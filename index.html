@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V2.1</title>
+<title>Fiat Operations Command Center V2.2</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f4f7fb;--panel:#fff;--text:#142033;--muted:#687386;--line:#e4e9f1;--nav:#0f1d33;--blue:#2563eb;--green:#0f9f6e;--orange:#e98719;--red:#dc3f4f;--purple:#7c3aed;--shadow:0 12px 35px rgba(15,29,51,.08);--radius:18px}
@@ -30,7 +30,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.1</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.2</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -42,7 +42,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V2.1</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+<div class="sidebar-note"><b>正式版 V2.2</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -59,7 +59,13 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="grid main-grid">
 <div>
 <div class="card table-card">
-<div class="section-title"><div><h3>幣種總覽</h3><div class="hint">以法幣 Available 為主，USD 僅供參考</div></div></div>
+<div class="section-title">
+  <div><h3>幣種總覽</h3><div class="hint">預設只顯示目前 Robot 商戶餘額中的幣種</div></div>
+  <label class="badge b-green" style="cursor:pointer">
+    <input id="balanceOnly" type="checkbox" checked onchange="renderAll()" style="width:auto;margin:0 6px 0 0">
+    只顯示有商戶餘額
+  </label>
+</div>
 <table class="currency-table"><thead><tr><th>幣種</th><th>Available（法幣）</th><th>USD（參考）</th><th>Withdrawal 日均</th><th>Deposit 日均</th><th>代付</th><th>代收</th><th>Pending</th><th>建議</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="9">尚未匯入資料</td></tr></tbody></table>
 </div>
 <div class="card" style="margin-top:16px"><div class="section-title"><div><h3>綜合資金分析</h3><div class="hint">依 Available、日均、通道與 Pending 自動判斷</div></div></div><div class="analysis-grid" id="analysisGrid"><div class="hint">尚未有分析結果</div></div></div>
@@ -82,8 +88,8 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="card"><div class="field"><label>貼上 Robot 原始內容</label><textarea id="robotInput" rows="16" placeholder="Provider&#10;Account&#10;Currency&#10;Total&#10;Available&#10;..."></textarea></div><div class="actions"><button class="btn primary" onclick="parseRobot()">解析並保存</button><button class="btn" onclick="clearRobot()">清空輸入</button></div><div id="robotResult"></div></div>
 </section>
 
-<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="3"></div><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><div id="withdrawResult"></div></div></section>
-<section class="page" id="page-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="depositFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="depositDays" type="number" min="1" value="3"></div><button class="btn primary" onclick="loadStats('deposit')">解析並保存</button><div id="depositResult"></div></div></section>
+<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="7"></div><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><div id="withdrawResult"></div></div></section>
+<section class="page" id="page-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="depositFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="depositDays" type="number" min="1" value="7"></div><button class="btn primary" onclick="loadStats('deposit')">解析並保存</button><div id="depositResult"></div></div></section>
 
 <section class="page" id="page-payout"><div class="topbar"><div><h2>代付通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payoutFile" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="loadChannels('payout')">解析並保存</button><div id="payoutResult"></div></div></section>
 <section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><div id="payinResult"></div></div></section>
@@ -226,17 +232,56 @@ async function readSheet(file){
 function findKey(obj,patterns){const keys=Object.keys(obj);return keys.find(k=>patterns.some(p=>k.toLowerCase().includes(p)))}
 function parseDateVal(v){if(!v)return null;const d=new Date(v);return isNaN(d)?null:d}
 async function loadStats(type){
- const f=document.getElementById(type+'File').files[0];if(!f){toast('請選擇檔案');return}
- const rows=await readSheet(f);const totals={};const dates=[];
+ const f=document.getElementById(type+'File').files[0];
+ if(!f){toast('請選擇檔案');return}
+
+ const rows=await readSheet(f);
+ const totals={};
+ const dates=[];
+
  rows.forEach(r=>{
-   const ck=findKey(r,['currency','币种','幣種']);const ak=findKey(r,['amount','金额','金額','sum amount','order amount']);const dk=findKey(r,['date','日期','created','create time']);
-   const c=normCurrency(ck?r[ck]:'');const a=num(ak?r[ak]:0);
-   if(c&&a)totals[c]=(totals[c]||0)+a;
-   const d=parseDateVal(dk?r[dk]:null);if(d)dates.push(d);
+   const ck=findKey(r,['currency','币种','幣種']);
+
+   // 金額欄位優先順序：Total Amount > Sum Amount > Amount
+   const keys=Object.keys(r);
+   let ak=keys.find(k=>/^total\s*amount$/i.test(k.trim()));
+   if(!ak) ak=keys.find(k=>/^sum\s*amount$/i.test(k.trim()));
+   if(!ak) ak=keys.find(k=>/total amount|总金额|總金額|合计金额|合計金額/i.test(k));
+   if(!ak) ak=findKey(r,['amount','金额','金額']);
+
+   const dk=findKey(r,['date','日期','created','create time']);
+   const c=normCurrency(ck?r[ck]:'');
+   const a=num(ak?r[ak]:0);
+
+   if(c && Number.isFinite(a)) totals[c]=(totals[c]||0)+a;
+
+   const d=parseDateVal(dk?r[dk]:null);
+   if(d) dates.push(d);
  });
- let days=num(document.getElementById(type+'Days').value)||1;
- if(dates.length){const min=Math.min(...dates),max=Math.max(...dates);days=Math.max(1,Math.round((max-min)/86400000)+1)}
- state[type]={days,totals};setUpdated(type);document.getElementById(type+'Result').innerHTML=`<p>已解析 ${Object.keys(totals).length} 個幣種，區間 ${days} 天。</p>`;renderAll();toast('解析完成');
+
+ // 依你的工作檔案規則：預設 7 天。
+ // 只有檔案中能辨識出完整日期區間時才自動覆蓋。
+ let days=num(document.getElementById(type+'Days').value)||7;
+ if(dates.length>=2){
+   const min=Math.min(...dates),max=Math.max(...dates);
+   const detected=Math.max(1,Math.round((max-min)/86400000)+1);
+   if(detected>1) days=detected;
+ }
+
+ state[type]={days,totals};
+ setUpdated(type);
+
+ const preview=Object.entries(totals).slice(0,8)
+   .map(([c,v])=>`${c}: ${fmt(v)} ÷ ${days} = ${fmt(v/days)}`)
+   .join('<br>');
+
+ document.getElementById(type+'Result').innerHTML=
+   `<p><b>已解析 ${Object.keys(totals).length} 個幣種，區間 ${days} 天。</b></p>
+    <div class="hint">計算方式：Total Amount ÷ ${days}</div>
+    <div style="margin-top:10px;text-align:left">${preview||'未識別到 Total Amount'}</div>`;
+
+ renderAll();
+ toast('解析完成');
 }
 
 async function loadChannels(type){
@@ -285,14 +330,66 @@ function recommendation(x){
  return {type:'ok',text:'观察',reason:`余额与通道暂时稳定；开启代付 ${open} 家。`}
 }
 function renderAll(){
- const rows=summary();const tbody=document.getElementById('dashboardBody');let alerts=[];let analysis=[];
- tbody.innerHTML=rows.length?rows.map(x=>{const r=recommendation(x);if(r.type!=='ok')alerts.push({x,r});analysis.push({x,r});const po=x.payout.filter(y=>y.status==='开启').length,pi=x.payin.filter(y=>y.status==='开启').length;const pend=x.pending.reduce((s,y)=>s+y.amount,0);const cls=r.type==='risk'?'red':r.type==='settle'?'green':r.type==='watch'?'orange':'';return `<tr><td class="currency">${x.currency}</td><td class="money">${SYMBOLS[x.currency]||''} ${fmt(x.fiat)}</td><td class="usd">${fmt(x.usd)} U</td><td>${SYMBOLS[x.currency]||''} ${fmt(x.withdraw)}</td><td>${SYMBOLS[x.currency]||''} ${fmt(x.deposit)}</td><td><span class="badge ${po?'b-green':'b-gray'}">${po}/${x.payout.length}</span></td><td><span class="badge ${pi?'b-green':'b-gray'}">${pi}/${x.payin.length}</span></td><td>${fmt(pend)}</td><td class="recommend ${cls}">${r.text}</td></tr>`}).join(''):'<tr><td colspan="9">尚未匯入資料</td></tr>';
- document.getElementById('kCurrency').textContent=rows.length;document.getElementById('kPayout').textContent=rows.filter(x=>x.payout.some(y=>y.status==='开启')).length;document.getElementById('kPayin').textContent=rows.filter(x=>x.payin.some(y=>y.status==='开启')).length;document.getElementById('kAlert').textContent=alerts.length;document.getElementById('kDays').textContent=(state.withdraw.days||0)+' 天';
- document.getElementById('analysisGrid').innerHTML=analysis.length?analysis.map(({x,r})=>`<div class="analysis-box ${r.type==='risk'?'risk':r.type==='settle'?'settle':'watch'}"><small>${x.currency}</small><b>${r.text}</b><span>${r.reason}</span></div>`).join(''):'<div class="hint">尚未有分析结果</div>';
- document.getElementById('alertList').innerHTML=alerts.length?alerts.slice(0,8).map(({x,r})=>`<div class="alert"><span class="dot ${r.type==='risk'?'red':'orange'}"></span><span><b>${x.currency}</b>：${r.text}</span></div>`).join(''):'<div class="alert"><span class="dot green"></span><span>目前无高优先提醒</span></div>';
- const labels={balances:'商户余额',withdraw:'Withdrawal Stats',deposit:'Deposit Stats',payout:'代付通道',payin:'代收通道',pending:'Pending'};
- document.getElementById('statusList').innerHTML=Object.keys(labels).map(k=>`<div class="status-row"><span>${labels[k]}</span><span>${state.updated[k]||'未更新'}</span></div>`).join('');
- const latest=Object.values(state.updated).sort().pop();document.getElementById('lastUpdated').textContent=latest?'最后更新：'+latest:'尚未汇入资料';
+ let rows=summary();
+ const balanceCurrencies=new Set(state.balances.map(x=>x.currency));
+ const onlyBalance=document.getElementById('balanceOnly')?.checked ?? true;
+
+ // 有商戶餘額的幣種優先；預設只顯示這些幣種。
+ rows.sort((a,b)=>{
+   const ap=balanceCurrencies.has(a.currency)?0:1;
+   const bp=balanceCurrencies.has(b.currency)?0:1;
+   return ap-bp || a.currency.localeCompare(b.currency);
+ });
+ if(onlyBalance && balanceCurrencies.size){
+   rows=rows.filter(x=>balanceCurrencies.has(x.currency));
+ }
+
+ const tbody=document.getElementById('dashboardBody');
+ let alerts=[];
+ let analysis=[];
+
+ tbody.innerHTML=rows.length?rows.map(x=>{
+   const r=recommendation(x);
+   if(r.type!=='ok')alerts.push({x,r});
+   analysis.push({x,r});
+   const po=x.payout.filter(y=>y.status==='开启').length;
+   const pi=x.payin.filter(y=>y.status==='开启').length;
+   const pend=x.pending.reduce((s,y)=>s+y.amount,0);
+   const cls=r.type==='risk'?'red':r.type==='settle'?'green':r.type==='watch'?'orange':'';
+   return `<tr>
+     <td class="currency">${x.currency}</td>
+     <td class="money">${SYMBOLS[x.currency]||''} ${fmt(x.fiat)}</td>
+     <td class="usd">${fmt(x.usd)} U</td>
+     <td>${SYMBOLS[x.currency]||''} ${fmt(x.withdraw)}</td>
+     <td>${SYMBOLS[x.currency]||''} ${fmt(x.deposit)}</td>
+     <td><span class="badge ${po?'b-green':'b-gray'}">${po}/${x.payout.length}</span></td>
+     <td><span class="badge ${pi?'b-green':'b-gray'}">${pi}/${x.payin.length}</span></td>
+     <td>${fmt(pend)}</td>
+     <td class="recommend ${cls}">${r.text}</td>
+   </tr>`;
+ }).join(''):'<tr><td colspan="9">目前沒有商戶餘額資料</td></tr>';
+
+ const allRows=summary();
+ document.getElementById('kCurrency').textContent=balanceCurrencies.size||allRows.length;
+ document.getElementById('kPayout').textContent=allRows.filter(x=>x.payout.some(y=>y.status==='开启')).length;
+ document.getElementById('kPayin').textContent=allRows.filter(x=>x.payin.some(y=>y.status==='开启')).length;
+ document.getElementById('kAlert').textContent=alerts.length;
+ document.getElementById('kDays').textContent=(state.withdraw.days||0)+' 天';
+
+ document.getElementById('analysisGrid').innerHTML=analysis.length?
+   analysis.map(({x,r})=>`<div class="analysis-box ${r.type==='risk'?'risk':r.type==='settle'?'settle':'watch'}"><small>${x.currency}</small><b>${r.text}</b><span>${r.reason}</span></div>`).join(''):
+   '<div class="hint">尚未有分析結果</div>';
+
+ document.getElementById('alertList').innerHTML=alerts.length?
+   alerts.slice(0,8).map(({x,r})=>`<div class="alert"><span class="dot ${r.type==='risk'?'red':'orange'}"></span><span><b>${x.currency}</b>：${r.text}</span></div>`).join(''):
+   '<div class="alert"><span class="dot green"></span><span>目前無高優先提醒</span></div>';
+
+ const labels={balances:'商戶餘額',withdraw:'Withdrawal Stats',deposit:'Deposit Stats',payout:'代付通道',payin:'代收通道',pending:'Pending'};
+ document.getElementById('statusList').innerHTML=Object.keys(labels)
+   .map(k=>`<div class="status-row"><span>${labels[k]}</span><span>${state.updated[k]||'未更新'}</span></div>`).join('');
+
+ const latest=Object.values(state.updated).sort().pop();
+ document.getElementById('lastUpdated').textContent=latest?'最後更新：'+latest:'尚未匯入資料';
  renderRobotResult();
 }
 
