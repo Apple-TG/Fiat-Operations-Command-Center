@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V2.3</title>
+<title>Fiat Operations Command Center V2.4</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f4f7fb;--panel:#fff;--text:#142033;--muted:#687386;--line:#e4e9f1;--nav:#0f1d33;--blue:#2563eb;--green:#0f9f6e;--orange:#e98719;--red:#dc3f4f;--purple:#7c3aed;--shadow:0 12px 35px rgba(15,29,51,.08);--radius:18px}
@@ -42,7 +42,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.3</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.4</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -54,7 +54,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V2.3</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+<div class="sidebar-note"><b>正式版 V2.4</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -83,12 +83,6 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="card" style="margin-top:16px"><div class="section-title"><div><h3>綜合資金分析</h3><div class="hint">依 Available、日均、通道與 Pending 自動判斷</div></div></div><div class="analysis-grid" id="analysisGrid"><div class="hint">尚未有分析結果</div></div></div>
 </div>
 <div class="side-stack">
-<div class="card"><div class="section-title"><h3>快速操作</h3></div><div class="quick-grid">
-<div class="quick" onclick="showPage('robot')">🤖<b>商戶餘額</b><small>貼 Robot 內容</small></div>
-<div class="quick" onclick="showPage('withdraw')">⇧<b>Withdrawal</b><small>上傳檔案</small></div>
-<div class="quick" onclick="showPage('deposit')">⇧<b>Deposit</b><small>上傳檔案</small></div>
-<div class="quick" onclick="showPage('pending')">⚠<b>Pending</b><small>貼上數據</small></div>
-</div></div>
 <div class="card"><div class="section-title"><h3>重點提醒</h3></div><div class="alert-list" id="alertList"><div class="hint">尚未有提醒</div></div></div>
 <div class="card"><div class="section-title"><h3>資料狀態</h3></div><div class="status-list" id="statusList"></div></div>
 </div>
@@ -106,7 +100,23 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <section class="page" id="page-payout"><div class="topbar"><div><h2>代付通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payoutFile" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="loadChannels('payout')">解析並保存</button><div id="payoutResult"></div></div></section>
 <section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><div id="payinResult"></div></div></section>
 
-<section class="page" id="page-pending"><div class="topbar"><div><h2>Pending 數據</h2><p>Count 缺失也可分析；支援 Provider / Channel / Currency / Amount / Avg / Max</p></div></div><div class="card"><textarea id="pendingInput" rows="16" placeholder="貼上 Pending 表格內容"></textarea><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="parsePending()">分析並保存</button><button class="btn" onclick="document.getElementById('pendingInput').value=''">清空</button></div><div id="pendingResult"></div></div></section>
+<section class="page" id="page-pending">
+<div class="topbar"><div><h2>Pending 數據</h2><p>直接貼上後台表格，自动生成提款超时回报话术</p></div></div>
+<div class="grid two">
+  <div class="card">
+    <textarea id="pendingInput" rows="18" placeholder="Provider	Channel	Currency	Sum Amount	Count	Avg. Pend Hour	Max Hour	Min Hour"></textarea>
+    <div class="actions" style="margin-top:12px">
+      <button class="btn primary" onclick="parsePending()">生成超时回报</button>
+      <button class="btn" onclick="clearPending()">清空</button>
+    </div>
+    <div id="pendingResult"></div>
+  </div>
+  <div class="card">
+    <div class="section-title"><h3>提款超时回报话术</h3><button class="btn" onclick="copyText('pendingOutput')">复制全部</button></div>
+    <div class="output" id="pendingOutput">生成结果显示于此</div>
+  </div>
+</div>
+</section>
 
 <section class="page" id="page-settlement">
 <div class="topbar"><div><h2>結算話術</h2><p>TRC 與 ERC 均支援批量貼上</p></div></div>
@@ -116,9 +126,9 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div class="card">
       <div class="section-title"><div><h3>整列貼上生成</h3><div class="hint">支援有表頭及無表頭；無表頭依工作檔案固定順序讀取</div></div></div>
       <textarea id="trcInput" rows="20" placeholder="貼上 Excel / WPS 多筆資料"></textarea>
-      <div class="grid two" style="margin-top:12px">
+      <div style="margin-top:12px;max-width:220px">
         <div class="field"><label>统一小数位</label><select id="trcDecimals"><option value="2" selected>2</option><option value="4">4</option><option value="6">6</option></select></div>
-        <div class="field"><label>结算文字</label><select id="trcAction"><option value="出U" selected>出U</option><option value="结算">结算</option></select></div>
+        
       </div>
       <div class="actions"><button class="btn primary" onclick="generateTRC()">贴上后生成</button><button class="btn" onclick="clearTRC()">清空</button></div>
       <div class="hint" id="trcStatus" style="margin-top:10px"></div>
@@ -314,30 +324,117 @@ async function loadStats(type){
 }
 
 async function loadChannels(type){
- const f=document.getElementById(type+'File').files[0];if(!f){toast('請選擇檔案');return}
- const rows=await readSheet(f);const result=[];
+ const f=document.getElementById(type+'File').files[0];
+ if(!f){toast('請選擇檔案');return}
+
+ const rows=await readSheet(f);
+ const result=[];
+
  rows.forEach(r=>{
-   const pk=findKey(r,['provider','商户','商戶']);const ck=findKey(r,['currency','币种','幣種']);const sk=findKey(r,['status','状态','狀態','switch','maintenance']);const ch=findKey(r,['channel','通道']);const nk=findKey(r,['note','备注','備註']);
-   const c=normCurrency(ck?r[ck]:'');if(!c)return;
+   const pk=findKey(r,['provider','商户','商戶']);
+   const ck=findKey(r,['currency','币种','幣種']);
+   const ch=findKey(r,['channel','通道']);
+   const nk=findKey(r,['note','备注','備註','remark']);
+   const c=normCurrency(ck?r[ck]:'');
+   if(!c)return;
+
    const text=Object.values(r).join(' ').toLowerCase();
    let status='关闭';
-   if(/maintenance|维护|維護/.test(text))status='维护';
-   else if(/enable|open|开启|開啟|true|1/.test(text))status='开启';
-   else if(/disable|close|关闭|關閉|false|0/.test(text))status='关闭';
-   const note=/note|备用|備用/.test(text)||(nk&&String(r[nk]).trim());
-   result.push({provider:pk?r[pk]:'',channel:ch?r[ch]:'',currency:c,status,note:!!note});
+   if(/maintenance|维护|維護/.test(text)) status='维护';
+   else if(/enable|open|开启|開啟|true|on/.test(text)) status='开启';
+   else if(/disable|close|关闭|關閉|false|off/.test(text)) status='关闭';
+
+   const noteText=nk?String(r[nk]||'').trim():'';
+
+   result.push({
+     provider:pk?String(r[pk]||'').trim():'',
+     channel:ch?String(r[ch]||'').trim():'',
+     currency:c,
+     status,
+     noteText
+   });
  });
- state[type]=result;setUpdated(type);document.getElementById(type+'Result').innerHTML=`<p>已解析 ${result.length} 条通道。</p>`;renderAll();toast('解析完成');
+
+ state[type]=result;
+ setUpdated(type);
+ document.getElementById(type+'Result').innerHTML=`<p>已解析 ${result.length} 条通道。</p>`;
+ renderAll();
+ toast('解析完成');
 }
 
 function parsePending(){
- const lines=document.getElementById('pendingInput').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);const rows=[];
- if(lines.some(x=>x.includes('\t'))){
-   lines.forEach(line=>{const p=line.split('\t');const c=p.map(normCurrency).find(Boolean);if(c)rows.push({provider:p[0]||'',channel:p[1]||'',currency:c,amount:num(p[3]||p[2]),avg:num(p[5]||p[4]),max:num(p[6]||p[5]),count:num(p[4])})})
- }else{
-   for(let i=0;i<lines.length;i++){const c=normCurrency(lines[i+2]);if(c){rows.push({provider:lines[i],channel:lines[i+1],currency:c,amount:num(lines[i+3]),count:num(lines[i+4]),avg:num(lines[i+5]),max:num(lines[i+6])});i+=6}}
- }
- state.pending=rows;setUpdated('pending');document.getElementById('pendingResult').innerHTML=`<p>已解析 ${rows.length} 条 Pending。</p>`;renderAll();toast('Pending 已保存');
+ const raw=document.getElementById('pendingInput').value.trim();
+ if(!raw){toast('请先贴上 Pending 表格');return}
+
+ const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ const rows=[];
+ const firstParts=lines[0].split(/\t+/).map(x=>x.trim());
+ const hasHeader=firstParts.some(x=>/provider|channel|currency|sum amount|count|avg|pend hour|max hour|min hour/i.test(x));
+ const headers=hasHeader?firstParts.map(x=>x.toLowerCase()):[];
+ const data=hasHeader?lines.slice(1):lines;
+
+ function hidx(patterns){return headers.findIndex(h=>patterns.some(p=>h.includes(p)))}
+ const H={
+   provider:hidx(['provider']),
+   channel:hidx(['channel']),
+   currency:hidx(['currency']),
+   amount:hidx(['sum amount','amount']),
+   count:hidx(['count']),
+   avg:hidx(['avg. pend hour','avg pend hour','avg']),
+   max:hidx(['max hour','max']),
+   min:hidx(['min hour','min'])
+ };
+
+ data.forEach(line=>{
+   const p=line.split(/\t+/).map(x=>x.trim());
+   if(p.length<4)return;
+
+   const provider=(H.provider>=0?p[H.provider]:p[0])||'';
+   const channel=(H.channel>=0?p[H.channel]:p[1])||'';
+   const currency=normCurrency(H.currency>=0?p[H.currency]:p[2]);
+   const amount=num(H.amount>=0?p[H.amount]:p[3]);
+   const count=num(H.count>=0?p[H.count]:p[4]);
+   const avg=num(H.avg>=0?p[H.avg]:p[5]);
+   const max=num(H.max>=0?p[H.max]:p[6]);
+   const min=num(H.min>=0?p[H.min]:p[7]);
+
+   if(provider && currency) rows.push({provider,channel,currency,amount,count,avg,max,min});
+ });
+
+ state.pending=rows;
+ setUpdated('pending');
+
+ // 依 Provider + Currency 汇总；同一商户多个渠道合并
+ const groups={};
+ rows.forEach(r=>{
+   const key=`${r.provider}|${r.currency}`;
+   if(!groups[key])groups[key]={provider:r.provider,currency:r.currency,amount:0,count:0,weighted:0,max:0,min:Infinity,channels:[]};
+   const g=groups[key];
+   g.amount+=r.amount;
+   g.count+=r.count;
+   g.weighted+=r.avg*(r.count||1);
+   g.max=Math.max(g.max,r.max);
+   g.min=Math.min(g.min,r.min||Infinity);
+   g.channels.push(r.channel);
+ });
+
+ const output=Object.values(groups)
+   .sort((a,b)=>b.count-a.count)
+   .map(g=>{
+     const avg=g.count?g.weighted/g.count:0;
+     const channelText=g.channels.length>1?`（${g.channels.length}个渠道）`:'';
+     return `${g.provider} ${g.currency} ${g.count||0}笔${channelText}，Pending金额 ${fmt(g.amount,2)}，平均 ${fmt(avg,2)} 小时，最长 ${fmt(g.max,2)} 小时，已请商户协助加急处理。`;
+   }).join('\n');
+
+ document.getElementById('pendingOutput').textContent=output||'未识别到有效 Pending 资料。';
+ document.getElementById('pendingResult').innerHTML=`<p>已读取 ${rows.length} 条 Pending，并生成 ${Object.keys(groups).length} 条回报话术。</p>`;
+ renderAll();
+ toast('提款超时回报已生成');
+}
+function clearPending(){
+ document.getElementById('pendingInput').value='';
+ document.getElementById('pendingOutput').textContent='生成结果显示于此';
+ document.getElementById('pendingResult').innerHTML='';
 }
 
 function summary(){
@@ -391,8 +488,14 @@ function renderAll(){
       .map(m=>`<div class="detail-item"><div><b>${m.provider}</b><div class="hint">${m.account||''}</div></div><div style="text-align:right"><b>${SYMBOLS[x.currency]||''} ${fmt(m.fiat)}</b><div class="hint">${fmt(m.usd)} U</div></div></div>`)
       .join(''):'<div class="hint">暂无商户余额明细</div>';
 
-   const payoutHtml=x.payout.length?x.payout.map(c=>`<div class="detail-item"><span>${c.provider||c.channel||'未命名通道'}</span><span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}${c.note?' · NOTE':''}</span></div>`).join(''):'<div class="hint">尚未上传代付通道</div>';
-   const payinHtml=x.payin.length?x.payin.map(c=>`<div class="detail-item"><span>${c.provider||c.channel||'未命名通道'}</span><span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}${c.note?' · NOTE':''}</span></div>`).join(''):'<div class="hint">尚未上传代收通道</div>';
+   const payoutHtml=x.payout.length?x.payout.map(c=>{
+     const note=(c.status==='关闭' && c.noteText)?`<div class="hint" style="margin-top:4px">NOTE：${c.noteText}</div>`:'';
+     return `<div class="detail-item"><div><b>${c.provider||'未命名商户'}</b><div class="hint">${c.channel||'未命名渠道'}</div>${note}</div><span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}</span></div>`;
+   }).join(''):'<div class="hint">尚未上传代付通道</div>';
+   const payinHtml=x.payin.length?x.payin.map(c=>{
+     const note=(c.status==='关闭' && c.noteText)?`<div class="hint" style="margin-top:4px">NOTE：${c.noteText}</div>`:'';
+     return `<div class="detail-item"><div><b>${c.provider||'未命名商户'}</b><div class="hint">${c.channel||'未命名渠道'}</div>${note}</div><span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}</span></div>`;
+   }).join(''):'<div class="hint">尚未上传代收通道</div>';
 
    return `<tr class="currency-row" onclick="toggleCurrencyDetail('${x.currency}')">
      <td class="currency">▸ ${x.currency}</td>
@@ -452,15 +555,21 @@ function generateTRC(){
  if(!rows.length){toast('请先贴上资料');return}
 
  const decimals=num(document.getElementById('trcDecimals').value)||2;
- const action=document.getElementById('trcAction').value||'出U';
-
  const first=rows[0];
- const hasHeader=first.some(h=>/merchant|商户|商戶|结算币种|結算幣種|订单金额|訂單金額|到账金额|到賬金額|手续费|手續費|实收usdt|實收usdt|hash|txid|优惠汇率|優惠匯率|最终计算|最終計算/i.test(h));
+ const hasHeader=first.some(h=>/merchant|商户|商戶|结算币种|結算幣種|订单金额|訂單金額|到账金额|到賬金額|手续费|手續費|实收usdt|實收usdt|hash|txid|优惠汇率|優惠匯率/i.test(h));
  const headers=hasHeader?first.map(x=>x.toLowerCase()):[];
  const data=hasHeader?rows.slice(1):rows;
 
  function idx(patterns){
    return headers.findIndex(h=>patterns.some(p=>h.includes(p)));
+ }
+ function rawAt(r,index,fallback=''){
+   return index>=0 ? String(r[index]??'').trim() : String(fallback??'').trim();
+ }
+ function cleanNumberText(v){
+   const s=String(v||'').replace(/,/g,'').trim();
+   if(!s)return '';
+   return s.replace(/(\.\d*?[1-9])0+$|\.0+$/,'$1');
  }
 
  const H={
@@ -468,70 +577,48 @@ function generateTRC(){
    currency:idx(['结算币种','結算幣種','currency','币种','幣種']),
    orderAmount:idx(['订单金额','訂單金額','order amount']),
    arrival:idx(['到账金额','到賬金額','arrival amount','settlement amount']),
-   feeFiat:idx(['手续费（fiat）','手續費（fiat）','fee fiat','fiat fee']),
-   feeUsd:idx(['手续费（usd）','手續費（usd）','fee usd','usd fee']),
    received:idx(['实收usdt','實收usdt','received usdt']),
    txid:idx(['usdt hash','txid','hash']),
-   date:idx(['到账日期','到賬日期','date']),
-   owner:idx(['专员','專員','owner']),
    merchantRate:idx(['商户汇率','商戶匯率','merchant rate']),
-   preferredRate:idx(['优惠汇率','優惠匯率','preferred rate']),
-   final:idx(['最终计算','最終計算','final'])
+   preferredRate:idx(['优惠汇率','優惠匯率','preferred rate'])
  };
 
  const outputs=[];
- data.forEach((r,rowIndex)=>{
+
+ data.forEach(r=>{
    if(!r.some(Boolean)) return;
 
-   // 無表頭固定順序：
-   // 0商户單號 1商户 2结算币种 3订单金额 4到账金额 5手续费Fiat 6手续费USD
-   // 7实收USDT 8USDT Hash 9到账日期 10专员 11商户汇率 12优惠汇率 13最终计算
-   const merchant=(H.merchant>=0?r[H.merchant]:r[1])||'';
-   const currency=(H.currency>=0?r[H.currency]:r[2])||'';
-   const orderAmount=num(H.orderAmount>=0?r[H.orderAmount]:r[3]);
-   const arrival=num(H.arrival>=0?r[H.arrival]:r[4]);
-   const feeFiat=num(H.feeFiat>=0?r[H.feeFiat]:r[5]);
-   const feeUsd=num(H.feeUsd>=0?r[H.feeUsd]:r[6]);
-   const received=num(H.received>=0?r[H.received]:r[7]);
-   const txid=(H.txid>=0?r[H.txid]:r[8])||'';
-   const merchantRate=num(H.merchantRate>=0?r[H.merchantRate]:r[11]);
-   const preferredRate=num(H.preferredRate>=0?r[H.preferredRate]:r[12]);
-   const finalValue=num(H.final>=0?r[H.final]:r[13]);
+   const merchant=rawAt(r,H.merchant,r[1]);
+   const currency=rawAt(r,H.currency,r[2]);
+   const orderText=rawAt(r,H.orderAmount,r[3]);
+   const arrivalText=rawAt(r,H.arrival,r[4]);
+   const amountText=cleanNumberText(arrivalText||orderText);
+   const receivedText=cleanNumberText(rawAt(r,H.received,r[7]));
+   const txid=rawAt(r,H.txid,r[8]);
+   const merchantRateText=cleanNumberText(rawAt(r,H.merchantRate,r[11]));
+   const preferredRateText=cleanNumberText(rawAt(r,H.preferredRate,r[12]));
+   const rateText=preferredRateText||merchantRateText;
 
-   const amount=arrival||orderAmount;
-   const rate=preferredRate||merchantRate;
+   const amount=num(amountText);
+   const rate=num(rateText);
 
-   if(!merchant || !currency || !amount || (!rate && !received && !finalValue)) return;
+   if(!merchant || !currency || !amount || !rate) return;
 
-   let calc='';
-   let result=0;
-
-   if(finalValue){
-     result=finalValue;
-     calc=feeFiat
-       ? `((${amount} - fee ${feeFiat})/${rate})${feeUsd?` - fee ${feeUsd}`:''}=${result.toFixed(decimals)} U`
-       : feeUsd
-         ? `(${amount}/${rate}) - fee ${feeUsd}=${result.toFixed(decimals)} U`
-         : `${amount}/${rate}=${result.toFixed(decimals)} U`;
-   }else if(received){
-     result=received;
-     calc=`实收USDT ${result.toFixed(decimals)} U`;
-   }else if(feeFiat){
-     result=(amount-feeFiat)/rate-feeUsd;
-     calc=`(${amount} - fee ${feeFiat})/${rate}${feeUsd?` - fee ${feeUsd}`:''}=${result.toFixed(decimals)} U`;
-   }else if(feeUsd){
-     result=amount/rate-feeUsd;
-     calc=`(${amount}/${rate}) - fee ${feeUsd}=${result.toFixed(decimals)} U`;
-   }else{
-     result=amount/rate;
-     calc=`${amount}/${rate}=${result.toFixed(decimals)} U`;
+   let resultText=receivedText;
+   if(!resultText){
+     resultText=(amount/rate).toFixed(decimals).replace(/0+$/,'').replace(/\.$/,'');
    }
 
-   outputs.push(`${merchant}${action},结算${currency} ${amount},汇率${rate}。 ${calc}, 请你确认,谢谢。\nTXID：${txid}`);
+   outputs.push(
+`${merchant}出U,结算${currency} ${amountText}.,汇率${rateText}.。
+${amountText}./${rateText}.=${resultText} U,请你确认,谢谢。
+TXID：
+${txid}`
+   );
  });
 
  document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';
- document.getElementById('trcStatus').textContent=`已读取 ${data.length} 列，并生成 ${outputs.length} 笔回报内文。最终汇率优先使用优惠汇率。`;
+ document.getElementById('trcStatus').textContent=`已读取 ${data.length} 列，并生成 ${outputs.length} 笔回报话术。汇率优先使用优惠汇率，结果优先使用实收USDT。`;
 }
 function generateERC(){
  const rows=splitRows(document.getElementById('ercInput').value);if(!rows.length){toast('请先贴上资料');return}
