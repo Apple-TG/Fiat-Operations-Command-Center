@@ -1,151 +1,284 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fiat Operations Command Center V2</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f4f7fb;--panel:#fff;--text:#142033;--muted:#687386;--line:#e4e9f1;--nav:#0f1d33;--blue:#2563eb;--green:#0f9f6e;--orange:#e98719;--red:#dc3f4f;--purple:#7c3aed;--shadow:0 12px 35px rgba(15,29,51,.08);--radius:18px}
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text)}button,input,textarea{font:inherit}.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}.sidebar{background:linear-gradient(180deg,#0d1b30,#122944);color:#fff;padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}.brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#1fd3a3,#2563eb);display:grid;place-items:center;font-weight:900}.brand h1{font-size:17px;margin:0}.brand p{font-size:12px;color:#9fb0c8;margin:3px 0 0}.group-title{font-size:11px;color:#7690b4;margin:17px 10px 7px;text-transform:uppercase;letter-spacing:.08em}.nav-btn{width:100%;border:0;background:transparent;color:#cbd7e8;text-align:left;padding:12px 13px;border-radius:11px;cursor:pointer;margin:3px 0}.nav-btn:hover,.nav-btn.active{background:linear-gradient(90deg,#1b5ee9,#2c74f2);color:#fff}.sidebar-note{margin-top:auto;background:#173657;border:1px solid #25496e;border-radius:14px;padding:14px;font-size:12px;line-height:1.7;color:#d6e1ef}.main{padding:24px 26px 38px;min-width:0}.page{display:none}.page.active{display:block}.topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}.topbar h2{margin:0 0 6px;font-size:27px}.topbar p{margin:0;color:var(--muted);font-size:13px}.actions{display:flex;gap:10px}.btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 14px;font-weight:700;cursor:pointer}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.purple{background:var(--purple);border-color:var(--purple);color:#fff}.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}.kpi{display:flex;gap:12px;align-items:center}.icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:20px;font-weight:900}.icon.blue{background:#e8f0ff;color:var(--blue)}.icon.green{background:#e5f8ef;color:var(--green)}.icon.orange{background:#fff2df;color:var(--orange)}.icon.purple{background:#f0e9ff;color:var(--purple)}.kpi small{display:block;color:var(--muted);margin-bottom:5px}.kpi strong{font-size:24px}.grid{display:grid;gap:16px}.main-grid{grid-template-columns:minmax(0,1fr) 340px}.two{grid-template-columns:1fr 1fr}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-title h3{margin:0;font-size:17px}.hint{color:var(--muted);font-size:12px}.currency-table{width:100%;border-collapse:collapse}.currency-table th,.currency-table td{padding:12px 10px;border-bottom:1px solid var(--line);font-size:13px;text-align:left;white-space:nowrap}.currency-table th{font-size:11px;color:var(--muted);background:#f9fbfd}.currency-table tbody tr{cursor:pointer}.currency-table tbody tr:hover{background:#f7faff}.currency{font-weight:800;color:var(--blue)}.money{font-variant-numeric:tabular-nums;font-weight:650}.usd{color:#536177}.badge{display:inline-flex;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:800}.b-green{background:#e6f8ef;color:#087b56}.b-orange{background:#fff1df;color:#b86208}.b-red{background:#ffe9ec;color:#b72234}.b-gray{background:#edf0f4;color:#586274}.recommend{font-weight:800}.red{color:var(--red)}.green{color:var(--green)}.orange{color:var(--orange)}.side-stack{display:grid;gap:14px}.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.quick{border:1px solid var(--line);border-radius:14px;padding:16px 10px;text-align:center;background:#fbfdff;cursor:pointer}.quick b{display:block;margin:8px 0 4px}.quick small{color:var(--muted)}.alert-list{display:grid;gap:11px}.alert{display:flex;gap:9px;font-size:13px;line-height:1.45}.dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:0 0 auto}.dot.red{background:var(--red)}.dot.orange{background:var(--orange)}.dot.green{background:var(--green)}.status-list{display:grid;gap:10px}.status-row{display:flex;justify-content:space-between;font-size:12px}.status-row span:last-child{color:var(--green);font-weight:800}.detail-panel{display:none;margin-top:12px;border:1px solid #cfe0ff;background:#f8fbff;border-radius:14px;padding:16px}.detail-panel.show{display:block}.detail-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:14px}.merchant-list{display:grid;gap:8px}.merchant-item{display:flex;justify-content:space-between;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#fff}.merchant-item small{display:block;color:var(--muted)}.channel-list{display:grid;gap:8px}.channel{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding-bottom:7px}.ai-box{background:#fff7e8;border:1px solid #ffe0a8;border-radius:12px;padding:13px;line-height:1.65;font-size:13px}.upload-box{border:2px dashed #cdd7e6;border-radius:16px;padding:28px;text-align:center;background:#fbfdff}.field{display:grid;gap:6px;margin-bottom:12px}.field label{font-size:12px;color:var(--muted)}textarea,input[type=text],input[type=number]{width:100%;border:1px solid #d6deea;border-radius:10px;padding:11px;background:#fff}.output{white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:220px;line-height:1.7}.tabs{display:flex;gap:8px;margin-bottom:14px}.tab{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px}.tab.active{background:#eaf1ff;color:var(--blue);border-color:#bed1ff;font-weight:800}@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.main-grid{grid-template-columns:1fr}.side-stack{grid-template-columns:1fr 1fr}}@media(max-width:800px){.app{display:block}.sidebar{height:auto;position:static}.main{padding:16px}.kpis,.two,.detail-grid,.side-stack{grid-template-columns:1fr}.currency-table{min-width:1000px}.table-card{overflow:auto}}
-
-.analysis-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.analysis-box{border-radius:14px;padding:15px;border:1px solid var(--line);display:grid;gap:6px}
-.analysis-box small{color:var(--muted);font-weight:700}
-.analysis-box b{font-size:17px}
-.analysis-box span{font-size:12px;line-height:1.55;color:#536177}
-.analysis-box.risk{background:#fff7f7;border-color:#ffd4d9}
-.analysis-box.settle{background:#f0fbf6;border-color:#ccefdc}
-.analysis-box.watch{background:#fff9ed;border-color:#ffe4b9}
-.tool-pane{display:none}.tool-pane.active{display:block}
-@media(max-width:900px){.analysis-grid{grid-template-columns:1fr}}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text)}
+button,input,textarea,select{font:inherit}.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+.sidebar{background:linear-gradient(180deg,#0d1b30,#122944);color:#fff;padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#1fd3a3,#2563eb);display:grid;place-items:center;font-weight:900}
+.brand h1{font-size:17px;margin:0}.brand p{font-size:12px;color:#9fb0c8;margin:3px 0 0}.group-title{font-size:11px;color:#7690b4;margin:17px 10px 7px;text-transform:uppercase;letter-spacing:.08em}
+.nav-btn{width:100%;border:0;background:transparent;color:#cbd7e8;text-align:left;padding:12px 13px;border-radius:11px;cursor:pointer;margin:3px 0}.nav-btn:hover,.nav-btn.active{background:linear-gradient(90deg,#1b5ee9,#2c74f2);color:#fff}
+.sidebar-note{margin-top:auto;background:#173657;border:1px solid #25496e;border-radius:14px;padding:14px;font-size:12px;line-height:1.7;color:#d6e1ef}
+.main{padding:24px 26px 38px;min-width:0}.page{display:none}.page.active{display:block}.topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}.topbar h2{margin:0 0 6px;font-size:27px}.topbar p{margin:0;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 14px;font-weight:700;cursor:pointer}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.purple{background:var(--purple);border-color:var(--purple);color:#fff}.btn.danger{color:var(--red)}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}.kpi{display:flex;gap:12px;align-items:center}.icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:20px;font-weight:900}.icon.blue{background:#e8f0ff;color:var(--blue)}.icon.green{background:#e5f8ef;color:var(--green)}.icon.orange{background:#fff2df;color:var(--orange)}.icon.purple{background:#f0e9ff;color:var(--purple)}.kpi small{display:block;color:var(--muted);margin-bottom:5px}.kpi strong{font-size:24px}
+.grid{display:grid;gap:16px}.grid.main-grid{grid-template-columns:minmax(0,1fr) 340px}.grid.two{grid-template-columns:1fr 1fr}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-title h3{margin:0;font-size:17px}.hint{color:var(--muted);font-size:12px}
+.currency-table{width:100%;border-collapse:collapse}.currency-table th,.currency-table td{padding:12px 10px;border-bottom:1px solid var(--line);font-size:13px;text-align:left;white-space:nowrap}.currency-table th{font-size:11px;color:var(--muted);background:#f9fbfd}.currency{font-weight:800;color:var(--blue)}.money{font-variant-numeric:tabular-nums;font-weight:650}.usd{color:#536177}.badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:800}.b-green{background:#e6f8ef;color:#087b56}.b-orange{background:#fff1df;color:#b86208}.b-red{background:#ffe9ec;color:#b72234}.b-gray{background:#edf0f4;color:#586274}.recommend{font-weight:800}.recommend.red{color:var(--red)}.recommend.green{color:var(--green)}.recommend.orange{color:var(--orange)}
+.side-stack{display:grid;gap:14px}.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.quick{border:1px solid var(--line);border-radius:14px;padding:16px 10px;text-align:center;background:#fbfdff;cursor:pointer}.quick b{display:block;margin:8px 0 4px}.quick small{color:var(--muted)}
+.alert-list,.status-list{display:grid;gap:10px}.alert{display:flex;gap:9px;font-size:13px;line-height:1.45}.dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:0 0 auto}.dot.red{background:var(--red)}.dot.orange{background:var(--orange)}.dot.green{background:var(--green)}.status-row{display:flex;justify-content:space-between;font-size:12px}.status-row span:last-child{font-weight:800}
+.field{display:grid;gap:6px;margin-bottom:12px}.field label{font-size:12px;color:var(--muted)}textarea,input[type="text"],input[type="number"],select{width:100%;border:1px solid #d6deea;border-radius:10px;padding:11px;background:#fff}.output{white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:220px;line-height:1.7}.upload-box{border:2px dashed #cdd7e6;border-radius:16px;padding:28px;text-align:center;background:#fbfdff}.tabs{display:flex;gap:8px;margin-bottom:14px}.tab{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}.tab.active{background:#eaf1ff;color:var(--blue);border-color:#bed1ff;font-weight:800}.tool-pane{display:none}.tool-pane.active{display:block}
+.result-table{width:100%;border-collapse:collapse;margin-top:14px}.result-table th,.result-table td{border-bottom:1px solid var(--line);padding:10px;font-size:12px;text-align:left}.analysis-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.analysis-box{border-radius:14px;padding:15px;border:1px solid var(--line);display:grid;gap:6px}.analysis-box small{color:var(--muted);font-weight:700}.analysis-box b{font-size:17px}.analysis-box span{font-size:12px;line-height:1.55;color:#536177}.analysis-box.risk{background:#fff7f7;border-color:#ffd4d9}.analysis-box.settle{background:#f0fbf6;border-color:#ccefdc}.analysis-box.watch{background:#fff9ed;border-color:#ffe4b9}.toast{position:fixed;right:20px;bottom:20px;background:#13243d;color:#fff;padding:12px 16px;border-radius:10px;display:none;z-index:99}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.grid.main-grid{grid-template-columns:1fr}.side-stack{grid-template-columns:1fr 1fr}}
+@media(max-width:800px){.app{display:block}.sidebar{height:auto;position:static}.main{padding:16px}.kpis,.grid.two,.analysis-grid,.side-stack{grid-template-columns:1fr}.currency-table{min-width:950px}.card.table-card{overflow:auto}}
 </style>
 </head>
-<body><div class="app">
-<aside class="sidebar"><div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center</p></div></div>
-<button class="nav-btn active" data-page="home">⌂　首頁總覽</button><button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button><div class="group-title">上傳資料</div><button class="nav-btn" data-page="withdraw">⇧　Withdrawal Stats</button><button class="nav-btn" data-page="deposit">⇧　Deposit Stats</button><button class="nav-btn" data-page="payout">⇧　代付通道</button><button class="nav-btn" data-page="payin">⇧　代收通道</button><button class="nav-btn" data-page="pending">⌁　Pending 數據</button><div class="group-title">工具中心</div><button class="nav-btn" data-page="settlement">$　結算話術</button><button class="nav-btn" data-page="report">▤　報表中心</button><div class="sidebar-note"><b>正式版 V1</b><br><br><b>使用方式</b><br>1. 貼上 Robot 商戶餘額<br>2. 上傳提款、代收與通道資料<br>3. 回首頁查看整合建議<br>4. 依建議補幣、結算或切換通道</div></aside>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2</p></div></div>
+<button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
+<button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
+<div class="group-title">上傳資料</div>
+<button class="nav-btn" data-page="withdraw">⇧　Withdrawal Stats</button>
+<button class="nav-btn" data-page="deposit">⇧　Deposit Stats</button>
+<button class="nav-btn" data-page="payout">⇧　代付通道</button>
+<button class="nav-btn" data-page="payin">⇧　代收通道</button>
+<button class="nav-btn" data-page="pending">⌁　Pending 數據</button>
+<div class="group-title">工具中心</div>
+<button class="nav-btn" data-page="settlement">$　結算話術</button>
+<button class="nav-btn" data-page="report">▤　報表中心</button>
+<div class="sidebar-note"><b>正式版 V2</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+</aside>
+
 <main class="main">
-<section class="page active" id="page-home"><div class="topbar"><div><h2>首頁總覽</h2><p>最後更新：今天 15:30（UTC+8）</p></div><div class="actions"><button class="btn">↻ 重新整理</button><button class="btn primary">產生主管回報</button></div></div>
-<div class="kpis"><div class="card kpi"><div class="icon blue">≡</div><div><small>幣種總數</small><strong>12</strong></div></div><div class="card kpi"><div class="icon green">✓</div><div><small>可用代付幣種</small><strong>9</strong></div></div><div class="card kpi"><div class="icon purple">⇧</div><div><small>可用代收幣種</small><strong>10</strong></div></div><div class="card kpi"><div class="icon orange">!</div><div><small>需關注幣種</small><strong>3</strong></div></div><div class="card kpi"><div class="icon blue">◷</div><div><small>資料區間</small><strong>3 天</strong></div></div></div>
-<div class="grid main-grid"><div><div class="card table-card"><div class="section-title"><div><h3>幣種總覽（主要顯示法幣）</h3><div class="hint">點擊幣種展開商戶、通道與建議</div></div></div><table class="currency-table"><thead><tr><th>幣種</th><th>Available（法幣）</th><th>USD（參考）</th><th>提款日均</th><th>代收日均</th><th>代付通道</th><th>代收通道</th><th>NOTE 備用</th><th>建議</th></tr></thead><tbody>
-<tr data-detail="inr"><td class="currency">INR</td><td class="money">₹ 25,680,450</td><td class="usd">308,220 U</td><td>₹ 21,450,000</td><td>₹ 18,230,000</td><td><span class="badge b-green">7（開6）</span></td><td><span class="badge b-green">5（開4）</span></td><td><span class="badge b-orange">2 備用</span></td><td class="recommend red">建議補 ₹15M</td></tr>
-<tr><td class="currency">PKR</td><td class="money">Rs 2,150,000</td><td class="usd">7,890 U</td><td>Rs 4,820,000</td><td>Rs 3,760,000</td><td><span class="badge b-orange">4（開2）</span></td><td><span class="badge b-green">6（開4）</span></td><td><span class="badge b-orange">1 備用</span></td><td class="recommend red">建議補 Rs 3M</td></tr>
-<tr><td class="currency">RUB</td><td class="money">₽ 2,850,000</td><td class="usd">31,500 U</td><td>₽ 520,000</td><td>₽ 610,000</td><td><span class="badge b-green">3（開3）</span></td><td><span class="badge b-green">2（開2）</span></td><td><span class="badge b-gray">0</span></td><td class="recommend green">可結算 ₽1.8M</td></tr>
-<tr><td class="currency">NGN</td><td class="money">₦ 48,500,000</td><td class="usd">32,800 U</td><td>₦ 25,430,000</td><td>₦ 22,110,000</td><td><span class="badge b-green">5（開4）</span></td><td><span class="badge b-green">4（開3）</span></td><td><span class="badge b-orange">1 備用</span></td><td class="recommend green">安全</td></tr>
-<tr><td class="currency">BDT</td><td class="money">৳ 1,850,000</td><td class="usd">14,200 U</td><td>৳ 1,260,000</td><td>৳ 980,000</td><td><span class="badge b-orange">3（開2）</span></td><td><span class="badge b-green">5（開5）</span></td><td><span class="badge b-orange">2 備用</span></td><td class="recommend orange">關注通道</td></tr>
-</tbody></table><div class="detail-panel" id="detail-inr"><div class="section-title"><h3>INR 詳細分析</h3><button class="btn" onclick="closeDetails()">收起</button></div><div class="detail-grid"><div><h4>商戶 Available</h4><div class="merchant-list"><div class="merchant-item"><div><b>FunPay24</b><small>38,220 U</small></div><b>₹11,797,600</b></div><div class="merchant-item"><div><b>TopPayNew</b><small>16,180 U</small></div><b>₹6,175,800</b></div><div class="merchant-item"><div><b>FlashPay</b><small>690 U</small></div><b>₹262,620</b></div></div></div><div><h4>代付通道</h4><div class="channel-list"><div class="channel"><span>TopPayNew</span><span class="badge b-green">開啟</span></div><div class="channel"><span>FunPay24</span><span class="badge b-green">開啟</span></div><div class="channel"><span>BullPay</span><span class="badge b-orange">維護</span></div><div class="channel"><span>SmilePay NOTE</span><span class="badge b-gray">備用</span></div></div></div><div><h4>系統建議</h4><div class="ai-box"><b>建議補幣 ₹15M</b><br>目前 Available 低於建議留存量。主要通道仍有 6 家開啟，另有 2 家 NOTE 備用。<br><br>建議：先補幣，不需立即切換通道；若主要通道延遲擴大，再啟用 NOTE 備用。</div></div></div></div></div>
-<div class="card" style="margin-top:16px">
-        <div class="section-title"><div><h3>綜合資金分析</h3><div class="hint">依 Available、Withdrawal Stats、Deposit Stats、通道與 NOTE 備用綜合判斷</div></div></div>
-        <div class="analysis-grid">
-          <div class="analysis-box risk"><small>建議補幣</small><b>INR　₹15M</b><span>Available 低於留存目標；代付 6 家開啟，NOTE 備用 2 家。</span></div>
-          <div class="analysis-box risk"><small>建議補幣</small><b>PKR　Rs 3M</b><span>Withdrawal 日均高於 Available；主要通道僅 2 家開啟。</span></div>
-          <div class="analysis-box settle"><small>可下發／結算</small><b>RUB　₽1.8M</b><span>保留一天 Withdrawal 需求后仍有多余余额，通道状态稳定。</span></div>
-          <div class="analysis-box watch"><small>持续观察</small><b>BDT　通道风险</b><span>余额暂可维持，但开启通道较少，可预先确认 NOTE 备用。</span></div>
-        </div>
-      </div>
-    </div>
+<section class="page active" id="page-home">
+<div class="topbar"><div><h2>首頁總覽</h2><p id="lastUpdated">尚未匯入資料</p></div><div class="actions"><button class="btn" onclick="renderAll()">↻ 重新整理</button><button class="btn primary" onclick="generateReport()">產生主管回報</button><button class="btn danger" onclick="resetAll()">清空全部資料</button></div></div>
+<div class="kpis">
+<div class="card kpi"><div class="icon blue">≡</div><div><small>幣種總數</small><strong id="kCurrency">0</strong></div></div>
+<div class="card kpi"><div class="icon green">✓</div><div><small>可用代付幣種</small><strong id="kPayout">0</strong></div></div>
+<div class="card kpi"><div class="icon purple">⇧</div><div><small>可用代收幣種</small><strong id="kPayin">0</strong></div></div>
+<div class="card kpi"><div class="icon orange">!</div><div><small>需關注幣種</small><strong id="kAlert">0</strong></div></div>
+<div class="card kpi"><div class="icon blue">◷</div><div><small>Withdrawal 區間</small><strong id="kDays">0 天</strong></div></div>
+</div>
 
-    <div class="side-stack"><div class="card"><div class="section-title"><h3>快速操作</h3></div><div class="quick-grid"><div class="quick" onclick="showPage('robot')">🤖<b>商戶餘額</b><small>貼 Robot 內容</small></div><div class="quick" onclick="showPage('withdraw')">⇧<b>Withdrawal Stats</b><small>上傳檔案</small></div><div class="quick" onclick="showPage('deposit')">⇧<b>Deposit Stats</b><small>上傳檔案</small></div><div class="quick" onclick="showPage('pending')">⚠<b>Pending</b><small>貼上數據</small></div></div></div><div class="card"><div class="section-title"><h3>今日重點提醒</h3></div><div class="alert-list"><div class="alert"><span class="dot red"></span><span>INR Available 偏低，建議補幣 ₹15M</span></div><div class="alert"><span class="dot red"></span><span>PKR Available 低於提款日均，建議補幣 Rs 3M</span></div><div class="alert"><span class="dot orange"></span><span>TopPayNew INR Pending 時間偏高</span></div><div class="alert"><span class="dot green"></span><span>RUB 可結算約 ₽1.8M</span></div></div></div><div class="card"><div class="section-title"><h3>資料狀態</h3></div><div class="status-list"><div class="status-row"><span>商戶餘額</span><span>已更新 15:30</span></div><div class="status-row"><span>Withdrawal Stats</span><span>已更新 15:25</span></div><div class="status-row"><span>Deposit Stats</span><span>已更新 15:20</span></div><div class="status-row"><span>代付通道</span><span>已更新 15:15</span></div></div></div></div></div></section>
-<section class="page" id="page-robot"><div class="topbar"><div><h2>商戶餘額（Robot）</h2><p>貼上 Robot 內容，顯示法幣 Available 與 USD 參考</p></div></div><div class="card"><div class="field"><label>Robot 原始內容</label><textarea id="robotInput" rows="14" placeholder="貼上 /b — Channel Balance 完整內容"></textarea></div><div class="actions"><button class="btn primary">解析餘額</button><button class="btn" onclick="clearRobot()">清空</button></div></div></section>
-<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>上傳任意天數資料，無日期時手動填入天數</p></div></div><div class="card upload-box"><h3>拖曳或選擇提款檔案</h3><input type="file"><div class="field" style="max-width:220px;margin:16px auto 0"><label>資料天數</label><input type="number" value="3"></div></div></section>
-<section class="page" id="page-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>上傳任意天數資料，無日期時手動填入天數</p></div></div><div class="card upload-box"><h3>拖曳或選擇代收檔案</h3><input type="file"><div class="field" style="max-width:220px;margin:16px auto 0"><label>資料天數</label><input type="number" value="3"></div></div></section>
-<section class="page" id="page-payout"><div class="topbar"><div><h2>代付通道</h2><p>上傳通道檔案，含開啟、維護、關閉與 NOTE 備用</p></div></div><div class="card upload-box"><h3>選擇代付通道檔案</h3><input type="file"></div></section>
-<section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>上傳代收通道檔案</p></div></div><div class="card upload-box"><h3>選擇代收通道檔案</h3><input type="file"></div></section>
-<section class="page" id="page-pending"><div class="topbar"><div><h2>Pending 數據</h2><p>貼上後台複製內容，Count 無法複製也可分析</p></div></div><div class="card"><textarea rows="16" placeholder="貼上 Pending 表格內容"></textarea><div style="margin-top:12px"><button class="btn primary">分析 Pending</button></div></div></section>
-<section class="page" id="page-settlement">
-  <div class="topbar"><div><h2>結算話術</h2><p>TRC 與 ERC 話術集中在同一頁</p></div></div>
-  <div class="tabs">
-    <button class="tab active" data-tool="trc">TRC 話術</button>
-    <button class="tab" data-tool="erc">ERC 話術</button>
-  </div>
-
-  <div class="tool-pane active" id="tool-trc">
-    <div class="grid two">
-      <div class="card">
-        <textarea id="trcInput" rows="18" placeholder="貼上有表頭或無表頭的 TRC 結算資料"></textarea>
-        <div class="actions" style="margin-top:12px">
-          <button class="btn primary">生成 TRC 話術</button>
-          <button class="btn" onclick="clearTRC()">清空</button>
-        </div>
-      </div>
-      <div class="card"><div class="output" id="trcOutput">生成結果顯示於此</div></div>
-    </div>
-  </div>
-
-  <div class="tool-pane" id="tool-erc">
-    <div class="grid two">
-      <div class="card">
-        <div class="hint" style="margin-bottom:8px">可一次貼上多組資料；系統會依幣種、TXID 或匯率自動切分並批量生成。</div><textarea id="ercInput" rows="18">5de5bb40-e7df-4b2c-afff-b9e6c21065e2 / b4500a67-3d16-460a-aae6-723b96442f34	Slyse	USDC(from EUR)	18153.4	18153.4	276.44		20633.15	0xa16cbbfd92ca03d5da591c8f2cc7c7c92dca343849ac37fb532c54145b0e4e27	7/24	Kerwin	0.879817187
-0465e83e-2232-4ca7-acd6-3e53b21cd92f	SlyseJB		22005.1	22005.1	335.10		25011		7/24	Kerwin	0.879817187
-f63c5860-654c-4bb5-bc6c-c1f2f61cf68c	SlyseBZ		5304.31	5304.31	90.15		6028.88		7/24	Kerwin	0.879817187</textarea>
-        <div class="actions" style="margin-top:12px">
-          <button class="btn purple" onclick="generateERC()">生成 ERC 話術</button>
-          <button class="btn" onclick="clearERC()">清空</button>
-        </div>
-      </div>
-      <div class="card"><div class="output" id="ercOutput">Slyse出U,結算USDC(from EUR),匯率0.879817187。45462.81/0.879817187=51673.03 U, 請你確認,謝謝。TXID：0xa16cbbfd92ca03d5da591c8f2cc7c7c92dca343849ac37fb532c54145b0e4e27</div></div>
-    </div>
-  </div>
+<div class="grid main-grid">
+<div>
+<div class="card table-card">
+<div class="section-title"><div><h3>幣種總覽</h3><div class="hint">以法幣 Available 為主，USD 僅供參考</div></div></div>
+<table class="currency-table"><thead><tr><th>幣種</th><th>Available（法幣）</th><th>USD（參考）</th><th>Withdrawal 日均</th><th>Deposit 日均</th><th>代付</th><th>代收</th><th>Pending</th><th>建議</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="9">尚未匯入資料</td></tr></tbody></table>
+</div>
+<div class="card" style="margin-top:16px"><div class="section-title"><div><h3>綜合資金分析</h3><div class="hint">依 Available、日均、通道與 Pending 自動判斷</div></div></div><div class="analysis-grid" id="analysisGrid"><div class="hint">尚未有分析結果</div></div></div>
+</div>
+<div class="side-stack">
+<div class="card"><div class="section-title"><h3>快速操作</h3></div><div class="quick-grid">
+<div class="quick" onclick="showPage('robot')">🤖<b>商戶餘額</b><small>貼 Robot 內容</small></div>
+<div class="quick" onclick="showPage('withdraw')">⇧<b>Withdrawal</b><small>上傳檔案</small></div>
+<div class="quick" onclick="showPage('deposit')">⇧<b>Deposit</b><small>上傳檔案</small></div>
+<div class="quick" onclick="showPage('pending')">⚠<b>Pending</b><small>貼上數據</small></div>
+</div></div>
+<div class="card"><div class="section-title"><h3>重點提醒</h3></div><div class="alert-list" id="alertList"><div class="hint">尚未有提醒</div></div></div>
+<div class="card"><div class="section-title"><h3>資料狀態</h3></div><div class="status-list" id="statusList"></div></div>
+</div>
+</div>
 </section>
-<section class="page" id="page-report"><div class="topbar"><div><h2>報表中心</h2><p>主管回報、小周記與每日延遲回報</p></div></div><div class="tabs"><button class="tab active">主管回報</button><button class="tab">小周記</button><button class="tab">每日延遲</button></div><div class="card"><div class="output">【重點事項】<br>INR Available 偏低，建議補幣 ₹15M；目前代付 6 家開啟，另有 2 家 NOTE 備用。<br><br>RUB Available 高於區間提款需求，可考慮結算約 ₽1.8M。</div></div></section>
-</main></div>
+
+<section class="page" id="page-robot">
+<div class="topbar"><div><h2>商戶餘額（Robot）</h2><p>支援 Robot 逐行輸出，系統只採用 Available balance</p></div></div>
+<div class="card"><div class="field"><label>貼上 Robot 原始內容</label><textarea id="robotInput" rows="16" placeholder="Provider&#10;Account&#10;Currency&#10;Total&#10;Available&#10;..."></textarea></div><div class="actions"><button class="btn primary" onclick="parseRobot()">解析並保存</button><button class="btn" onclick="clearRobot()">清空輸入</button></div><div id="robotResult"></div></div>
+</section>
+
+<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="3"></div><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><div id="withdrawResult"></div></div></section>
+<section class="page" id="page-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="depositFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="depositDays" type="number" min="1" value="3"></div><button class="btn primary" onclick="loadStats('deposit')">解析並保存</button><div id="depositResult"></div></div></section>
+
+<section class="page" id="page-payout"><div class="topbar"><div><h2>代付通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payoutFile" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="loadChannels('payout')">解析並保存</button><div id="payoutResult"></div></div></section>
+<section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><div id="payinResult"></div></div></section>
+
+<section class="page" id="page-pending"><div class="topbar"><div><h2>Pending 數據</h2><p>Count 缺失也可分析；支援 Provider / Channel / Currency / Amount / Avg / Max</p></div></div><div class="card"><textarea id="pendingInput" rows="16" placeholder="貼上 Pending 表格內容"></textarea><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="parsePending()">分析並保存</button><button class="btn" onclick="document.getElementById('pendingInput').value=''">清空</button></div><div id="pendingResult"></div></div></section>
+
+<section class="page" id="page-settlement">
+<div class="topbar"><div><h2>結算話術</h2><p>TRC 與 ERC 均支援批量貼上</p></div></div>
+<div class="tabs"><button class="tab active" data-tool="trc">TRC 話術</button><button class="tab" data-tool="erc">ERC 話術</button></div>
+<div class="tool-pane active" id="tool-trc"><div class="grid two"><div class="card"><textarea id="trcInput" rows="20" placeholder="貼上 Excel/WPS 資料，可有表頭或無表頭"></textarea><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="generateTRC()">生成 TRC 話術</button><button class="btn" onclick="clearTRC()">清空</button></div></div><div class="card"><div class="actions" style="margin-bottom:10px"><button class="btn" onclick="copyText('trcOutput')">複製全部</button></div><div class="output" id="trcOutput">生成結果顯示於此</div></div></div></div>
+<div class="tool-pane" id="tool-erc"><div class="grid two"><div class="card"><textarea id="ercInput" rows="20" placeholder="貼上多組 ERC Excel/WPS 資料"></textarea><div class="actions" style="margin-top:12px"><button class="btn purple" onclick="generateERC()">生成 ERC 話術</button><button class="btn" onclick="clearERC()">清空</button></div></div><div class="card"><div class="actions" style="margin-bottom:10px"><button class="btn" onclick="copyText('ercOutput')">複製全部</button></div><div class="output" id="ercOutput">生成結果顯示於此</div></div></div></div>
+</section>
+
+<section class="page" id="page-report"><div class="topbar"><div><h2>報表中心</h2><p>依目前資料產生主管回報</p></div></div><div class="card"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="generateReport()">重新生成</button><button class="btn" onclick="copyText('reportOutput')">複製</button></div><div class="output" id="reportOutput">尚未生成</div></div></section>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+
 <script>
-function showPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');const b=[...document.querySelectorAll('.nav-btn')].find(x=>x.dataset.page===name);if(b)b.classList.add('active');window.scrollTo({top:0,behavior:'smooth'})}
-document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));document.querySelectorAll('[data-detail]').forEach(r=>r.addEventListener('click',()=>{closeDetails();const d=document.getElementById('detail-'+r.dataset.detail);if(d)d.classList.add('show')}));function closeDetails(){document.querySelectorAll('.detail-panel').forEach(x=>x.classList.remove('show'))}
-function generateERC(){
-  const text=document.getElementById('ercInput').value.trim();
-  if(!text){
-    document.getElementById('ercOutput').textContent='請先貼上 ERC 資料';
-    return;
-  }
+const STORE_KEY='fiat_ops_v2_data';
+let state=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');
+state.balances=state.balances||[];
+state.withdraw=state.withdraw||{days:0,totals:{}};
+state.deposit=state.deposit||{days:0,totals:{}};
+state.payout=state.payout||[];
+state.payin=state.payin||[];
+state.pending=state.pending||[];
+state.updated=state.updated||{};
 
-  const rows=text.split(/\r?\n/)
-    .map(line=>line.split('\t').map(v=>v.trim()))
-    .filter(cols=>cols.some(Boolean));
+const SYMBOLS={INR:'₹',PKR:'Rs',RUB:'₽',NGN:'₦',BDT:'৳',ARS:'$',KES:'KSh',UAH:'₴',PHP:'₱',IDR:'Rp',THB:'฿',EUR:'€',GBP:'£',TRY:'₺',UZS:'UZS',KRW:'₩',MYR:'RM',MXN:'MX$',BRL:'R$',VND:'₫',KZT:'₸'};
+function save(){localStorage.setItem(STORE_KEY,JSON.stringify(state));}
+function now(){return new Date().toLocaleString('zh-TW',{hour12:false});}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',1800)}
+function showPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');const b=[...document.querySelectorAll('.nav-btn')].find(x=>x.dataset.page===name);if(b)b.classList.add('active');window.scrollTo(0,0)}
+document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tool]').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tool-pane').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('tool-'+b.dataset.tool).classList.add('active')});
 
-  const groups=[];
-  let current=null;
+function num(v){if(v==null)return 0;const s=String(v).replace(/,/g,'').replace(/[^\d.\-]/g,'');const n=parseFloat(s);return Number.isFinite(n)?n:0}
+function fmt(n,d=2){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:0})}
+function normCurrency(v){const s=String(v||'').toUpperCase().trim();const m=s.match(/\b([A-Z]{3,5})(?:FIAT)?\b/);return m?m[1].replace('FIAT',''):''}
+function isCurrency(v){return !!normCurrency(v)&&!['TOTAL','SUM','COUNT','HOUR','DATE','TIME'].includes(normCurrency(v))}
+function setUpdated(k){state.updated[k]=now();save()}
 
-  rows.forEach(cols=>{
-    const merchant=cols[1]||'';
-    const currency=cols[2]||'';
-    const amount=parseFloat((cols[4]||cols[3]||'').replace(/,/g,''))||0;
-    const txid=cols[8]||'';
-    const rate=parseFloat((cols[11]||'').replace(/,/g,''))||0;
+function parseRobot(){
+ const raw=document.getElementById('robotInput').value.trim();
+ if(!raw){toast('請先貼上資料');return}
+ const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ const rows=[]; let i=0;
+ while(i<lines.length){
+   const provider=lines[i];
+   const account=lines[i+1]||'';
+   const currency=normCurrency(lines[i+2]);
+   if(currency){
+     const window=lines.slice(i+3,i+9);
+     const moneyLines=window.filter(x=>/[-\d,.]+/.test(x));
+     if(moneyLines.length){
+       const availableLine=moneyLines[1]||moneyLines[0];
+       const fiat=num(availableLine.split('(')[0]);
+       const usdMatch=availableLine.match(/\(([-\d,.]+)\s*USD\)/i);
+       const usd=usdMatch?num(usdMatch[1]):0;
+       rows.push({provider,account,currency,fiat,usd});
+       i+=3+window.indexOf(availableLine)+1; continue;
+     }
+   }
+   // tabular fallback
+   const parts=provider.split(/\t+/);
+   if(parts.length>=5){
+     const c=normCurrency(parts[2]);
+     if(c)rows.push({provider:parts[0],account:parts[1],currency:c,fiat:num(parts[4]),usd:num((parts[4].match(/\((.*?)USD/i)||[])[1])});
+   }
+   i++;
+ }
+ if(!rows.length){document.getElementById('robotResult').innerHTML='<p class="recommend red">未解析到資料，請確認有 Provider / Account / Currency / Available。</p>';return}
+ state.balances=rows;setUpdated('balances');renderRobotResult();renderAll();toast(`已解析 ${rows.length} 筆商戶餘額`);
+}
+function renderRobotResult(){
+ const rows=state.balances;
+ if(!rows.length){document.getElementById('robotResult').innerHTML='';return}
+ document.getElementById('robotResult').innerHTML='<table class="result-table"><thead><tr><th>商戶</th><th>帳戶</th><th>幣種</th><th>Available</th><th>USD</th></tr></thead><tbody>'+rows.map(r=>`<tr><td>${r.provider}</td><td>${r.account}</td><td>${r.currency}</td><td>${fmt(r.fiat)}</td><td>${fmt(r.usd)}</td></tr>`).join('')+'</tbody></table>';
+}
+function clearRobot(){document.getElementById('robotInput').value='';document.getElementById('robotResult').innerHTML=''}
 
-    const startsNewGroup=!current || Boolean(currency) || Boolean(txid) || Boolean(rate);
-
-    if(startsNewGroup){
-      current={
-        merchant:merchant||'Merchant',
-        currency:currency||'USDC',
-        rate:rate||0,
-        txid:txid||'',
-        total:0
-      };
-      groups.push(current);
-    }
-
-    current.total+=amount;
-  });
-
-  const results=groups.map((g,index)=>{
-    if(!g.rate){
-      return `第 ${index+1} 組資料缺少匯率，請檢查。`;
-    }
-    const usdt=g.total/g.rate;
-    return `${g.merchant}出U,\n結算${g.currency},\n匯率${g.rate}。\n\n${g.total.toFixed(2)}/${g.rate}\n=\n${usdt.toFixed(2)} U,\n\n請你確認,謝謝。\n\nTXID：\n${g.txid}`;
-  });
-
-  document.getElementById('ercOutput').textContent=results.join('\n\n------------------------------\n\n');
+async function readSheet(file){
+ const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];return XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+}
+function findKey(obj,patterns){const keys=Object.keys(obj);return keys.find(k=>patterns.some(p=>k.toLowerCase().includes(p)))}
+function parseDateVal(v){if(!v)return null;const d=new Date(v);return isNaN(d)?null:d}
+async function loadStats(type){
+ const f=document.getElementById(type+'File').files[0];if(!f){toast('請選擇檔案');return}
+ const rows=await readSheet(f);const totals={};const dates=[];
+ rows.forEach(r=>{
+   const ck=findKey(r,['currency','币种','幣種']);const ak=findKey(r,['amount','金额','金額','sum amount','order amount']);const dk=findKey(r,['date','日期','created','create time']);
+   const c=normCurrency(ck?r[ck]:'');const a=num(ak?r[ak]:0);
+   if(c&&a)totals[c]=(totals[c]||0)+a;
+   const d=parseDateVal(dk?r[dk]:null);if(d)dates.push(d);
+ });
+ let days=num(document.getElementById(type+'Days').value)||1;
+ if(dates.length){const min=Math.min(...dates),max=Math.max(...dates);days=Math.max(1,Math.round((max-min)/86400000)+1)}
+ state[type]={days,totals};setUpdated(type);document.getElementById(type+'Result').innerHTML=`<p>已解析 ${Object.keys(totals).length} 個幣種，區間 ${days} 天。</p>`;renderAll();toast('解析完成');
 }
 
-document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('[data-tool]').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.tool-pane').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  document.getElementById('tool-'+b.dataset.tool).classList.add('active');
-}));
-function clearRobot(){const el=document.getElementById('robotInput');if(el)el.value='';}
-function clearTRC(){document.getElementById('trcInput').value='';document.getElementById('trcOutput').textContent='生成結果顯示於此';}
-function clearERC(){document.getElementById('ercInput').value='';document.getElementById('ercOutput').textContent='生成結果顯示於此';}
+async function loadChannels(type){
+ const f=document.getElementById(type+'File').files[0];if(!f){toast('請選擇檔案');return}
+ const rows=await readSheet(f);const result=[];
+ rows.forEach(r=>{
+   const pk=findKey(r,['provider','商户','商戶']);const ck=findKey(r,['currency','币种','幣種']);const sk=findKey(r,['status','状态','狀態','switch','maintenance']);const ch=findKey(r,['channel','通道']);const nk=findKey(r,['note','备注','備註']);
+   const c=normCurrency(ck?r[ck]:'');if(!c)return;
+   const text=Object.values(r).join(' ').toLowerCase();
+   let status='关闭';
+   if(/maintenance|维护|維護/.test(text))status='维护';
+   else if(/enable|open|开启|開啟|true|1/.test(text))status='开启';
+   else if(/disable|close|关闭|關閉|false|0/.test(text))status='关闭';
+   const note=/note|备用|備用/.test(text)||(nk&&String(r[nk]).trim());
+   result.push({provider:pk?r[pk]:'',channel:ch?r[ch]:'',currency:c,status,note:!!note});
+ });
+ state[type]=result;setUpdated(type);document.getElementById(type+'Result').innerHTML=`<p>已解析 ${result.length} 条通道。</p>`;renderAll();toast('解析完成');
+}
 
-</script></body></html>
+function parsePending(){
+ const lines=document.getElementById('pendingInput').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);const rows=[];
+ if(lines.some(x=>x.includes('\t'))){
+   lines.forEach(line=>{const p=line.split('\t');const c=p.map(normCurrency).find(Boolean);if(c)rows.push({provider:p[0]||'',channel:p[1]||'',currency:c,amount:num(p[3]||p[2]),avg:num(p[5]||p[4]),max:num(p[6]||p[5]),count:num(p[4])})})
+ }else{
+   for(let i=0;i<lines.length;i++){const c=normCurrency(lines[i+2]);if(c){rows.push({provider:lines[i],channel:lines[i+1],currency:c,amount:num(lines[i+3]),count:num(lines[i+4]),avg:num(lines[i+5]),max:num(lines[i+6])});i+=6}}
+ }
+ state.pending=rows;setUpdated('pending');document.getElementById('pendingResult').innerHTML=`<p>已解析 ${rows.length} 条 Pending。</p>`;renderAll();toast('Pending 已保存');
+}
+
+function summary(){
+ const map={};
+ state.balances.forEach(r=>{map[r.currency]??={currency:r.currency,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[],pending:[]};map[r.currency].fiat+=r.fiat;map[r.currency].usd+=r.usd});
+ Object.keys(state.withdraw.totals||{}).forEach(c=>{map[c]??={currency:c,fiat:0,usd:0,payout:[],payin:[],pending:[]};map[c].withdraw=state.withdraw.totals[c]/Math.max(1,state.withdraw.days)});
+ Object.keys(state.deposit.totals||{}).forEach(c=>{map[c]??={currency:c,fiat:0,usd:0,payout:[],payin:[],pending:[]};map[c].deposit=state.deposit.totals[c]/Math.max(1,state.deposit.days)});
+ state.payout.forEach(x=>{map[x.currency]??={currency:x.currency,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[],pending:[]};map[x.currency].payout.push(x)});
+ state.payin.forEach(x=>{map[x.currency]??={currency:x.currency,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[],pending:[]};map[x.currency].payin.push(x)});
+ state.pending.forEach(x=>{map[x.currency]??={currency:x.currency,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[],pending:[]};map[x.currency].pending.push(x)});
+ return Object.values(map).sort((a,b)=>a.currency.localeCompare(b.currency));
+}
+function recommendation(x){
+ const wd=x.withdraw||0;const open=x.payout.filter(y=>y.status==='开启').length;const note=x.payout.filter(y=>y.note).length;const pendingAmount=x.pending.reduce((s,y)=>s+y.amount,0);const maxHour=Math.max(0,...x.pending.map(y=>y.max||0));
+ if(wd>0&&x.fiat<wd){return {type:'risk',text:`建议补 ${SYMBOLS[x.currency]||''}${fmt(wd-x.fiat,0)}`,reason:`Available 低于 1 天 Withdrawal 日均；开启代付 ${open} 家。`}}
+ if(wd>0&&x.fiat>wd*2){return {type:'settle',text:`可结算 ${SYMBOLS[x.currency]||''}${fmt(x.fiat-wd,0)}`,reason:'保留约 1 天 Withdrawal 后仍有多余余额。'}}
+ if(maxHour>=6||pendingAmount>wd*.5&&wd>0){return {type:'watch',text:'关注 Pending',reason:`最高 Pending ${fmt(maxHour,1)} 小时；可用代付 ${open} 家，NOTE ${note} 家。`}}
+ if(open===0&&x.payout.length){return {type:'risk',text:'代付无可用通道',reason:`目前无开启通道，NOTE 备用 ${note} 家。`}}
+ return {type:'ok',text:'观察',reason:`余额与通道暂时稳定；开启代付 ${open} 家。`}
+}
+function renderAll(){
+ const rows=summary();const tbody=document.getElementById('dashboardBody');let alerts=[];let analysis=[];
+ tbody.innerHTML=rows.length?rows.map(x=>{const r=recommendation(x);if(r.type!=='ok')alerts.push({x,r});analysis.push({x,r});const po=x.payout.filter(y=>y.status==='开启').length,pi=x.payin.filter(y=>y.status==='开启').length;const pend=x.pending.reduce((s,y)=>s+y.amount,0);const cls=r.type==='risk'?'red':r.type==='settle'?'green':r.type==='watch'?'orange':'';return `<tr><td class="currency">${x.currency}</td><td class="money">${SYMBOLS[x.currency]||''} ${fmt(x.fiat)}</td><td class="usd">${fmt(x.usd)} U</td><td>${SYMBOLS[x.currency]||''} ${fmt(x.withdraw)}</td><td>${SYMBOLS[x.currency]||''} ${fmt(x.deposit)}</td><td><span class="badge ${po?'b-green':'b-gray'}">${po}/${x.payout.length}</span></td><td><span class="badge ${pi?'b-green':'b-gray'}">${pi}/${x.payin.length}</span></td><td>${fmt(pend)}</td><td class="recommend ${cls}">${r.text}</td></tr>`}).join(''):'<tr><td colspan="9">尚未匯入資料</td></tr>';
+ document.getElementById('kCurrency').textContent=rows.length;document.getElementById('kPayout').textContent=rows.filter(x=>x.payout.some(y=>y.status==='开启')).length;document.getElementById('kPayin').textContent=rows.filter(x=>x.payin.some(y=>y.status==='开启')).length;document.getElementById('kAlert').textContent=alerts.length;document.getElementById('kDays').textContent=(state.withdraw.days||0)+' 天';
+ document.getElementById('analysisGrid').innerHTML=analysis.length?analysis.map(({x,r})=>`<div class="analysis-box ${r.type==='risk'?'risk':r.type==='settle'?'settle':'watch'}"><small>${x.currency}</small><b>${r.text}</b><span>${r.reason}</span></div>`).join(''):'<div class="hint">尚未有分析结果</div>';
+ document.getElementById('alertList').innerHTML=alerts.length?alerts.slice(0,8).map(({x,r})=>`<div class="alert"><span class="dot ${r.type==='risk'?'red':'orange'}"></span><span><b>${x.currency}</b>：${r.text}</span></div>`).join(''):'<div class="alert"><span class="dot green"></span><span>目前无高优先提醒</span></div>';
+ const labels={balances:'商户余额',withdraw:'Withdrawal Stats',deposit:'Deposit Stats',payout:'代付通道',payin:'代收通道',pending:'Pending'};
+ document.getElementById('statusList').innerHTML=Object.keys(labels).map(k=>`<div class="status-row"><span>${labels[k]}</span><span>${state.updated[k]||'未更新'}</span></div>`).join('');
+ const latest=Object.values(state.updated).sort().pop();document.getElementById('lastUpdated').textContent=latest?'最后更新：'+latest:'尚未汇入资料';
+ renderRobotResult();
+}
+
+function splitRows(text){return text.trim().split(/\r?\n/).filter(Boolean).map(x=>x.split(/\t+/).map(v=>v.trim()))}
+function findHeaderIndex(headers,patterns){return headers.findIndex(h=>patterns.some(p=>h.toLowerCase().includes(p)))}
+function generateTRC(){
+ const rows=splitRows(document.getElementById('trcInput').value);if(!rows.length){toast('请先贴上资料');return}
+ let headers=rows[0];let hasHeader=headers.some(h=>/merchant|商户|幣種|币种|amount|到账|優惠|汇率|txid|hash|fee|实收/i.test(h));let data=hasHeader?rows.slice(1):rows;
+ const hi=p=>hasHeader?findHeaderIndex(headers,p):-1;
+ const idx={merchant:hi(['merchant','商户','商戶']),currency:hi(['currency','币种','幣種']),amount:hi(['到账','到賬','amount','结算金额','結算金額']),rate:hi(['优惠汇率','優惠匯率','rate','汇率','匯率']),fee:hi(['fee','手续费','手續費']),feeType:hi(['fee type','手续费类型','手續費類型']),received:hi(['实收usdt','實收usdt','received usdt']),txid:hi(['txid','hash','usdt hash'])};
+ const outputs=[];
+ data.forEach((r,n)=>{
+   let merchant=idx.merchant>=0?r[idx.merchant]:r[0];let currency=idx.currency>=0?r[idx.currency]:r[1];let amount=num(idx.amount>=0?r[idx.amount]:r[2]);let rate=num(idx.rate>=0?r[idx.rate]:r[3]);let fee=num(idx.fee>=0?r[idx.fee]:r[4]);let feeType=(idx.feeType>=0?r[idx.feeType]:'').toLowerCase();let received=num(idx.received>=0?r[idx.received]:'');let txid=idx.txid>=0?r[idx.txid]:(r.find(x=>/^0x|^[a-f0-9]{40,}$/i.test(x))||'');
+   if(!merchant||!currency||!amount||(!rate&&!received))return;
+   let calc='',usdt=received;
+   if(received){calc=`实收 ${received.toFixed(2)} U`}
+   else if(fee){
+     if(/usd|usdt|u/.test(feeType)){usdt=amount/rate-fee;calc=`(${amount}/${rate}) - fee ${fee}=${usdt.toFixed(2)} U`}
+     else{usdt=(amount-fee)/rate;calc=`(${amount} - fee ${fee})/${rate}=${usdt.toFixed(2)} U`}
+   }else{usdt=amount/rate;calc=`${amount}/${rate}=${usdt.toFixed(2)} U`}
+   outputs.push(`${merchant}出U,\n结算${currency} ${amount},\n汇率${rate || '按实收'}。\n\n${calc},\n\n请你确认,谢谢。\n\nTXID：\n${txid}`);
+ });
+ document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n------------------------------\n\n'):'未识别到有效资料，请确认至少包含商户、币种、到账金额、优惠汇率。';
+}
+function generateERC(){
+ const rows=splitRows(document.getElementById('ercInput').value);if(!rows.length){toast('请先贴上资料');return}
+ const groups=[];let current=null;
+ rows.forEach(cols=>{const merchant=cols[1]||'';const currency=cols[2]||'';const amount=num(cols[4]||cols[3]);const txid=cols[8]||'';const rate=num(cols[11]);const starts=!current||currency||txid||rate;if(starts){current={merchant:merchant||'Merchant',currency:currency||'USDC',rate:rate||0,txid:txid||'',total:0};groups.push(current)}current.total+=amount});
+ const out=groups.map((g,i)=>g.rate?`${g.merchant}出U,\n结算${g.currency},\n汇率${g.rate}。\n\n${g.total.toFixed(2)}/${g.rate}\n=\n${(g.total/g.rate).toFixed(2)} U,\n\n请你确认,谢谢。\n\nTXID：\n${g.txid}`:`第 ${i+1} 组缺少汇率`).join('\n\n------------------------------\n\n');
+ document.getElementById('ercOutput').textContent=out;
+}
+function clearTRC(){document.getElementById('trcInput').value='';document.getElementById('trcOutput').textContent='生成结果显示于此'}
+function clearERC(){document.getElementById('ercInput').value='';document.getElementById('ercOutput').textContent='生成结果显示于此'}
+async function copyText(id){await navigator.clipboard.writeText(document.getElementById(id).textContent);toast('已复制')}
+function generateReport(){
+ const rows=summary();const lines=['【Fiat Operations 综合回报】'];
+ rows.forEach(x=>{const r=recommendation(x);lines.push(`${x.currency}：Available ${SYMBOLS[x.currency]||''}${fmt(x.fiat)}，Withdrawal 日均 ${SYMBOLS[x.currency]||''}${fmt(x.withdraw)}，Deposit 日均 ${SYMBOLS[x.currency]||''}${fmt(x.deposit)}；${r.text}。${r.reason}`)});
+ document.getElementById('reportOutput').textContent=rows.length?lines.join('\n'):'目前尚未汇入资料';showPage('report');
+}
+function resetAll(){if(!confirm('确定清空所有已保存资料？'))return;localStorage.removeItem(STORE_KEY);location.reload()}
+renderAll();
+</script>
+</body></html>
