@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V2.5</title>
+<title>Fiat Operations Command Center V2.6</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
@@ -50,7 +50,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.5</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.6</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -62,7 +62,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V2.5</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+<div class="sidebar-note"><b>正式版 V2.6</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -136,7 +136,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
     <div class="grid two">
       <div class="field"><label>回報日期</label><input id="reportDate" type="text" placeholder="例如 7/28"></div>
-      <div class="field"><label>班別</label><select id="reportShift"><option>夜班</option><option>日班</option></select></div>
+      <div class="field"><label>班別</label><select id="reportShift"><option>早班</option><option selected>晚班</option></select></div>
     </div>
 
     <div class="actions">
@@ -681,88 +681,95 @@ function generateTRC(){
  if(!text){toast('請先貼上資料');return}
 
  const decimals=num(document.getElementById('trcDecimals').value)||2;
- const normalized=text.replace(/\r/g,'').trim();
+ const lines=text.replace(/\r/g,'').split('\n').filter(x=>x.trim());
+ const rows=lines.map(line=>line.split('\t').map(x=>x.trim()));
 
- // 優先處理 Excel/WPS 保留 Tab 的格式
- let rows=normalized.split('\n').filter(Boolean).map(line=>line.split('\t').map(x=>x.trim()));
- let hasTab=rows.some(r=>r.length>=8);
+ const headerIndex=rows.findIndex(r=>r.some(x=>/商户单号|商戶單號/i.test(x)) && r.some(x=>/优惠汇率|優惠匯率/i.test(x)));
+ const data=headerIndex>=0?rows.slice(headerIndex+1):rows;
 
- // 如果畫面換行導致表頭與資料被拆散，改用 Token 推斷
- const records=[];
-
- if(hasTab){
-   const headerRow=rows.findIndex(r=>r.some(x=>/商户单号|商戶單號/i.test(x)) && r.some(x=>/优惠汇率|優惠匯率/i.test(x)));
-   const data=headerRow>=0?rows.slice(headerRow+1):rows;
-   data.forEach(r=>{
-     if(r.length<8)return;
-     // 固定欄位：單號 商戶 幣種 訂單 到帳 feeFiat feeUSD 實收 hash 日期 專員 商戶匯率 優惠匯率
-     while(r.length<13)r.push('');
-     const txIndex=r.findIndex(x=>/^(0x)?[a-f0-9]{40,}$/i.test(x));
-     if(txIndex<0)return;
-     const merchant=r[1], currency=r[2];
-     const order=num(r[3]), arrival=num(r[4]);
-     const feeFiat=num(r[5]), feeUsd=num(r[6]);
-     const received=num(r[7]);
-     const txid=r[8];
-     const merchantRate=num(r[11]), preferredRate=num(r[12]);
-     records.push({merchant,currency,amount:arrival||order,feeFiat,feeUsd,received,txid,rate:preferredRate||merchantRate});
-   });
- } else {
-   // 無 Tab：利用 Hash、日期、幣種與數字位置重建每筆資料
-   const tokens=normalized
-     .replace(/商户单号|商戶單號|商户|商戶|结算币种|結算幣種|订单金额|訂單金額|到账金额|到賬金額|手续费（Fiat）|手續費（Fiat）|手续费（USD）|手續費（USD）|实收USDT|實收USDT|USDT Hash|到账日期|到賬日期|专员|專員|商户汇率|商戶匯率|优惠汇率|優惠匯率/gi,' ')
-     .split(/\s+/).filter(Boolean);
-
-   let pos=0;
-   while(pos<tokens.length){
-     const hashIndex=tokens.findIndex((x,idx)=>idx>=pos && /^(0x)?[a-f0-9]{40,}$/i.test(x));
-     if(hashIndex<0)break;
-     const before=tokens.slice(pos,hashIndex);
-     const after=tokens.slice(hashIndex+1);
-
-     const currencyIndex=before.findIndex(x=>/^[A-Z]{3,5}$/.test(x));
-     if(currencyIndex<2){pos=hashIndex+1;continue}
-
-     const orderId=before[currencyIndex-2];
-     const merchant=before[currencyIndex-1];
-     const currency=before[currencyIndex];
-     const nums=before.slice(currencyIndex+1).filter(x=>/^[-\d,.]+$/.test(x)).map(num);
-     if(nums.length<3){pos=hashIndex+1;continue}
-
-     const amount=nums[1]||nums[0];
-     const received=nums[nums.length-1];
-
-     // Hash 後通常為 日期、專員、商戶匯率、優惠匯率
-     let dateEnd=0;
-     if(after[0] && /月|\/|-/.test(after[0])) dateEnd=1;
-     const owner=after[dateEnd]||'';
-     const rate1=num(after[dateEnd+1]);
-     const rate2=num(after[dateEnd+2]);
-     const rate=rate2||rate1;
-
-     records.push({merchant,currency,amount,received,txid:tokens[hashIndex],rate,feeFiat:0,feeUsd:0});
-     pos=hashIndex+1+dateEnd+3;
-   }
+ function clean(v){
+   const s=String(v??'').replace(/,/g,'').trim();
+   if(!s)return '';
+   const n=Number(s);
+   if(!Number.isFinite(n))return s;
+   return String(n);
+ }
+ function fixedTrim(n,d){
+   return Number(n).toFixed(d).replace(/\.?0+$/,'');
  }
 
  const outputs=[];
- records.forEach(r=>{
-   if(!r.merchant||!r.currency||!r.amount||!r.rate||!r.txid)return;
-   let result=r.received || (r.amount/r.rate);
-   let resultText=Number(result.toFixed(decimals)).toString();
+ let validCount=0;
 
-   // 舊 Fiat Operations AI 規則：
-   // 有實收 USDT 時，回報結果以實收為準；公式維持 到帳金額/優惠匯率。
-   const amountText=Number(r.amount).toString();
-   const rateText=Number(r.rate).toString();
+ data.forEach(r=>{
+   if(!r.some(Boolean))return;
 
-   outputs.push(`${r.merchant}出U,结算${r.currency} ${amountText}.,汇率${rateText}。 ${amountText}./${rateText}.=${resultText} U,请你确认,谢谢。
+   // 固定欄位：
+   // 0 商戶單號
+   // 1 商戶
+   // 2 結算幣種
+   // 3 訂單金額
+   // 4 到賬金額
+   // 5 手續費（Fiat）
+   // 6 手續費（USD）
+   // 7 實收USDT
+   // 8 USDT Hash
+   // 9 到賬日期
+   // 10 專員
+   // 11 商戶匯率
+   // 12 優惠匯率
+
+   while(r.length<13)r.push('');
+
+   const merchant=(r[1]||'').trim();
+   const currency=(r[2]||'').trim();
+   const orderAmount=num(r[3]);
+   const arrivalAmount=num(r[4]);
+   const feeFiat=num(r[5]);
+   const feeUsd=num(r[6]);
+   const received=num(r[7]);
+   const txid=(r[8]||'').trim();
+   const merchantRate=num(r[11]);
+   const preferredRate=num(r[12]);
+
+   const amount=arrivalAmount||orderAmount;
+   const rate=preferredRate||merchantRate;
+
+   if(!merchant||!currency||!amount||!rate||!txid)return;
+
+   let calcValue;
+   let formula;
+
+   if(feeFiat && feeUsd){
+     calcValue=((amount-feeFiat)/rate)-feeUsd;
+     formula=`((${clean(amount)}-${clean(feeFiat)})/${clean(rate)})-${clean(feeUsd)}`;
+   }else if(feeFiat){
+     calcValue=(amount-feeFiat)/rate;
+     formula=`(${clean(amount)}-${clean(feeFiat)})/${clean(rate)}`;
+   }else if(feeUsd){
+     calcValue=(amount/rate)-feeUsd;
+     formula=`(${clean(amount)}/${clean(rate)})-${clean(feeUsd)}`;
+   }else{
+     calcValue=amount/rate;
+     formula=`${clean(amount)}/${clean(rate)}`;
+   }
+
+   // 實收USDT優先作為最終結果；公式則依手續費欄位顯示
+   const result=received||calcValue;
+   const resultText=fixedTrim(result,decimals);
+
+   outputs.push(
+`${merchant}出U,结算${currency} ${clean(amount)},汇率${clean(rate)}。
+${formula}=${resultText} U,请你确认,谢谢。
 TXID：
-${r.txid}`);
+${txid}`
+   );
+
+   validCount++;
  });
 
- document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。请直接从 Excel/WPS 复制完整表格，不需自行整理。';
- document.getElementById('trcStatus').textContent=`已读取并生成 ${outputs.length} 笔。结果优先采用实收USDT，汇率优先采用优惠汇率。`;
+ document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。请直接从 Excel/WPS 复制完整表格。';
+ document.getElementById('trcStatus').textContent=`已生成 ${validCount} 笔。手续费（Fiat）会先从到账金额扣除，手续费（USD）会在换算后扣除；最终结果优先使用实收USDT。`;
 }
 function generateERC(){
  const rows=splitRows(document.getElementById('ercInput').value);if(!rows.length){toast('请先贴上资料');return}
