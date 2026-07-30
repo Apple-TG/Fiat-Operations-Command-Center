@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V2.4</title>
+<title>Fiat Operations Command Center V2.5</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 :root{--bg:#f4f7fb;--panel:#fff;--text:#142033;--muted:#687386;--line:#e4e9f1;--nav:#0f1d33;--blue:#2563eb;--green:#0f9f6e;--orange:#e98719;--red:#dc3f4f;--purple:#7c3aed;--shadow:0 12px 35px rgba(15,29,51,.08);--radius:18px}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text)}
@@ -37,12 +38,19 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .currency-row{cursor:pointer}
 .currency-row:hover{background:#f7faff}
 @media(max-width:900px){.detail-columns{grid-template-columns:1fr}}
+
+.ocr-preview{max-width:100%;max-height:320px;border:1px solid var(--line);border-radius:12px;margin-top:12px;display:none}
+.progress{height:10px;background:#edf1f7;border-radius:999px;overflow:hidden;margin-top:10px;display:none}
+.progress>div{height:100%;background:var(--blue);width:0}
+.pending-editor{width:100%;border-collapse:collapse;margin-top:12px}
+.pending-editor th,.pending-editor td{border-bottom:1px solid var(--line);padding:8px;font-size:12px}
+.pending-editor input{padding:7px;border:1px solid var(--line);border-radius:7px;width:100%}
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.4</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.5</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -54,7 +62,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V2.4</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+<div class="sidebar-note"><b>正式版 V2.5</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -101,19 +109,46 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><div id="payinResult"></div></div></section>
 
 <section class="page" id="page-pending">
-<div class="topbar"><div><h2>Pending 數據</h2><p>直接貼上後台表格，自动生成提款超时回报话术</p></div></div>
+<div class="topbar"><div><h2>Pending 數據</h2><p>上傳後台截圖，辨識 Count 與延遲資料，再結合商戶回覆生成夜班回報</p></div></div>
 <div class="grid two">
   <div class="card">
-    <textarea id="pendingInput" rows="18" placeholder="Provider	Channel	Currency	Sum Amount	Count	Avg. Pend Hour	Max Hour	Min Hour"></textarea>
-    <div class="actions" style="margin-top:12px">
-      <button class="btn primary" onclick="parsePending()">生成超时回报</button>
+    <div class="field">
+      <label>1. 上傳 Pending 截圖</label>
+      <input type="file" id="pendingImage" accept="image/*" onchange="previewPendingImage()">
+      <img id="pendingPreview" class="ocr-preview">
+      <div class="progress" id="ocrProgress"><div id="ocrBar"></div></div>
+      <div class="hint" id="ocrStatus"></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" onclick="recognizePendingImage()">辨識截圖</button>
+      <button class="btn" onclick="loadPendingExample()">載入格式範例</button>
+    </div>
+
+    <div class="field" style="margin-top:16px">
+      <label>辨識結果（可直接修正）</label>
+      <textarea id="pendingInput" rows="12" placeholder="Provider	Channel	Currency	Sum Amount	Count	Avg. Pend Hour	Max Hour	Min Hour"></textarea>
+    </div>
+
+    <div class="field">
+      <label>2. 貼上商戶對延遲出款的回覆／處理進度</label>
+      <textarea id="merchantReplies" rows="8" placeholder="例如：&#10;TopPayNew：消化速度正常，已持續優先處理。&#10;FunPay24：出款正常，無24小時以上訂單。&#10;Etpay：上午10點半至凌晨3點處理較快。"></textarea>
+    </div>
+
+    <div class="grid two">
+      <div class="field"><label>回報日期</label><input id="reportDate" type="text" placeholder="例如 7/28"></div>
+      <div class="field"><label>班別</label><select id="reportShift"><option>夜班</option><option>日班</option></select></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" onclick="parsePending()">生成超時回報</button>
       <button class="btn" onclick="clearPending()">清空</button>
     </div>
     <div id="pendingResult"></div>
   </div>
+
   <div class="card">
-    <div class="section-title"><h3>提款超时回报话术</h3><button class="btn" onclick="copyText('pendingOutput')">复制全部</button></div>
-    <div class="output" id="pendingOutput">生成结果显示于此</div>
+    <div class="section-title"><h3>提款超時回報話術</h3><button class="btn" onclick="copyText('pendingOutput')">複製全部</button></div>
+    <div class="output" id="pendingOutput">生成結果顯示於此</div>
   </div>
 </div>
 </section>
@@ -362,74 +397,165 @@ async function loadChannels(type){
  toast('解析完成');
 }
 
+function previewPendingImage(){
+ const file=document.getElementById('pendingImage').files[0];
+ if(!file)return;
+ const img=document.getElementById('pendingPreview');
+ img.src=URL.createObjectURL(file);
+ img.style.display='block';
+}
+
+async function recognizePendingImage(){
+ const file=document.getElementById('pendingImage').files[0];
+ if(!file){toast('請先上傳截圖');return}
+ if(typeof Tesseract==='undefined'){toast('OCR 元件載入失敗，請重新整理後再試');return}
+
+ const progress=document.getElementById('ocrProgress');
+ const bar=document.getElementById('ocrBar');
+ const status=document.getElementById('ocrStatus');
+ progress.style.display='block';
+
+ try{
+   const result=await Tesseract.recognize(file,'eng',{
+     logger:m=>{
+       if(m.status==='recognizing text'){
+         const p=Math.round((m.progress||0)*100);
+         bar.style.width=p+'%';
+         status.textContent=`正在辨識 ${p}%`;
+       }else status.textContent=m.status||'';
+     }
+   });
+   const parsed=parsePendingOCRText(result.data.text);
+   document.getElementById('pendingInput').value=parsed;
+   status.textContent=parsed?'辨識完成，請快速確認數字後生成回報。':'未辨識到表格，請換一張較清晰、完整的截圖。';
+ }catch(e){
+   status.textContent='辨識失敗：'+e.message;
+ }
+}
+
+function parsePendingOCRText(text){
+ const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ const out=['Provider\tChannel\tCurrency\tSum Amount\tCount\tAvg. Pend Hour\tMax Hour\tMin Hour'];
+
+ lines.forEach(line=>{
+   // 從右側抓 5 個數字：Amount Count Avg Max Min
+   const nums=line.match(/-?\d[\d,]*(?:\.\d+)?/g);
+   if(!nums || nums.length<5)return;
+
+   const min=nums[nums.length-1];
+   const max=nums[nums.length-2];
+   const avg=nums[nums.length-3];
+   const count=nums[nums.length-4];
+   const amount=nums[nums.length-5];
+
+   const prefix=line.slice(0,line.lastIndexOf(amount)).trim();
+   const currencyMatch=prefix.match(/\b([A-Z]{3,5})(?:FIAT)?\b(?!.*\b[A-Z]{3,5}\b)/);
+   if(!currencyMatch)return;
+   const currency=currencyMatch[1].replace('FIAT','');
+   const left=prefix.slice(0,currencyMatch.index).trim().split(/\s{2,}|\t+/).filter(Boolean);
+   let provider=left[0]||'';
+   let channel=left.slice(1).join(' ')||provider;
+
+   // OCR 常把 Provider/Channel 只用單空格分開，依重複商戶名拆
+   if(left.length===1){
+     const words=prefix.slice(0,currencyMatch.index).trim().split(/\s+/);
+     provider=words[0]||'';
+     channel=words.slice(1).join(' ')||provider;
+   }
+
+   out.push([provider,channel,currency,amount,count,avg,max,min].join('\t'));
+ });
+ return out.length>1?out.join('\n'):'';
+}
+
+function loadPendingExample(){
+ document.getElementById('pendingInput').value=
+`Provider	Channel	Currency	Sum Amount	Count	Avg. Pend Hour	Max Hour	Min Hour
+TopPayNew	TopPayNew_INR_UPI	INRFIAT	1318540.00	175	8.57	29.39	6.00
+TopPayNew	TopPayNew_INR_WITHDRAW	INRFIAT	1637934.00	126	8.63	22.38	6.06
+SolPay	SolPayINR	INRFIAT	88738.00	16	7.56	10.37	6.08`;
+}
+
 function parsePending(){
  const raw=document.getElementById('pendingInput').value.trim();
- if(!raw){toast('请先贴上 Pending 表格');return}
+ if(!raw){toast('请先辨识截图或贴上修正后的资料');return}
 
  const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
  const rows=[];
- const firstParts=lines[0].split(/\t+/).map(x=>x.trim());
- const hasHeader=firstParts.some(x=>/provider|channel|currency|sum amount|count|avg|pend hour|max hour|min hour/i.test(x));
- const headers=hasHeader?firstParts.map(x=>x.toLowerCase()):[];
+ const first=lines[0].split(/\t+/);
+ const hasHeader=first.some(x=>/provider|count|avg/i.test(x));
  const data=hasHeader?lines.slice(1):lines;
-
- function hidx(patterns){return headers.findIndex(h=>patterns.some(p=>h.includes(p)))}
- const H={
-   provider:hidx(['provider']),
-   channel:hidx(['channel']),
-   currency:hidx(['currency']),
-   amount:hidx(['sum amount','amount']),
-   count:hidx(['count']),
-   avg:hidx(['avg. pend hour','avg pend hour','avg']),
-   max:hidx(['max hour','max']),
-   min:hidx(['min hour','min'])
- };
 
  data.forEach(line=>{
    const p=line.split(/\t+/).map(x=>x.trim());
-   if(p.length<4)return;
-
-   const provider=(H.provider>=0?p[H.provider]:p[0])||'';
-   const channel=(H.channel>=0?p[H.channel]:p[1])||'';
-   const currency=normCurrency(H.currency>=0?p[H.currency]:p[2]);
-   const amount=num(H.amount>=0?p[H.amount]:p[3]);
-   const count=num(H.count>=0?p[H.count]:p[4]);
-   const avg=num(H.avg>=0?p[H.avg]:p[5]);
-   const max=num(H.max>=0?p[H.max]:p[6]);
-   const min=num(H.min>=0?p[H.min]:p[7]);
-
-   if(provider && currency) rows.push({provider,channel,currency,amount,count,avg,max,min});
+   if(p.length<8)return;
+   const currency=normCurrency(p[2]);
+   if(!currency)return;
+   rows.push({
+     provider:p[0],channel:p[1],currency,
+     amount:num(p[3]),count:num(p[4]),avg:num(p[5]),max:num(p[6]),min:num(p[7])
+   });
  });
 
  state.pending=rows;
  setUpdated('pending');
 
- // 依 Provider + Currency 汇总；同一商户多个渠道合并
  const groups={};
  rows.forEach(r=>{
    const key=`${r.provider}|${r.currency}`;
-   if(!groups[key])groups[key]={provider:r.provider,currency:r.currency,amount:0,count:0,weighted:0,max:0,min:Infinity,channels:[]};
+   if(!groups[key])groups[key]={provider:r.provider,currency:r.currency,count:0,amount:0,weighted:0,max:0,channels:[]};
    const g=groups[key];
-   g.amount+=r.amount;
    g.count+=r.count;
-   g.weighted+=r.avg*(r.count||1);
+   g.amount+=r.amount;
+   g.weighted+=r.avg*r.count;
    g.max=Math.max(g.max,r.max);
-   g.min=Math.min(g.min,r.min||Infinity);
    g.channels.push(r.channel);
  });
 
- const output=Object.values(groups)
-   .sort((a,b)=>b.count-a.count)
-   .map(g=>{
-     const avg=g.count?g.weighted/g.count:0;
-     const channelText=g.channels.length>1?`（${g.channels.length}个渠道）`:'';
-     return `${g.provider} ${g.currency} ${g.count||0}笔${channelText}，Pending金额 ${fmt(g.amount,2)}，平均 ${fmt(avg,2)} 小时，最长 ${fmt(g.max,2)} 小时，已请商户协助加急处理。`;
-   }).join('\n');
+ const replyText=document.getElementById('merchantReplies').value.trim();
+ const replyLines=replyText.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ function replyFor(provider){
+   const found=replyLines.find(x=>x.toLowerCase().startsWith(provider.toLowerCase()));
+   if(found)return found.replace(new RegExp('^'+provider+'\\s*[:：-]?\\s*','i'),'');
+   return '已通知商户优先处理并持续跟进。';
+ }
 
- document.getElementById('pendingOutput').textContent=output||'未识别到有效 Pending 资料。';
- document.getElementById('pendingResult').innerHTML=`<p>已读取 ${rows.length} 条 Pending，并生成 ${Object.keys(groups).length} 条回报话术。</p>`;
+ const date=document.getElementById('reportDate').value.trim()||new Date().toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'});
+ const shift=document.getElementById('reportShift').value;
+ const byCurrency={};
+ Object.values(groups).forEach(g=>{
+   (byCurrency[g.currency]??=[]).push(g);
+ });
+
+ const sections=[`${date} ${shift}`];
+ Object.entries(byCurrency).forEach(([currency,gs])=>{
+   const total=gs.reduce((s,g)=>s+g.count,0);
+   sections.push(`${currency}卡款超过6小时`);
+   gs.sort((a,b)=>b.count-a.count).forEach(g=>{
+     const channelInfo=g.channels.length>1?`，主要为${g.channels.map(c=>c.replace(/^.*?_/, '')).join('及')}`:'';
+     sections.push(`${g.provider} ${currency} ${g.count}笔：${channelInfo}${channelInfo?'，':''}${replyFor(g.provider)}`);
+   });
+   const minor=gs.filter(g=>g.count<10);
+   if(minor.length>1){
+     sections.push(`其余通道均未超过10笔，已通知商户优先处理并持续跟进。`);
+   }
+ });
+
+ document.getElementById('pendingOutput').textContent=sections.join('\n');
+ document.getElementById('pendingResult').innerHTML=`<p>已读取 ${rows.length} 个渠道，合并为 ${Object.keys(groups).length} 个商户币种回报。</p>`;
  renderAll();
  toast('提款超时回报已生成');
+}
+
+function clearPending(){
+ document.getElementById('pendingImage').value='';
+ document.getElementById('pendingPreview').style.display='none';
+ document.getElementById('pendingInput').value='';
+ document.getElementById('merchantReplies').value='';
+ document.getElementById('pendingOutput').textContent='生成结果显示于此';
+ document.getElementById('pendingResult').innerHTML='';
+ document.getElementById('ocrStatus').textContent='';
+ document.getElementById('ocrBar').style.width='0';
 }
 function clearPending(){
  document.getElementById('pendingInput').value='';
@@ -551,74 +677,92 @@ function toggleCurrencyDetail(currency){
 function splitRows(text){return text.trim().split(/\r?\n/).filter(Boolean).map(x=>x.split(/\t+/).map(v=>v.trim()))}
 function findHeaderIndex(headers,patterns){return headers.findIndex(h=>patterns.some(p=>h.toLowerCase().includes(p)))}
 function generateTRC(){
- const rows=splitRows(document.getElementById('trcInput').value);
- if(!rows.length){toast('请先贴上资料');return}
+ const text=document.getElementById('trcInput').value.trim();
+ if(!text){toast('請先貼上資料');return}
 
  const decimals=num(document.getElementById('trcDecimals').value)||2;
- const first=rows[0];
- const hasHeader=first.some(h=>/merchant|商户|商戶|结算币种|結算幣種|订单金额|訂單金額|到账金额|到賬金額|手续费|手續費|实收usdt|實收usdt|hash|txid|优惠汇率|優惠匯率/i.test(h));
- const headers=hasHeader?first.map(x=>x.toLowerCase()):[];
- const data=hasHeader?rows.slice(1):rows;
+ const normalized=text.replace(/\r/g,'').trim();
 
- function idx(patterns){
-   return headers.findIndex(h=>patterns.some(p=>h.includes(p)));
- }
- function rawAt(r,index,fallback=''){
-   return index>=0 ? String(r[index]??'').trim() : String(fallback??'').trim();
- }
- function cleanNumberText(v){
-   const s=String(v||'').replace(/,/g,'').trim();
-   if(!s)return '';
-   return s.replace(/(\.\d*?[1-9])0+$|\.0+$/,'$1');
- }
+ // 優先處理 Excel/WPS 保留 Tab 的格式
+ let rows=normalized.split('\n').filter(Boolean).map(line=>line.split('\t').map(x=>x.trim()));
+ let hasTab=rows.some(r=>r.length>=8);
 
- const H={
-   merchant:idx(['merchant','商户','商戶']),
-   currency:idx(['结算币种','結算幣種','currency','币种','幣種']),
-   orderAmount:idx(['订单金额','訂單金額','order amount']),
-   arrival:idx(['到账金额','到賬金額','arrival amount','settlement amount']),
-   received:idx(['实收usdt','實收usdt','received usdt']),
-   txid:idx(['usdt hash','txid','hash']),
-   merchantRate:idx(['商户汇率','商戶匯率','merchant rate']),
-   preferredRate:idx(['优惠汇率','優惠匯率','preferred rate'])
- };
+ // 如果畫面換行導致表頭與資料被拆散，改用 Token 推斷
+ const records=[];
+
+ if(hasTab){
+   const headerRow=rows.findIndex(r=>r.some(x=>/商户单号|商戶單號/i.test(x)) && r.some(x=>/优惠汇率|優惠匯率/i.test(x)));
+   const data=headerRow>=0?rows.slice(headerRow+1):rows;
+   data.forEach(r=>{
+     if(r.length<8)return;
+     // 固定欄位：單號 商戶 幣種 訂單 到帳 feeFiat feeUSD 實收 hash 日期 專員 商戶匯率 優惠匯率
+     while(r.length<13)r.push('');
+     const txIndex=r.findIndex(x=>/^(0x)?[a-f0-9]{40,}$/i.test(x));
+     if(txIndex<0)return;
+     const merchant=r[1], currency=r[2];
+     const order=num(r[3]), arrival=num(r[4]);
+     const feeFiat=num(r[5]), feeUsd=num(r[6]);
+     const received=num(r[7]);
+     const txid=r[8];
+     const merchantRate=num(r[11]), preferredRate=num(r[12]);
+     records.push({merchant,currency,amount:arrival||order,feeFiat,feeUsd,received,txid,rate:preferredRate||merchantRate});
+   });
+ } else {
+   // 無 Tab：利用 Hash、日期、幣種與數字位置重建每筆資料
+   const tokens=normalized
+     .replace(/商户单号|商戶單號|商户|商戶|结算币种|結算幣種|订单金额|訂單金額|到账金额|到賬金額|手续费（Fiat）|手續費（Fiat）|手续费（USD）|手續費（USD）|实收USDT|實收USDT|USDT Hash|到账日期|到賬日期|专员|專員|商户汇率|商戶匯率|优惠汇率|優惠匯率/gi,' ')
+     .split(/\s+/).filter(Boolean);
+
+   let pos=0;
+   while(pos<tokens.length){
+     const hashIndex=tokens.findIndex((x,idx)=>idx>=pos && /^(0x)?[a-f0-9]{40,}$/i.test(x));
+     if(hashIndex<0)break;
+     const before=tokens.slice(pos,hashIndex);
+     const after=tokens.slice(hashIndex+1);
+
+     const currencyIndex=before.findIndex(x=>/^[A-Z]{3,5}$/.test(x));
+     if(currencyIndex<2){pos=hashIndex+1;continue}
+
+     const orderId=before[currencyIndex-2];
+     const merchant=before[currencyIndex-1];
+     const currency=before[currencyIndex];
+     const nums=before.slice(currencyIndex+1).filter(x=>/^[-\d,.]+$/.test(x)).map(num);
+     if(nums.length<3){pos=hashIndex+1;continue}
+
+     const amount=nums[1]||nums[0];
+     const received=nums[nums.length-1];
+
+     // Hash 後通常為 日期、專員、商戶匯率、優惠匯率
+     let dateEnd=0;
+     if(after[0] && /月|\/|-/.test(after[0])) dateEnd=1;
+     const owner=after[dateEnd]||'';
+     const rate1=num(after[dateEnd+1]);
+     const rate2=num(after[dateEnd+2]);
+     const rate=rate2||rate1;
+
+     records.push({merchant,currency,amount,received,txid:tokens[hashIndex],rate,feeFiat:0,feeUsd:0});
+     pos=hashIndex+1+dateEnd+3;
+   }
+ }
 
  const outputs=[];
+ records.forEach(r=>{
+   if(!r.merchant||!r.currency||!r.amount||!r.rate||!r.txid)return;
+   let result=r.received || (r.amount/r.rate);
+   let resultText=Number(result.toFixed(decimals)).toString();
 
- data.forEach(r=>{
-   if(!r.some(Boolean)) return;
+   // 舊 Fiat Operations AI 規則：
+   // 有實收 USDT 時，回報結果以實收為準；公式維持 到帳金額/優惠匯率。
+   const amountText=Number(r.amount).toString();
+   const rateText=Number(r.rate).toString();
 
-   const merchant=rawAt(r,H.merchant,r[1]);
-   const currency=rawAt(r,H.currency,r[2]);
-   const orderText=rawAt(r,H.orderAmount,r[3]);
-   const arrivalText=rawAt(r,H.arrival,r[4]);
-   const amountText=cleanNumberText(arrivalText||orderText);
-   const receivedText=cleanNumberText(rawAt(r,H.received,r[7]));
-   const txid=rawAt(r,H.txid,r[8]);
-   const merchantRateText=cleanNumberText(rawAt(r,H.merchantRate,r[11]));
-   const preferredRateText=cleanNumberText(rawAt(r,H.preferredRate,r[12]));
-   const rateText=preferredRateText||merchantRateText;
-
-   const amount=num(amountText);
-   const rate=num(rateText);
-
-   if(!merchant || !currency || !amount || !rate) return;
-
-   let resultText=receivedText;
-   if(!resultText){
-     resultText=(amount/rate).toFixed(decimals).replace(/0+$/,'').replace(/\.$/,'');
-   }
-
-   outputs.push(
-`${merchant}出U,结算${currency} ${amountText}.,汇率${rateText}.。
-${amountText}./${rateText}.=${resultText} U,请你确认,谢谢。
+   outputs.push(`${r.merchant}出U,结算${r.currency} ${amountText}.,汇率${rateText}。 ${amountText}./${rateText}.=${resultText} U,请你确认,谢谢。
 TXID：
-${txid}`
-   );
+${r.txid}`);
  });
 
- document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';
- document.getElementById('trcStatus').textContent=`已读取 ${data.length} 列，并生成 ${outputs.length} 笔回报话术。汇率优先使用优惠汇率，结果优先使用实收USDT。`;
+ document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。请直接从 Excel/WPS 复制完整表格，不需自行整理。';
+ document.getElementById('trcStatus').textContent=`已读取并生成 ${outputs.length} 笔。结果优先采用实收USDT，汇率优先采用优惠汇率。`;
 }
 function generateERC(){
  const rows=splitRows(document.getElementById('ercInput').value);if(!rows.length){toast('请先贴上资料');return}
