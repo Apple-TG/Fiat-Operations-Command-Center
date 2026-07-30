@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V2</title>
+<title>Fiat Operations Command Center V2.1</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f4f7fb;--panel:#fff;--text:#142033;--muted:#687386;--line:#e4e9f1;--nav:#0f1d33;--blue:#2563eb;--green:#0f9f6e;--orange:#e98719;--red:#dc3f4f;--purple:#7c3aed;--shadow:0 12px 35px rgba(15,29,51,.08);--radius:18px}
@@ -30,7 +30,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.1</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -42,7 +42,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V2</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+<div class="sidebar-note"><b>正式版 V2.1</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -130,34 +130,88 @@ function setUpdated(k){state.updated[k]=now();save()}
 function parseRobot(){
  const raw=document.getElementById('robotInput').value.trim();
  if(!raw){toast('請先貼上資料');return}
- const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
- const rows=[]; let i=0;
- while(i<lines.length){
-   const provider=lines[i];
-   const account=lines[i+1]||'';
-   const currency=normCurrency(lines[i+2]);
-   if(currency){
-     const window=lines.slice(i+3,i+9);
-     const moneyLines=window.filter(x=>/[-\d,.]+/.test(x));
-     if(moneyLines.length){
-       const availableLine=moneyLines[1]||moneyLines[0];
-       const fiat=num(availableLine.split('(')[0]);
-       const usdMatch=availableLine.match(/\(([-\d,.]+)\s*USD\)/i);
-       const usd=usdMatch?num(usdMatch[1]):0;
-       rows.push({provider,account,currency,fiat,usd});
-       i+=3+window.indexOf(availableLine)+1; continue;
-     }
-   }
-   // tabular fallback
-   const parts=provider.split(/\t+/);
-   if(parts.length>=5){
-     const c=normCurrency(parts[2]);
-     if(c)rows.push({provider:parts[0],account:parts[1],currency:c,fiat:num(parts[4]),usd:num((parts[4].match(/\((.*?)USD/i)||[])[1])});
-   }
-   i++;
+
+ const rows=[];
+ const seen=new Set();
+
+ function pushRow(provider,account,currency,fiat,usd){
+   currency=normCurrency(currency);
+   fiat=num(fiat); usd=num(usd);
+   if(!currency || !Number.isFinite(fiat)) return;
+   const key=[provider,account,currency,fiat,usd].join('|');
+   if(seen.has(key)) return;
+   seen.add(key);
+   rows.push({
+     provider:(provider||account||currency).trim(),
+     account:(account||provider||'').trim(),
+     currency,
+     fiat,
+     usd
+   });
  }
- if(!rows.length){document.getElementById('robotResult').innerHTML='<p class="recommend red">未解析到資料，請確認有 Provider / Account / Currency / Available。</p>';return}
- state.balances=rows;setUpdated('balances');renderRobotResult();renderAll();toast(`已解析 ${rows.length} 筆商戶餘額`);
+
+ // 1) 正常逐行格式
+ const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ for(let j=0;j<lines.length;j++){
+   const provider=lines[j];
+   const account=lines[j+1]||'';
+   const currency=normCurrency(lines[j+2]);
+   if(!currency) continue;
+
+   const candidates=lines.slice(j+3,j+9).filter(x=>/\d/.test(x));
+   if(candidates.length){
+     const availableLine=candidates[1]||candidates[0];
+     const usdMatch=availableLine.match(/\(([-\d,.]+)\s*USD\)/i);
+     pushRow(provider,account,currency,availableLine.split('(')[0],usdMatch?usdMatch[1]:0);
+   }
+ }
+
+ // 2) Tab 表格格式
+ lines.forEach(line=>{
+   const p=line.split(/\t+/);
+   if(p.length<5) return;
+   const c=normCurrency(p[2]);
+   if(!c) return;
+   const usd=(String(p[4]).match(/\(([-\d,.]+)\s*USD\)/i)||[])[1]||0;
+   pushRow(p[0],p[1],c,String(p[4]).split('(')[0],usd);
+ });
+
+ // 3) Robot 複製後全部黏成一行的格式
+ // 每筆通常以 PT...S 開始，接著 Provider+Account，再接 _PHPFIATPHPFIAT...
+ const compact=raw
+   .replace(/^\/b\s*[—-]\s*Channel Balance\s*/i,'')
+   .replace(/provideraccountcurrencytotalavailablependingfrozenupdated/i,'');
+
+ const rgx=/(?:^|PT(?:\d+H)?(?:\d+M)?[\d.]+S)([A-Za-z0-9_-]+?)_([A-Z]{3,5})FIAT\2FIAT(-?[\d,.]+)\s*\((-?[\d,.]+)\s*USD\)(-?[\d,.]+)\s*\((-?[\d,.]+)\s*USD\)/g;
+ let m;
+ while((m=rgx.exec(compact))!==null){
+   const chunk=m[1];
+   let provider=chunk;
+   const repeated=chunk.match(/^(.+?)\1/);
+   if(repeated && repeated[1]) provider=repeated[1];
+   else if(chunk.includes('_')) provider=chunk.split('_')[0];
+   pushRow(provider,chunk,m[2],m[5],m[6]);
+ }
+
+ // 4) 最後備援：只抓幣種與 Available，確保首頁至少能統計
+ if(!rows.length){
+   const fallback=/_([A-Z]{3,5})FIAT\1FIAT(-?[\d,.]+)\s*\((-?[\d,.]+)\s*USD\)(-?[\d,.]+)\s*\((-?[\d,.]+)\s*USD\)/g;
+   let f,n=1;
+   while((f=fallback.exec(compact))!==null){
+     pushRow(`Merchant ${n}`,`Merchant ${n}`,f[1],f[4],f[5]); n++;
+   }
+ }
+
+ if(!rows.length){
+   document.getElementById('robotResult').innerHTML='<p class="recommend red">仍未解析到資料。請直接複製完整 Robot 結果，不需自行整理。</p>';
+   return;
+ }
+
+ state.balances=rows;
+ setUpdated('balances');
+ renderRobotResult();
+ renderAll();
+ toast(`已解析 ${rows.length} 筆商戶餘額`);
 }
 function renderRobotResult(){
  const rows=state.balances;
