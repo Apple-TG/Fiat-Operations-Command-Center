@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V2.6</title>
+<title>Fiat Operations Command Center V2.7</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
@@ -18,7 +18,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .main{padding:24px 26px 38px;min-width:0}.page{display:none}.page.active{display:block}.topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}.topbar h2{margin:0 0 6px;font-size:27px}.topbar p{margin:0;color:var(--muted);font-size:13px}
 .actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 14px;font-weight:700;cursor:pointer}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.purple{background:var(--purple);border-color:var(--purple);color:#fff}.btn.danger{color:var(--red)}
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}.kpi{display:flex;gap:12px;align-items:center}.icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:20px;font-weight:900}.icon.blue{background:#e8f0ff;color:var(--blue)}.icon.green{background:#e5f8ef;color:var(--green)}.icon.orange{background:#fff2df;color:var(--orange)}.icon.purple{background:#f0e9ff;color:var(--purple)}.kpi small{display:block;color:var(--muted);margin-bottom:5px}.kpi strong{font-size:24px}
-.grid{display:grid;gap:16px}.grid.main-grid{grid-template-columns:minmax(0,1fr) 340px}.grid.two{grid-template-columns:1fr 1fr}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-title h3{margin:0;font-size:17px}.hint{color:var(--muted);font-size:12px}
+.grid{display:grid;gap:16px}.grid.main-grid{grid-template-columns:1fr}.grid.two{grid-template-columns:1fr 1fr}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-title h3{margin:0;font-size:17px}.hint{color:var(--muted);font-size:12px}
 .currency-table{width:100%;border-collapse:collapse}.currency-table th,.currency-table td{padding:12px 10px;border-bottom:1px solid var(--line);font-size:13px;text-align:left;white-space:nowrap}.currency-table th{font-size:11px;color:var(--muted);background:#f9fbfd}.currency{font-weight:800;color:var(--blue)}.money{font-variant-numeric:tabular-nums;font-weight:650}.usd{color:#536177}.badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:800}.b-green{background:#e6f8ef;color:#087b56}.b-orange{background:#fff1df;color:#b86208}.b-red{background:#ffe9ec;color:#b72234}.b-gray{background:#edf0f4;color:#586274}.recommend{font-weight:800}.recommend.red{color:var(--red)}.recommend.green{color:var(--green)}.recommend.orange{color:var(--orange)}
 .side-stack{display:grid;gap:14px}.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.quick{border:1px solid var(--line);border-radius:14px;padding:16px 10px;text-align:center;background:#fbfdff;cursor:pointer}.quick b{display:block;margin:8px 0 4px}.quick small{color:var(--muted)}
 .alert-list,.status-list{display:grid;gap:10px}.alert{display:flex;gap:9px;font-size:13px;line-height:1.45}.dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:0 0 auto}.dot.red{background:var(--red)}.dot.orange{background:var(--orange)}.dot.green{background:var(--green)}.status-row{display:flex;justify-content:space-between;font-size:12px}.status-row span:last-child{font-weight:800}
@@ -30,7 +30,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .detail-row td{background:#f8fbff;padding:0!important}
 .currency-detail{display:none;padding:18px;border-top:1px solid #d9e6fb}
 .currency-detail.show{display:block}
-.detail-columns{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:14px}
+.detail-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .detail-box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
 .detail-box h4{margin:0 0 10px}
 .detail-list{display:grid;gap:8px}
@@ -50,7 +50,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.6</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.7</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -62,7 +62,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V2.6</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+<div class="sidebar-note"><b>正式版 V2.7</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -90,12 +90,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 </div>
 <div class="card" style="margin-top:16px"><div class="section-title"><div><h3>綜合資金分析</h3><div class="hint">依 Available、日均、通道與 Pending 自動判斷</div></div></div><div class="analysis-grid" id="analysisGrid"><div class="hint">尚未有分析結果</div></div></div>
 </div>
-<div class="side-stack">
-<div class="card"><div class="section-title"><h3>重點提醒</h3></div><div class="alert-list" id="alertList"><div class="hint">尚未有提醒</div></div></div>
-<div class="card"><div class="section-title"><h3>資料狀態</h3></div><div class="status-list" id="statusList"></div></div>
-</div>
-</div>
-</section>
+</div></section>
 
 <section class="page" id="page-robot">
 <div class="topbar"><div><h2>商戶餘額（Robot）</h2><p>支援 Robot 逐行輸出，系統只採用 Available balance</p></div></div>
@@ -581,6 +576,58 @@ function recommendation(x){
  if(open===0&&x.payout.length){return {type:'risk',text:'代付无可用通道',reason:`目前无开启通道，NOTE 备用 ${note} 家。`}}
  return {type:'ok',text:'观察',reason:`余额与通道暂时稳定；开启代付 ${open} 家。`}
 }
+
+function normalizeName(v){
+  return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+function balanceForChannel(channel,currency){
+  const providerKey=normalizeName(channel.provider);
+  const channelKey=normalizeName(channel.channel);
+  const balances=state.balances.filter(b=>b.currency===currency);
+  let best=0;
+
+  balances.forEach(b=>{
+    const provider=normalizeName(b.provider);
+    const account=normalizeName(b.account);
+    let matched=false;
+
+    if(providerKey && (
+      provider===providerKey ||
+      account===providerKey ||
+      provider.includes(providerKey) ||
+      providerKey.includes(provider) ||
+      account.includes(providerKey) ||
+      providerKey.includes(account)
+    )) matched=true;
+
+    if(!matched && channelKey && (
+      (provider && channelKey.includes(provider)) ||
+      (account && channelKey.includes(account)) ||
+      (providerKey && channelKey.includes(providerKey))
+    )) matched=true;
+
+    if(matched) best=Math.max(best,Number(b.fiat)||0);
+  });
+
+  return best;
+}
+function sortChannelsForCurrency(channels,currency){
+  const rank={'开启':0,'维护':1,'关闭':2};
+
+  return [...channels].sort((a,b)=>{
+    const statusDiff=(rank[a.status]??9)-(rank[b.status]??9);
+    if(statusDiff!==0) return statusDiff;
+
+    const balanceDiff=balanceForChannel(b,currency)-balanceForChannel(a,currency);
+    if(balanceDiff!==0) return balanceDiff;
+
+    const providerDiff=(a.provider||'').localeCompare(b.provider||'');
+    if(providerDiff!==0) return providerDiff;
+
+    return (a.channel||'').localeCompare(b.channel||'');
+  });
+}
+
 function renderAll(){
  let rows=summary();
  const balanceCurrencies=new Set(state.balances.map(x=>x.currency));
@@ -614,13 +661,39 @@ function renderAll(){
       .map(m=>`<div class="detail-item"><div><b>${m.provider}</b><div class="hint">${m.account||''}</div></div><div style="text-align:right"><b>${SYMBOLS[x.currency]||''} ${fmt(m.fiat)}</b><div class="hint">${fmt(m.usd)} U</div></div></div>`)
       .join(''):'<div class="hint">暂无商户余额明细</div>';
 
-   const payoutHtml=x.payout.length?x.payout.map(c=>{
+   const payoutSorted=sortChannelsForCurrency(x.payout,x.currency);
+   const payinSorted=sortChannelsForCurrency(x.payin,x.currency);
+
+   const payoutHtml=payoutSorted.length?payoutSorted.map(c=>{
+     const matchedBalance=balanceForChannel(c,x.currency);
      const note=(c.status==='关闭' && c.noteText)?`<div class="hint" style="margin-top:4px">NOTE：${c.noteText}</div>`:'';
-     return `<div class="detail-item"><div><b>${c.provider||'未命名商户'}</b><div class="hint">${c.channel||'未命名渠道'}</div>${note}</div><span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}</span></div>`;
+     const balanceText=matchedBalance?`<div class="hint" style="margin-top:4px">当前余额：${SYMBOLS[x.currency]||''} ${fmt(matchedBalance)}</div>`:'';
+
+     return `<div class="detail-item">
+       <div>
+         <b>${c.provider||'未命名商户'}</b>
+         <div class="hint">${c.channel||'未命名渠道'}</div>
+         ${balanceText}
+         ${note}
+       </div>
+       <span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}</span>
+     </div>`;
    }).join(''):'<div class="hint">尚未上传代付通道</div>';
-   const payinHtml=x.payin.length?x.payin.map(c=>{
+
+   const payinHtml=payinSorted.length?payinSorted.map(c=>{
+     const matchedBalance=balanceForChannel(c,x.currency);
      const note=(c.status==='关闭' && c.noteText)?`<div class="hint" style="margin-top:4px">NOTE：${c.noteText}</div>`:'';
-     return `<div class="detail-item"><div><b>${c.provider||'未命名商户'}</b><div class="hint">${c.channel||'未命名渠道'}</div>${note}</div><span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}</span></div>`;
+     const balanceText=matchedBalance?`<div class="hint" style="margin-top:4px">当前余额：${SYMBOLS[x.currency]||''} ${fmt(matchedBalance)}</div>`:'';
+
+     return `<div class="detail-item">
+       <div>
+         <b>${c.provider||'未命名商户'}</b>
+         <div class="hint">${c.channel||'未命名渠道'}</div>
+         ${balanceText}
+         ${note}
+       </div>
+       <span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}</span>
+     </div>`;
    }).join(''):'<div class="hint">尚未上传代收通道</div>';
 
    return `<tr class="currency-row" onclick="toggleCurrencyDetail('${x.currency}')">
