@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V3.3</title>
+<title>Fiat Operations Command Center V3.5</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
@@ -71,7 +71,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V3.3</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V3.5</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -83,7 +83,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V3.3</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+<div class="sidebar-note"><b>正式版 V3.5</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -436,14 +436,47 @@ async function loadChannels(type){
 
  const rows=await readSheet(f);
  const result=[];
+ let detectedStatusKey='';
+ let detectedMaintenanceKey='';
+
+ function normalizeHeader(v){
+   return String(v||'').toLowerCase().replace(/[\s_\-()]/g,'');
+ }
+ function exactKey(obj,candidates){
+   const keys=Object.keys(obj);
+   for(const candidate of candidates){
+     const found=keys.find(k=>normalizeHeader(k)===normalizeHeader(candidate));
+     if(found)return found;
+   }
+   return '';
+ }
+ function looseKey(obj,candidates,exclude=[]){
+   const keys=Object.keys(obj);
+   return keys.find(k=>{
+     const n=normalizeHeader(k);
+     return candidates.some(c=>n.includes(normalizeHeader(c))) &&
+       !exclude.some(x=>n.includes(normalizeHeader(x)));
+   })||'';
+ }
 
  rows.forEach(r=>{
    const pk=findKey(r,['provider','商户','商戶']);
    const ck=findKey(r,['currency','币种','幣種']);
    const ch=findKey(r,['channel','通道']);
    const nk=findKey(r,['note','备注','備註','remark']);
-   const statusKey=findKey(r,['status','switch','状态','狀態']);
-   const maintenanceKey=findKey(r,['maintenance','维护','維護']);
+
+   // 关键修正：
+   // Status 必须只取真正的 Status / Switch 栏，不能误抓 Maintenance Status。
+   const statusKey=
+     exactKey(r,['Status','Switch','Channel Status','Channel Switch']) ||
+     looseKey(r,['status','switch'],['maintenance']);
+
+   const maintenanceKey=
+     exactKey(r,['Maintenance','Maintenance Status','Withdraw Maintenance']) ||
+     looseKey(r,['maintenance','维护','維護']);
+
+   if(statusKey)detectedStatusKey=statusKey;
+   if(maintenanceKey)detectedMaintenanceKey=maintenanceKey;
 
    const currency=normCurrency(ck?r[ck]:'');
    if(!currency)return;
@@ -458,18 +491,13 @@ async function loadChannels(type){
 
    let status='关闭';
 
-   // 正确逻辑：
-   // Status = 开 + Maintenance = true  -> 🟢 开启
-   // Status = 开 + Maintenance = false -> 🟠 余额不足
-   // Status = 关闭 + Maintenance 任意   -> ⚪ 关闭
    if(switchClosed){
      status='关闭';
-   }else if(switchOpen && maintenanceTrue){
-     status='开启';
    }else if(switchOpen && maintenanceFalse){
+     status='开启';
+   }else if(switchOpen && maintenanceTrue){
      status='余额不足';
    }else if(switchOpen){
-     // Status 明确为开，但 Maintenance 无法识别时，保守显示开启
      status='开启';
    }
 
@@ -478,14 +506,23 @@ async function loadChannels(type){
      channel:ch?String(r[ch]||'').trim():'',
      currency,
      status,
-     noteText:nk?String(r[nk]||'').trim():''
+     noteText:nk?String(r[nk]||'').trim():'',
+     rawStatus:statusRaw,
+     rawMaintenance:maintenanceRaw
    });
  });
 
  state[type]=result;
  setUpdated(type);
+
+ const openCount=result.filter(x=>x.status==='开启').length;
+ const lowCount=result.filter(x=>x.status==='余额不足').length;
+ const closedCount=result.filter(x=>x.status==='关闭').length;
+
  document.getElementById(type+'Result').innerHTML=
-   `<p>已解析 ${result.length} 条通道。逻辑：Status 开 + Maintenance true = 开启；Status 开 + Maintenance false = 余额不足；Status 关闭 = 关闭。</p>`;
+   `<p><b>已解析 ${result.length} 条通道：</b> 🟢${openCount}　🟠${lowCount}　⚪${closedCount}</p>
+    <div class="hint">读取栏位：Status=${detectedStatusKey||'未找到'}；Maintenance=${detectedMaintenanceKey||'未找到'}</div>`;
+
  renderAll();
  toast('解析完成');
 }
