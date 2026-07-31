@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V3.1</title>
+<title>Fiat Operations Command Center V3.2</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
@@ -64,7 +64,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V3.1</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V3.2</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -76,7 +76,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V3.1</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+<div class="sidebar-note"><b>正式版 V3.2</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -408,57 +408,22 @@ async function loadStats(type){
 }
 
 async function loadChannels(type){
- const f=document.getElementById(type+'File').files[0];
- if(!f){toast('請選擇檔案');return}
-
- const rows=await readSheet(f);
- const result=[];
-
+ const f=document.getElementById(type+'File').files[0];if(!f){toast('請選擇檔案');return}
+ const rows=await readSheet(f);const result=[];
  rows.forEach(r=>{
-   const pk=findKey(r,['provider','商户','商戶']);
-   const ck=findKey(r,['currency','币种','幣種']);
-   const ch=findKey(r,['channel','通道']);
-   const nk=findKey(r,['note','备注','備註','remark']);
-   const statusKey=findKey(r,['status','switch','状态','狀態']);
-   const maintenanceKey=findKey(r,['maintenance','维护','維護']);
-
-   const currency=normCurrency(ck?r[ck]:'');
-   if(!currency)return;
-
-   const statusRaw=String(statusKey?r[statusKey]:'').trim().toLowerCase();
-   const maintenanceRaw=String(maintenanceKey?r[maintenanceKey]:'').trim().toLowerCase();
-   let status='关闭';
-
-   // 文件实际逻辑：
-   // Maintenance = true  -> 开启
-   // Maintenance = false -> 关闭
-   // 若出现明确的 Maintenance (Withdraw NO)，仍显示余额不足
-   if(/maintenance\s*\(withdraw\s*no\)|withdraw\s*no|余额不足|餘額不足/.test(maintenanceRaw)){
-     status='余额不足';
-   }else if(/^(true|1|yes|enabled|enable|on)$/i.test(maintenanceRaw)){
-     status='开启';
-   }else if(/^(false|0|no|disabled|disable|off)$/i.test(maintenanceRaw)){
-     status='关闭';
-   }else{
-     // Maintenance 字段缺失时，才回退使用 Status / Switch
-     if(/^(enabled|enable|on|true|1)$/i.test(statusRaw)) status='开启';
-     else if(/^(disabled|disable|off|false|0)$/i.test(statusRaw)) status='关闭';
-   }
-
-   result.push({
-     provider:pk?String(r[pk]||'').trim():'',
-     channel:ch?String(r[ch]||'').trim():'',
-     currency,
-     status,
-     noteText:nk?String(r[nk]||'').trim():''
-   });
+   const pk=findKey(r,['provider','商户','商戶']);const ck=findKey(r,['currency','币种','幣種']);const ch=findKey(r,['channel','通道']);const nk=findKey(r,['note','备注','備註','remark']);
+   const statusKey=findKey(r,['status','switch','状态','狀態']);const maintenanceKey=findKey(r,['maintenance','维护','維護']);
+   const currency=normCurrency(ck?r[ck]:'');if(!currency)return;
+   const switchText=String(statusKey?r[statusKey]:'').trim().toLowerCase();const maintenanceText=String(maintenanceKey?r[maintenanceKey]:'').trim().toLowerCase();const allText=Object.values(r).join(' ').toLowerCase();
+   let status='关闭';const enabled=/^enabled$|^enable$|^on$|^true$|开启|開啟/.test(switchText);const disabled=/^disabled$|^disable$|^off$|^false$|关闭|關閉/.test(switchText);
+   if(disabled)status='关闭';
+   else if(enabled)status=/maintenance\s*\(withdraw\s*no\)|withdraw\s*no|余额不足|餘額不足/.test(maintenanceText)?'余额不足':'开启';
+   else if(/disabled|disable|switch\s*off|关闭|關閉/.test(allText))status='关闭';
+   else if(/maintenance\s*\(withdraw\s*no\)|withdraw\s*no|余额不足|餘額不足/.test(allText))status='余额不足';
+   else if(/enabled|enable|not under maintenance|开启|開啟/.test(allText))status='开启';
+   result.push({provider:pk?String(r[pk]||'').trim():'',channel:ch?String(r[ch]||'').trim():'',currency,status,noteText:nk?String(r[nk]||'').trim():''});
  });
-
- state[type]=result;
- setUpdated(type);
- document.getElementById(type+'Result').innerHTML=`<p>已解析 ${result.length} 条通道：🟢 开启、🟠 余额不足、⚪ 关闭。</p>`;
- renderAll();
- toast('解析完成');
+ state[type]=result;setUpdated(type);document.getElementById(type+'Result').innerHTML=`<p>已解析 ${result.length} 条通道：🟢 开启、🟠 余额不足、⚪ 关闭。</p>`;renderAll();toast('解析完成');
 }
 
 function previewPendingImage(){
@@ -971,7 +936,7 @@ function generateERC(){
  const ntext=v=>String(v||'').replace(/,/g,'').replace(/[^\d.\-]/g,'').trim(),number=v=>{const n=Number(ntext(v));return Number.isFinite(n)?n:0},trimCalc=n=>n.toFixed(12).replace(/\.?0+$/,''),txHash=v=>{const s=String(v||'').trim(),m=s.match(/0x[a-f0-9]{64}/i);return m?m[0]:s};
  const outputs=records.map(r=>{const fiat=number(r.orderText),feeFiat=number(r.feeFiatText),feeUsd=number(r.feeUsdText),rate=number(r.rateText),receivedRaw=ntext(r.receivedText);if(!r.merchant||!r.currency||!fiat||!rate)return '';
   const netFiat=fiat-feeFiat,computed=netFiat/rate-feeUsd,actual=receivedRaw||trimCalc(computed),from=(r.currency.match(/from\s+([A-Z]+)/i)||[])[1]||'';
-  const out=[`${r.merchant}出U,结算${r.currency} ${ntext(r.orderText)}${/[A-Za-z]/.test(r.orderText)?'':from?' '+from:''},`,`汇率${ntext(r.rateText)}。`];if(feeFiat)out.push(`${ntext(r.orderText)}-${ntext(r.feeFiatText)}(fee)=${trimCalc(netFiat)}`);let formula=`(${trimCalc(netFiat)}/${ntext(r.rateText)})`;if(feeUsd)formula+=`-${ntext(r.feeUsdText)}(fee)`;out.push(`${formula}=${actual} U,请你确认,谢谢。  TXID：`);out.push(txHash(r.hashText));return out.join('\n');
+  const out=[`${r.merchant}出U,结算${r.currency} ${ntext(r.orderText)}${/[A-Za-z]/.test(r.orderText)?'':from?' '+from:''},`,`汇率${ntext(r.rateText)}。`];if(feeFiat)out.push(`${ntext(r.orderText)}-${ntext(r.feeFiatText)}(fee)=${trimCalc(netFiat)}`);let formula=`(${trimCalc(netFiat)}/${ntext(r.rateText)})`;if(feeUsd)formula+=`-${ntext(r.feeUsdText)}`;out.push(`${formula}=${actual} U,请你确认,谢谢。  TXID：`);out.push(txHash(r.hashText));return out.join('\n');
  }).filter(Boolean);document.getElementById('ercOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';
 }
 function clearTRC(){document.getElementById('trcInput').value='';document.getElementById('trcOutput').textContent='生成结果显示于此'}
