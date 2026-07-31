@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V2.7</title>
+<title>Fiat Operations Command Center V2.8</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
@@ -30,11 +30,21 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .detail-row td{background:#f8fbff;padding:0!important}
 .currency-detail{display:none;padding:18px;border-top:1px solid #d9e6fb}
 .currency-detail.show{display:block}
-.detail-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.detail-box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
-.detail-box h4{margin:0 0 10px}
-.detail-list{display:grid;gap:8px}
-.detail-item{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:10px}
+.merchant-channel-table{display:grid;gap:10px;min-width:0}
+.merchant-channel-header,.merchant-channel-row{display:grid;grid-template-columns:minmax(320px,1.15fr) minmax(300px,1fr) minmax(300px,1fr);gap:12px;align-items:stretch}
+.merchant-channel-header>div{font-weight:800;padding:0 12px 6px}
+.merchant-cell,.channel-cell{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+.merchant-cell{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+.merchant-name{min-width:0}
+.merchant-name b,.channel-card b{display:block;overflow-wrap:anywhere}
+.merchant-amount{flex:0 0 190px;text-align:right;white-space:nowrap}
+.merchant-amount b{font-size:15px}
+.channel-cell{display:grid;gap:8px;align-content:start}
+.channel-card{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;min-width:0}
+.channel-card>div{min-width:0}
+.unmatched-row{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.detail-scroll{overflow-x:auto;padding-bottom:4px}
+.detail-scroll>.merchant-channel-table{min-width:980px}
 .currency-row{cursor:pointer}
 .currency-row:hover{background:#f7faff}
 @media(max-width:900px){.detail-columns{grid-template-columns:1fr}}
@@ -50,7 +60,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.7</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V2.8</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -62,7 +72,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V2.7</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+<div class="sidebar-note"><b>正式版 V2.8</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -628,6 +638,37 @@ function sortChannelsForCurrency(channels,currency){
   });
 }
 
+
+function channelMatchesMerchant(channel,merchant){
+  const cp=normalizeName(channel.provider);
+  const cc=normalizeName(channel.channel);
+  const mp=normalizeName(merchant.provider);
+  const ma=normalizeName(merchant.account);
+
+  if(!cp && !cc)return false;
+  return Boolean(
+    (cp && mp && (cp===mp || cp.includes(mp) || mp.includes(cp))) ||
+    (cp && ma && (cp===ma || cp.includes(ma) || ma.includes(cp))) ||
+    (cc && mp && cc.includes(mp)) ||
+    (cc && ma && cc.includes(ma))
+  );
+}
+function channelCards(channels,currency){
+  if(!channels.length)return '<div class="hint">无对应通道</div>';
+  return sortChannelsForCurrency(channels,currency).map(c=>{
+    const note=(c.status==='关闭' && c.noteText)
+      ? `<div class="hint" style="margin-top:4px">NOTE：${c.noteText}</div>`:'';
+    return `<div class="channel-card">
+      <div>
+        <b>${c.provider||'未命名商户'}</b>
+        <div class="hint">${c.channel||'未命名渠道'}</div>
+        ${note}
+      </div>
+      <span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}</span>
+    </div>`;
+  }).join('');
+}
+
 function renderAll(){
  let rows=summary();
  const balanceCurrencies=new Set(state.balances.map(x=>x.currency));
@@ -655,46 +696,59 @@ function renderAll(){
    const pend=x.pending.reduce((s,y)=>s+y.amount,0);
    const cls=r.type==='risk'?'red':r.type==='settle'?'green':r.type==='watch'?'orange':'';
 
-   const merchants=state.balances.filter(b=>b.currency===x.currency);
-   const merchantHtml=merchants.length?merchants
-      .sort((a,b)=>b.fiat-a.fiat)
-      .map(m=>`<div class="detail-item"><div><b>${m.provider}</b><div class="hint">${m.account||''}</div></div><div style="text-align:right"><b>${SYMBOLS[x.currency]||''} ${fmt(m.fiat)}</b><div class="hint">${fmt(m.usd)} U</div></div></div>`)
-      .join(''):'<div class="hint">暂无商户余额明细</div>';
+   const merchants=state.balances
+     .filter(b=>b.currency===x.currency)
+     .sort((a,b)=>b.fiat-a.fiat);
 
-   const payoutSorted=sortChannelsForCurrency(x.payout,x.currency);
-   const payinSorted=sortChannelsForCurrency(x.payin,x.currency);
+   const usedPayout=new Set();
+   const usedPayin=new Set();
 
-   const payoutHtml=payoutSorted.length?payoutSorted.map(c=>{
-     const matchedBalance=balanceForChannel(c,x.currency);
-     const note=(c.status==='关闭' && c.noteText)?`<div class="hint" style="margin-top:4px">NOTE：${c.noteText}</div>`:'';
-     const balanceText=matchedBalance?`<div class="hint" style="margin-top:4px">当前余额：${SYMBOLS[x.currency]||''} ${fmt(matchedBalance)}</div>`:'';
+   const alignedRows=merchants.map(m=>{
+     const matchedPayout=x.payout.filter((c,index)=>{
+       const matched=channelMatchesMerchant(c,m);
+       if(matched)usedPayout.add(index);
+       return matched;
+     });
+     const matchedPayin=x.payin.filter((c,index)=>{
+       const matched=channelMatchesMerchant(c,m);
+       if(matched)usedPayin.add(index);
+       return matched;
+     });
 
-     return `<div class="detail-item">
-       <div>
-         <b>${c.provider||'未命名商户'}</b>
-         <div class="hint">${c.channel||'未命名渠道'}</div>
-         ${balanceText}
-         ${note}
+     return `<div class="merchant-channel-row">
+       <div class="merchant-cell">
+         <div class="merchant-name">
+           <b>${m.provider}</b>
+           <div class="hint">${m.account||''}</div>
+         </div>
+         <div class="merchant-amount">
+           <b>${SYMBOLS[x.currency]||''} ${fmt(m.fiat)}</b>
+           <div class="hint">${fmt(m.usd)} U</div>
+         </div>
        </div>
-       <span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}</span>
+       <div class="channel-cell">${channelCards(matchedPayout,x.currency)}</div>
+       <div class="channel-cell">${channelCards(matchedPayin,x.currency)}</div>
      </div>`;
-   }).join(''):'<div class="hint">尚未上传代付通道</div>';
+   }).join('');
 
-   const payinHtml=payinSorted.length?payinSorted.map(c=>{
-     const matchedBalance=balanceForChannel(c,x.currency);
-     const note=(c.status==='关闭' && c.noteText)?`<div class="hint" style="margin-top:4px">NOTE：${c.noteText}</div>`:'';
-     const balanceText=matchedBalance?`<div class="hint" style="margin-top:4px">当前余额：${SYMBOLS[x.currency]||''} ${fmt(matchedBalance)}</div>`:'';
+   const unmatchedPayout=x.payout.filter((_,index)=>!usedPayout.has(index));
+   const unmatchedPayin=x.payin.filter((_,index)=>!usedPayin.has(index));
+   const unmatchedHtml=(unmatchedPayout.length||unmatchedPayin.length)
+     ? `<div class="merchant-channel-row unmatched-row">
+         <div class="merchant-cell">
+           <div class="merchant-name"><b>未匹配商户余额</b><div class="hint">通道名称与 Robot 商户名称不同</div></div>
+         </div>
+         <div class="channel-cell">${channelCards(unmatchedPayout,x.currency)}</div>
+         <div class="channel-cell">${channelCards(unmatchedPayin,x.currency)}</div>
+       </div>`:'';
 
-     return `<div class="detail-item">
-       <div>
-         <b>${c.provider||'未命名商户'}</b>
-         <div class="hint">${c.channel||'未命名渠道'}</div>
-         ${balanceText}
-         ${note}
-       </div>
-       <span class="badge ${c.status==='开启'?'b-green':c.status==='维护'?'b-orange':'b-gray'}">${c.status}</span>
-     </div>`;
-   }).join(''):'<div class="hint">尚未上传代收通道</div>';
+   const detailHtml=merchants.length
+     ? alignedRows+unmatchedHtml
+     : `<div class="merchant-channel-row">
+          <div class="merchant-cell"><div class="hint">暂无商户余额明细</div></div>
+          <div class="channel-cell">${channelCards(x.payout,x.currency)}</div>
+          <div class="channel-cell">${channelCards(x.payin,x.currency)}</div>
+        </div>`;
 
    return `<tr class="currency-row" onclick="toggleCurrencyDetail('${x.currency}')">
      <td class="currency">▸ ${x.currency}</td>
@@ -709,10 +763,15 @@ function renderAll(){
    </tr>
    <tr class="detail-row"><td colspan="9">
      <div class="currency-detail" id="detail-${x.currency}">
-       <div class="detail-columns">
-         <div class="detail-box"><h4>${x.currency} 商户余额</h4><div class="detail-list">${merchantHtml}</div></div>
-         <div class="detail-box"><h4>代付通道</h4><div class="detail-list">${payoutHtml}</div></div>
-         <div class="detail-box"><h4>代收通道</h4><div class="detail-list">${payinHtml}</div></div>
+       <div class="detail-scroll">
+         <div class="merchant-channel-table">
+           <div class="merchant-channel-header">
+             <div>${x.currency} 商户余额</div>
+             <div>代付通道（开启优先）</div>
+             <div>代收通道（开启优先）</div>
+           </div>
+           ${detailHtml}
+         </div>
        </div>
      </div>
    </td></tr>`;
