@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V3.0</title>
+<title>Fiat Operations Command Center V3.1</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
@@ -64,7 +64,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V3.0</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V3.1</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -76,7 +76,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V3.0</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
+<div class="sidebar-note"><b>正式版 V3.1</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -111,11 +111,11 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="card"><div class="field"><label>貼上 Robot 原始內容</label><textarea id="robotInput" rows="16" placeholder="Provider&#10;Account&#10;Currency&#10;Total&#10;Available&#10;..."></textarea></div><div class="actions"><button class="btn primary" onclick="parseRobot()">解析並保存</button><button class="btn" onclick="clearRobot()">清空輸入</button></div><div id="robotResult"></div></div>
 </section>
 
-<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="7"></div><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><div id="withdrawResult"></div></div></section>
-<section class="page" id="page-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="depositFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="depositDays" type="number" min="1" value="7"></div><button class="btn primary" onclick="loadStats('deposit')">解析並保存</button><div id="depositResult"></div></div></section>
+<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><button class="btn" onclick="clearUploadData('withdraw')">清空</button></div><div id="withdrawResult"></div></div></section>
+<section class="page" id="page-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="depositFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="depositDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('deposit')">解析並保存</button><button class="btn" onclick="clearUploadData('deposit')">清空</button></div><div id="depositResult"></div></div></section>
 
-<section class="page" id="page-payout"><div class="topbar"><div><h2>代付通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payoutFile" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="loadChannels('payout')">解析並保存</button><div id="payoutResult"></div></div></section>
-<section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><div id="payinResult"></div></div></section>
+<section class="page" id="page-payout"><div class="topbar"><div><h2>代付通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payoutFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payout')">解析並保存</button><button class="btn" onclick="clearUploadData('payout')">清空</button></div><div id="payoutResult"></div></div></section>
+<section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><button class="btn" onclick="clearUploadData('payin')">清空</button></div><div id="payinResult"></div></div></section>
 
 <section class="page" id="page-pending">
 <div class="topbar"><div><h2>Pending 數據</h2><p>上傳後台截圖，辨識 Count 與延遲資料，再結合商戶回覆生成夜班回報</p></div></div>
@@ -164,7 +164,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
 <section class="page" id="page-settlement">
 <div class="topbar"><div><h2>結算話術</h2><p>TRC 與 ERC 均支援批量貼上</p></div></div>
-<div class="tabs"><button class="tab active" data-tool="trc">TRC 話術</button><button class="tab" data-tool="erc">ERC 話術</button></div>
+<div class="tabs"><button class="tab active" data-tool="trc">TRC 話術</button><button class="tab" data-tool="erc">ERC 話術</button><button class="tab" data-tool="template">結算／充值模板</button></div>
 <div class="tool-pane active" id="tool-trc">
   <div class="grid two">
     <div class="card">
@@ -181,6 +181,40 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   </div>
 </div>
 <div class="tool-pane" id="tool-erc"><div class="grid two"><div class="card"><textarea id="ercInput" rows="20" placeholder="貼上多組 ERC Excel/WPS 資料"></textarea><div class="actions" style="margin-top:12px"><button class="btn purple" onclick="generateERC()">生成 ERC 話術</button><button class="btn" onclick="clearERC()">清空</button></div></div><div class="card"><div class="actions" style="margin-bottom:10px"><button class="btn" onclick="copyText('ercOutput')">複製全部</button></div><div class="output" id="ercOutput">生成結果顯示於此</div></div></div></div>
+
+<div class="tool-pane" id="tool-template">
+  <div class="grid two">
+    <div class="card">
+      <div class="section-title"><h3>Settle 结算</h3></div>
+      <div class="field"><label>Fiat Amount</label><input id="tplSettleAmount" type="number" value="400000000"></div>
+      <div class="field"><label>Rate</label><input id="tplSettleRate" type="number" step="any" value="26460"></div>
+      <div class="field"><label>Fee %</label><input id="tplSettleFee" type="number" step="any" value="0"></div>
+      <div class="field"><label>Address</label><input id="tplSettleAddress" type="text" value="TPSzwHR6UmSr3f4p7hYfxQ2C6yLyX73wWG"></div>
+      <div class="actions"><button class="btn primary" onclick="generateSettleTemplate()">生成 Settle</button><button class="btn" onclick="clearSettleTemplate()">清空</button></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h3>Top-Up 充值</h3></div>
+      <div class="field"><label>USDT</label><input id="tplTopupUsdt" type="number" value="40000"></div>
+      <div class="field"><label>Rate</label><input id="tplTopupRate" type="number" step="any" value="1.14573786"></div>
+      <div class="field"><label>Fee %</label><input id="tplTopupFee" type="number" step="any" value="0"></div>
+      <div class="field"><label>Address</label><input id="tplTopupAddress" type="text" value="TJRVEktLxNrCvehZcW1u6evpKbvaEtNahX"></div>
+      <div class="actions"><button class="btn primary" onclick="generateTopupTemplate()">生成 Top-Up</button><button class="btn" onclick="clearTopupTemplate()">清空</button></div>
+    </div>
+  </div>
+
+  <div class="grid two" style="margin-top:16px">
+    <div class="card">
+      <div class="section-title"><h3>Settle 生成话术</h3><button class="btn" onclick="copyText('tplSettleOutput')">复制</button></div>
+      <div class="output" id="tplSettleOutput">生成结果显示于此</div>
+    </div>
+    <div class="card">
+      <div class="section-title"><h3>Top-Up 生成话术</h3><button class="btn" onclick="copyText('tplTopupOutput')">复制</button></div>
+      <div class="output" id="tplTopupOutput">生成结果显示于此</div>
+    </div>
+  </div>
+</div>
+
 </section>
 
 <section class="page" id="page-report"><div class="topbar"><div><h2>報表中心</h2><p>依目前資料產生主管回報</p></div></div><div class="card"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="generateReport()">重新生成</button><button class="btn" onclick="copyText('reportOutput')">複製</button></div><div class="output" id="reportOutput">尚未生成</div></div></section>
@@ -374,22 +408,57 @@ async function loadStats(type){
 }
 
 async function loadChannels(type){
- const f=document.getElementById(type+'File').files[0];if(!f){toast('請選擇檔案');return}
- const rows=await readSheet(f);const result=[];
+ const f=document.getElementById(type+'File').files[0];
+ if(!f){toast('請選擇檔案');return}
+
+ const rows=await readSheet(f);
+ const result=[];
+
  rows.forEach(r=>{
-   const pk=findKey(r,['provider','商户','商戶']);const ck=findKey(r,['currency','币种','幣種']);const ch=findKey(r,['channel','通道']);const nk=findKey(r,['note','备注','備註','remark']);
-   const statusKey=findKey(r,['status','switch','状态','狀態']);const maintenanceKey=findKey(r,['maintenance','维护','維護']);
-   const currency=normCurrency(ck?r[ck]:'');if(!currency)return;
-   const switchText=String(statusKey?r[statusKey]:'').trim().toLowerCase();const maintenanceText=String(maintenanceKey?r[maintenanceKey]:'').trim().toLowerCase();const allText=Object.values(r).join(' ').toLowerCase();
-   let status='关闭';const enabled=/^enabled$|^enable$|^on$|^true$|开启|開啟/.test(switchText);const disabled=/^disabled$|^disable$|^off$|^false$|关闭|關閉/.test(switchText);
-   if(disabled)status='关闭';
-   else if(enabled)status=/maintenance\s*\(withdraw\s*no\)|withdraw\s*no|余额不足|餘額不足/.test(maintenanceText)?'余额不足':'开启';
-   else if(/disabled|disable|switch\s*off|关闭|關閉/.test(allText))status='关闭';
-   else if(/maintenance\s*\(withdraw\s*no\)|withdraw\s*no|余额不足|餘額不足/.test(allText))status='余额不足';
-   else if(/enabled|enable|not under maintenance|开启|開啟/.test(allText))status='开启';
-   result.push({provider:pk?String(r[pk]||'').trim():'',channel:ch?String(r[ch]||'').trim():'',currency,status,noteText:nk?String(r[nk]||'').trim():''});
+   const pk=findKey(r,['provider','商户','商戶']);
+   const ck=findKey(r,['currency','币种','幣種']);
+   const ch=findKey(r,['channel','通道']);
+   const nk=findKey(r,['note','备注','備註','remark']);
+   const statusKey=findKey(r,['status','switch','状态','狀態']);
+   const maintenanceKey=findKey(r,['maintenance','维护','維護']);
+
+   const currency=normCurrency(ck?r[ck]:'');
+   if(!currency)return;
+
+   const statusRaw=String(statusKey?r[statusKey]:'').trim().toLowerCase();
+   const maintenanceRaw=String(maintenanceKey?r[maintenanceKey]:'').trim().toLowerCase();
+   let status='关闭';
+
+   // 文件实际逻辑：
+   // Maintenance = true  -> 开启
+   // Maintenance = false -> 关闭
+   // 若出现明确的 Maintenance (Withdraw NO)，仍显示余额不足
+   if(/maintenance\s*\(withdraw\s*no\)|withdraw\s*no|余额不足|餘額不足/.test(maintenanceRaw)){
+     status='余额不足';
+   }else if(/^(true|1|yes|enabled|enable|on)$/i.test(maintenanceRaw)){
+     status='开启';
+   }else if(/^(false|0|no|disabled|disable|off)$/i.test(maintenanceRaw)){
+     status='关闭';
+   }else{
+     // Maintenance 字段缺失时，才回退使用 Status / Switch
+     if(/^(enabled|enable|on|true|1)$/i.test(statusRaw)) status='开启';
+     else if(/^(disabled|disable|off|false|0)$/i.test(statusRaw)) status='关闭';
+   }
+
+   result.push({
+     provider:pk?String(r[pk]||'').trim():'',
+     channel:ch?String(r[ch]||'').trim():'',
+     currency,
+     status,
+     noteText:nk?String(r[nk]||'').trim():''
+   });
  });
- state[type]=result;setUpdated(type);document.getElementById(type+'Result').innerHTML=`<p>已解析 ${result.length} 条通道：🟢 开启、🟠 余额不足、⚪ 关闭。</p>`;renderAll();toast('解析完成');
+
+ state[type]=result;
+ setUpdated(type);
+ document.getElementById(type+'Result').innerHTML=`<p>已解析 ${result.length} 条通道：🟢 开启、🟠 余额不足、⚪ 关闭。</p>`;
+ renderAll();
+ toast('解析完成');
 }
 
 function previewPendingImage(){
@@ -667,6 +736,80 @@ function currencyAnalysisHtml(x){
   const recent=snaps.slice(-5).reverse().map(s=>{const d=new Date(s.time).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});return `<div class="snapshot-item"><span>${d}</span><b>${SYMBOLS[x.currency]||''} ${fmt(s.total)}</b></div>`}).join('');
   return `<div class="detail-box" style="margin-bottom:14px"><h4>${x.currency} 币种分析</h4><div class="currency-analysis-grid"><div class="analysis-metric"><small>当前 Available</small><b>${SYMBOLS[x.currency]||''} ${fmt(x.fiat)}</b></div><div class="analysis-metric"><small>Withdrawal 日均</small><b>${SYMBOLS[x.currency]||''} ${fmt(wd)}</b></div><div class="analysis-metric"><small>Deposit 日均</small><b>${SYMBOLS[x.currency]||''} ${fmt(dep)}</b></div><div class="analysis-metric"><small>约可维持</small><b>${support?support.toFixed(2)+' 天':'无提款数据'}</b></div><div class="analysis-metric"><small>代付状态</small><b>🟢${payoutOpen}　🟠${payoutLow}　⚪${payoutClosed}</b></div></div><div class="grid two"><div><b>较上次快照</b><div class="hint" style="margin-top:6px">${changeText}</div></div><div><b>最近快照</b><div class="snapshot-list">${recent||'<div class="hint">尚未建立快照</div>'}</div></div></div></div>`;
 }
+
+function clearUploadData(type){
+ const file=document.getElementById(type+'File');
+ if(file)file.value='';
+ const result=document.getElementById(type+'Result');
+ if(result)result.innerHTML='';
+
+ if(type==='withdraw') state.withdraw={days:0,totals:{}};
+ else if(type==='deposit') state.deposit={days:0,totals:{}};
+ else state[type]=[];
+
+ delete state.updated[type];
+ save();
+ renderAll();
+ toast('已清空');
+}
+
+function trimNumber(v,maxDigits=12){
+ const n=Number(v);
+ if(!Number.isFinite(n))return '';
+ return n.toFixed(maxDigits).replace(/\.?0+$/,'');
+}
+
+function generateSettleTemplate(){
+ const amount=Number(document.getElementById('tplSettleAmount').value);
+ const rate=Number(document.getElementById('tplSettleRate').value);
+ const feePct=Number(document.getElementById('tplSettleFee').value)||0;
+ const address=document.getElementById('tplSettleAddress').value.trim();
+
+ if(!amount||!rate){toast('请填写金额与汇率');return}
+
+ const gross=amount/rate;
+ const fee=gross*feePct/100;
+ const net=gross-fee;
+
+ let out=`Settle\n${trimNumber(amount)}/${trimNumber(rate)}=${trimNumber(gross)} U`;
+ if(feePct){
+   out+=`\n${trimNumber(gross)}×${trimNumber(feePct)}%=${trimNumber(fee)}`;
+   out+=`\n${trimNumber(gross)}-${trimNumber(fee)}=${trimNumber(net)} U`;
+ }
+ out+=`\n\nAddress：${address}\nConfirm：`;
+ document.getElementById('tplSettleOutput').textContent=out;
+}
+
+function generateTopupTemplate(){
+ const usdt=Number(document.getElementById('tplTopupUsdt').value);
+ const rate=Number(document.getElementById('tplTopupRate').value);
+ const feePct=Number(document.getElementById('tplTopupFee').value)||0;
+ const address=document.getElementById('tplTopupAddress').value.trim();
+
+ if(!usdt||!rate){toast('请填写 USDT 与汇率');return}
+
+ const gross=usdt*rate;
+ const fee=gross*feePct/100;
+ const total=gross+fee;
+
+ let out=`Top-Up\n${trimNumber(usdt)}×${trimNumber(rate)}=${trimNumber(gross)}`;
+ if(feePct){
+   out+=`\n${trimNumber(gross)}×${trimNumber(feePct)}%=${trimNumber(fee)}`;
+   out+=`\n${trimNumber(gross)}+${trimNumber(fee)}=${trimNumber(total)}`;
+ }
+ out+=`\n\nAddress：${address}\nConfirm：`;
+ document.getElementById('tplTopupOutput').textContent=out;
+}
+
+function clearSettleTemplate(){
+ ['tplSettleAmount','tplSettleRate','tplSettleFee','tplSettleAddress'].forEach(id=>document.getElementById(id).value='');
+ document.getElementById('tplSettleOutput').textContent='生成结果显示于此';
+}
+function clearTopupTemplate(){
+ ['tplTopupUsdt','tplTopupRate','tplTopupFee','tplTopupAddress'].forEach(id=>document.getElementById(id).value='');
+ document.getElementById('tplTopupOutput').textContent='生成结果显示于此';
+}
+
 function renderAll(){
  let rows=summary();
  const balanceCurrencies=new Set(state.balances.map(x=>x.currency));
@@ -828,7 +971,7 @@ function generateERC(){
  const ntext=v=>String(v||'').replace(/,/g,'').replace(/[^\d.\-]/g,'').trim(),number=v=>{const n=Number(ntext(v));return Number.isFinite(n)?n:0},trimCalc=n=>n.toFixed(12).replace(/\.?0+$/,''),txHash=v=>{const s=String(v||'').trim(),m=s.match(/0x[a-f0-9]{64}/i);return m?m[0]:s};
  const outputs=records.map(r=>{const fiat=number(r.orderText),feeFiat=number(r.feeFiatText),feeUsd=number(r.feeUsdText),rate=number(r.rateText),receivedRaw=ntext(r.receivedText);if(!r.merchant||!r.currency||!fiat||!rate)return '';
   const netFiat=fiat-feeFiat,computed=netFiat/rate-feeUsd,actual=receivedRaw||trimCalc(computed),from=(r.currency.match(/from\s+([A-Z]+)/i)||[])[1]||'';
-  const out=[`${r.merchant}出U,结算${r.currency} ${ntext(r.orderText)}${/[A-Za-z]/.test(r.orderText)?'':from?' '+from:''},`,`汇率${ntext(r.rateText)}。`];if(feeFiat)out.push(`${ntext(r.orderText)}-${ntext(r.feeFiatText)}(fee)=${trimCalc(netFiat)}`);let formula=`(${trimCalc(netFiat)}/${ntext(r.rateText)})`;if(feeUsd)formula+=`-${ntext(r.feeUsdText)}`;out.push(`${formula}=${actual} U,请你确认,谢谢。  TXID：`);out.push(txHash(r.hashText));return out.join('\n');
+  const out=[`${r.merchant}出U,结算${r.currency} ${ntext(r.orderText)}${/[A-Za-z]/.test(r.orderText)?'':from?' '+from:''},`,`汇率${ntext(r.rateText)}。`];if(feeFiat)out.push(`${ntext(r.orderText)}-${ntext(r.feeFiatText)}(fee)=${trimCalc(netFiat)}`);let formula=`(${trimCalc(netFiat)}/${ntext(r.rateText)})`;if(feeUsd)formula+=`-${ntext(r.feeUsdText)}(fee)`;out.push(`${formula}=${actual} U,请你确认,谢谢。  TXID：`);out.push(txHash(r.hashText));return out.join('\n');
  }).filter(Boolean);document.getElementById('ercOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';
 }
 function clearTRC(){document.getElementById('trcInput').value='';document.getElementById('trcOutput').textContent='生成结果显示于此'}
