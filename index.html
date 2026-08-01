@@ -257,15 +257,17 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <script>
 const STORE_KEY='fiat_ops_v2_data';
 let state=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');
-state.balances=state.balances||[];
-state.withdraw=state.withdraw||{days:0,totals:{}};
-state.deposit=state.deposit||{days:0,totals:{}};
-state.payout=state.payout||[];
-state.payin=state.payin||[];
-state.pending=state.pending||[];
-state.updated=state.updated||{};
-state.currencyProgress=state.currencyProgress||{checked:[],current:'',mode:'',resume:''};
-state.currencyProgress.checked=state.currencyProgress.checked||[];
+state.balances=Array.isArray(state.balances)?state.balances:[];
+state.withdraw=state.withdraw&&typeof state.withdraw==='object'&&!Array.isArray(state.withdraw)?state.withdraw:{days:0,totals:{}};
+state.withdraw.totals=state.withdraw.totals&&typeof state.withdraw.totals==='object'?state.withdraw.totals:{};
+state.deposit=state.deposit&&typeof state.deposit==='object'&&!Array.isArray(state.deposit)?state.deposit:{days:0,totals:{}};
+state.deposit.totals=state.deposit.totals&&typeof state.deposit.totals==='object'?state.deposit.totals:{};
+state.payout=Array.isArray(state.payout)?state.payout:[];
+state.payin=Array.isArray(state.payin)?state.payin:[];
+state.pending=Array.isArray(state.pending)?state.pending:[];
+state.updated=state.updated&&typeof state.updated==='object'&&!Array.isArray(state.updated)?state.updated:{};
+state.currencyProgress=state.currencyProgress&&typeof state.currencyProgress==='object'&&!Array.isArray(state.currencyProgress)?state.currencyProgress:{checked:[],current:'',mode:'',resume:''};
+state.currencyProgress.checked=Array.isArray(state.currencyProgress.checked)?state.currencyProgress.checked:[];
 state.currencyProgress.mode=state.currencyProgress.mode||'';
 state.currencyProgress.resume=state.currencyProgress.resume||'';
 
@@ -365,11 +367,11 @@ function parseRobot(){
 
  state.balances=rows;
  setUpdated('balances');
- completeActiveCurrency(rows.map(r=>r.currency));
  renderRobotResult();
  renderAll();
- toast(`已解析 ${rows.length} 筆商戶餘額`);
  showPage('home');
+ completeActiveCurrency(rows.map(r=>r.currency));
+ toast(`已解析 ${rows.length} 筆商戶餘額`);
 }
 function renderRobotResult(){
  const rows=state.balances;
@@ -818,7 +820,7 @@ function clearUploadData(type){
  toast('已清空');
 }
 
-function trimNumber(v,maxDigits=12){
+function trimNumber(v,maxDigits=2){
  const n=Number(v);
  if(!Number.isFinite(n))return '';
  return n.toFixed(maxDigits).replace(/\.?0+$/,'');
@@ -1020,7 +1022,6 @@ function renderAll(){
    analysis.push({x,r});
    const po=x.payout.filter(y=>y.status==='开启').length;
    const pi=x.payin.filter(y=>y.status==='开启').length;
-   const pend=x.pending.reduce((s,y)=>s+y.amount,0);
    const cls=r.type==='risk'?'red':r.type==='settle'?'green':r.type==='watch'?'orange':'';
 
    const merchants=state.balances
