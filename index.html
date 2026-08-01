@@ -31,7 +31,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .currency-detail{display:none;padding:18px;border-top:1px solid #d9e6fb}
 .currency-detail.show{display:block}
 .merchant-channel-table{display:grid;gap:10px;min-width:0}
-.merchant-channel-header,.merchant-channel-row{display:grid;grid-template-columns:minmax(320px,1.15fr) minmax(300px,1fr) minmax(300px,1fr);gap:12px;align-items:stretch}
+.merchant-channel-header,.merchant-channel-row{display:grid;grid-template-columns:minmax(320px,1.35fr) minmax(210px,.8fr) minmax(210px,.8fr);gap:12px;align-items:stretch}
 .merchant-channel-header>div{font-weight:800;padding:0 12px 6px}
 .merchant-cell,.channel-cell{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
 .merchant-cell{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
@@ -42,6 +42,8 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .channel-cell{display:grid;gap:8px;align-content:start}
 .channel-card{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;min-width:0}
 .channel-card>div{min-width:0}
+.channel-summary{width:100%;border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}.channel-summary:hover{border-color:#a9c3f5;background:#f8fbff}.channel-counts{display:flex;gap:8px;font-size:12px;font-weight:800}.channel-counts span{white-space:nowrap}
+.drawer-backdrop{position:fixed;inset:0;background:rgba(15,29,51,.32);z-index:110;opacity:0;pointer-events:none;transition:opacity .2s}.drawer-backdrop.show{opacity:1;pointer-events:auto}.channel-drawer{position:fixed;z-index:111;right:0;top:0;height:100vh;width:min(480px,94vw);background:#f7f9fc;box-shadow:-18px 0 45px rgba(15,29,51,.2);transform:translateX(105%);transition:transform .25s ease;display:flex;flex-direction:column}.channel-drawer.show{transform:translateX(0)}.drawer-head{padding:20px;background:#fff;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.drawer-head h3{margin:0 0 5px}.drawer-close{border:0;background:#edf1f6;border-radius:10px;width:36px;height:36px;cursor:pointer;font-size:19px}.drawer-body{padding:18px;overflow:auto;display:grid;gap:16px}.drawer-group{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px}.drawer-group h4{margin:0 0 10px;display:flex;justify-content:space-between}.drawer-channels{display:grid;gap:8px}.drawer-channel{border-top:1px solid #edf0f4;padding-top:9px}.drawer-channel:first-child{border-top:0;padding-top:0}.drawer-channel b{display:block}.drawer-empty{color:var(--muted);font-size:13px}.drawer-group details summary{cursor:pointer;font-weight:800;color:#64748b}
 .unmatched-row{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
 .detail-scroll{overflow-x:auto;padding-bottom:4px}
 .detail-scroll>.merchant-channel-table{min-width:980px}
@@ -68,6 +70,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 @media(max-width:700px){.next-currency-card{align-items:flex-start;flex-direction:column}}
 .workflow-card{padding:0;overflow:hidden;margin-bottom:16px}.workflow-head{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:18px 20px;background:linear-gradient(135deg,#eef5ff,#fbfdff);border-bottom:1px solid #dce8fb}.workflow-title{display:flex;align-items:center;gap:12px}.workflow-title h3{margin:0 0 4px}.workflow-progress{min-width:210px}.progress-track{height:8px;border-radius:99px;background:#dce6f5;overflow:hidden;margin-top:8px}.progress-bar{height:100%;background:linear-gradient(90deg,#16b889,#2563eb);width:0;transition:width .25s}.workflow-body{padding:18px 20px}.workflow-now{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.workflow-stat{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfdff}.workflow-stat small{display:block;color:var(--muted);margin-bottom:6px}.workflow-stat b{font-size:22px}.workflow-stat.queue b{color:var(--blue)}.workflow-stat.interrupt{background:#fff8eb;border-color:#fedba8}.workflow-stat.interrupt b{color:#c66a08}.workflow-actions{display:flex;gap:10px;flex-wrap:wrap}.checklist-wrap{border-top:1px solid var(--line);padding:16px 20px;background:#fbfcfe}.checklist-tools{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.checklist-tools input{max-width:240px;padding:8px 10px}.currency-checklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(142px,1fr));gap:8px;max-height:260px;overflow:auto}.check-item{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:11px;padding:8px 9px;background:#fff}.check-item.active{border-color:#91b4ff;background:#eef5ff}.check-item.interrupting{border-color:#f4b65c;background:#fff7e8}.check-item.done{background:#eefaf5;color:#268467}.check-code{font-weight:850;flex:1}.icon-btn{border:0;background:#edf2f8;border-radius:8px;padding:5px 7px;cursor:pointer}.insert-btn{border:0;background:transparent;color:var(--blue);font-size:11px;font-weight:800;cursor:pointer;padding:4px}.workflow-note{font-size:12px;color:var(--muted);margin-top:10px}.btn.orange{background:#e98719;border-color:#e98719;color:#fff}
 @media(max-width:700px){.workflow-head,.checklist-tools{align-items:flex-start;flex-direction:column}.workflow-progress{width:100%}.workflow-now{grid-template-columns:1fr}.currency-checklist{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.merchant-channel-header,.merchant-channel-row{grid-template-columns:1fr}.merchant-channel-header{display:none}.detail-scroll>.merchant-channel-table{min-width:0}}
 </style>
 </head>
 <body>
@@ -116,13 +119,6 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div class="workflow-note">「插队」会保留目前队列位置；📋 只复制指令，不改变进度。</div>
   </div>
 </div>
-<div class="kpis">
-<div class="card kpi"><div class="icon blue">≡</div><div><small>幣種總數</small><strong id="kCurrency">0</strong></div></div>
-<div class="card kpi"><div class="icon green">✓</div><div><small>可用代付幣種</small><strong id="kPayout">0</strong></div></div>
-<div class="card kpi"><div class="icon purple">⇧</div><div><small>可用代收幣種</small><strong id="kPayin">0</strong></div></div>
-<div class="card kpi"><div class="icon orange">!</div><div><small>需關注幣種</small><strong id="kAlert">0</strong></div></div>
-<div class="card kpi"><div class="icon blue">◷</div><div><small>Withdrawal 區間</small><strong id="kDays">0 天</strong></div></div>
-</div>
 
 <div class="grid main-grid">
 <div>
@@ -134,7 +130,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     只顯示有商戶餘額
   </label>
 </div>
-<table class="currency-table"><thead><tr><th>幣種</th><th>Available（法幣）</th><th>USD（參考）</th><th>Withdrawal 日均</th><th>Deposit 日均</th><th>代付</th><th>代收</th><th>Pending</th><th>建議</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="9">尚未匯入資料</td></tr></tbody></table>
+<table class="currency-table"><thead><tr><th>幣種</th><th>Available（法幣）</th><th>USD（參考）</th><th>Withdrawal 日均</th><th>Deposit 日均</th><th>代付</th><th>代收</th><th>建議</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="8">尚未匯入資料</td></tr></tbody></table>
 </div>
 <div class="card" style="margin-top:16px"><div class="section-title"><div><h3>綜合資金分析</h3><div class="hint">依 Available、日均、通道與 Pending 自動判斷</div></div></div><div class="analysis-grid" id="analysisGrid"><div class="hint">尚未有分析結果</div></div></div>
 </div>
@@ -255,6 +251,8 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 </main>
 </div>
 <div class="toast" id="toast"></div>
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="closeChannelDrawer()"></div>
+<aside class="channel-drawer" id="channelDrawer" aria-hidden="true"><div class="drawer-head"><div><h3 id="drawerTitle">代付通道</h3><div class="hint" id="drawerSubtitle"></div></div><button class="drawer-close" onclick="closeChannelDrawer()" aria-label="关闭">×</button></div><div class="drawer-body" id="drawerBody"></div></aside>
 
 <script>
 const STORE_KEY='fiat_ops_v2_data';
@@ -384,7 +382,7 @@ function parseRobot(){
 function renderRobotResult(){
  const rows=state.balances;
  if(!rows.length){document.getElementById('robotResult').innerHTML='';return}
- document.getElementById('robotResult').innerHTML='<table class="result-table"><thead><tr><th>商戶</th><th>帳戶</th><th>幣種</th><th>Available</th><th>USD</th></tr></thead><tbody>'+rows.map(r=>`<tr><td>${r.provider}</td><td>${r.account}</td><td>${r.currency}</td><td>${fmt(r.fiat)}</td><td>${fmt(r.usd)}</td></tr>`).join('')+'</tbody></table>';
+ document.getElementById('robotResult').innerHTML='<table class="result-table"><thead><tr><th>商戶</th><th>幣種</th><th>Available</th><th>USD</th></tr></thead><tbody>'+rows.map(r=>`<tr><td>${r.provider||r.account}</td><td>${r.currency}</td><td>${fmt(r.fiat)}</td><td>${fmt(r.usd)}</td></tr>`).join('')+'</tbody></table>';
 }
 function clearRobot(){document.getElementById('robotInput').value='';document.getElementById('robotResult').innerHTML=''}
 
@@ -787,13 +785,31 @@ function channelMatchesMerchant(channel,merchant){
   const ma=normalizeName(merchant.account);
 
   if(!cp && !cc)return false;
-  return Boolean(
-    (cp && mp && (cp===mp || cp.includes(mp) || mp.includes(cp))) ||
-    (cp && ma && (cp===ma || cp.includes(ma) || ma.includes(cp))) ||
-    (cc && mp && cc.includes(mp)) ||
-    (cc && ma && cc.includes(ma))
-  );
+  if(cp)return Boolean((mp&&cp===mp)||(ma&&cp===ma));
+  return Boolean((mp&&cc.includes(mp))||(ma&&cc.includes(ma)));
 }
+
+function channelCounts(channels){
+  return {open:channels.filter(c=>c.status==='开启').length,low:channels.filter(c=>c.status==='余额不足').length,closed:channels.filter(c=>c.status==='关闭').length};
+}
+function channelSummaryButton(channels,currency,merchantIndex,type){
+  const counts=channelCounts(channels),label=type==='payout'?'代付通道':'代收通道';
+  return `<button class="channel-summary" onclick="event.stopPropagation();openChannelDrawer('${currency}',${merchantIndex},'${type}')"><div><b>${label}</b><div class="hint">点击查看明细</div></div><div class="channel-counts"><span style="color:var(--green)">● ${counts.open}</span><span style="color:var(--orange)">● ${counts.low}</span><span style="color:#94a3b8">● ${counts.closed}</span></div></button>`;
+}
+function openChannelDrawer(currency,merchantIndex,type){
+  const merchants=state.balances.filter(b=>b.currency===currency).sort((a,b)=>b.fiat-a.fiat);
+  const merchant=merchants[merchantIndex];if(!merchant)return;
+  const all=summary().find(x=>x.currency===currency)?.[type]||[];
+  const channels=sortChannelsForCurrency(all.filter(c=>channelMatchesMerchant(c,merchant)),currency);
+  const labels={open:'开启',low:'余额不足',closed:'关闭'};
+  const groups={open:channels.filter(c=>c.status==='开启'),low:channels.filter(c=>c.status==='余额不足'),closed:channels.filter(c=>c.status==='关闭')};
+  const rows=list=>list.length?list.map(c=>`<div class="drawer-channel"><b>${normalizeName(c.provider)===normalizeName(c.channel)?(c.provider||c.channel):(c.channel||c.provider)}</b>${c.provider&&normalizeName(c.provider)!==normalizeName(c.channel)?`<div class="hint">${c.provider}</div>`:''}${c.noteText?`<div class="hint">NOTE：${c.noteText}</div>`:''}</div>`).join(''):'<div class="drawer-empty">无</div>';
+  document.getElementById('drawerTitle').textContent=`${merchant.provider||merchant.account} · ${type==='payout'?'代付':'代收'}通道`;
+  document.getElementById('drawerSubtitle').textContent=`${currency}｜开启 ${groups.open.length}｜余额不足 ${groups.low.length}｜关闭 ${groups.closed.length}`;
+  document.getElementById('drawerBody').innerHTML=`<section class="drawer-group"><h4><span>🟢 ${labels.open}</span><span>${groups.open.length}</span></h4><div class="drawer-channels">${rows(groups.open)}</div></section><section class="drawer-group"><h4><span>🟠 ${labels.low}</span><span>${groups.low.length}</span></h4><div class="drawer-channels">${rows(groups.low)}</div></section><section class="drawer-group"><details><summary>⚪ ${labels.closed}（${groups.closed.length}）</summary><div class="drawer-channels" style="margin-top:12px">${rows(groups.closed)}</div></details></section>`;
+  document.getElementById('drawerBackdrop').classList.add('show');document.getElementById('channelDrawer').classList.add('show');document.getElementById('channelDrawer').setAttribute('aria-hidden','false');
+}
+function closeChannelDrawer(){document.getElementById('drawerBackdrop').classList.remove('show');document.getElementById('channelDrawer').classList.remove('show');document.getElementById('channelDrawer').setAttribute('aria-hidden','true')}
 function channelCards(channels,currency){
   if(!channels.length)return '<div class="hint">无对应通道</div>';
   return sortChannelsForCurrency(channels,currency).map(c=>{
@@ -1046,7 +1062,7 @@ function renderAll(){
    const usedPayout=new Set();
    const usedPayin=new Set();
 
-   const alignedRows=merchants.map(m=>{
+   const alignedRows=merchants.map((m,merchantIndex)=>{
      const matchedPayout=x.payout.filter((c,index)=>{
        const matched=channelMatchesMerchant(c,m);
        if(matched)usedPayout.add(index);
@@ -1061,29 +1077,22 @@ function renderAll(){
      return `<div class="merchant-channel-row">
        <div class="merchant-cell">
          <div class="merchant-name">
-           <b>${m.provider}</b>
-           <div class="hint">${m.account||''}</div>
+           <b>${m.provider||m.account}</b>
          </div>
          <div class="merchant-amount">
            <b>${SYMBOLS[x.currency]||''} ${fmt(m.fiat)}</b>
            <div class="hint">${fmt(m.usd)} U</div>
          </div>
        </div>
-       <div class="channel-cell">${channelCards(matchedPayout,x.currency)}</div>
-       <div class="channel-cell">${channelCards(matchedPayin,x.currency)}</div>
+       <div>${channelSummaryButton(matchedPayout,x.currency,merchantIndex,'payout')}</div>
+       <div>${channelSummaryButton(matchedPayin,x.currency,merchantIndex,'payin')}</div>
      </div>`;
    }).join('');
 
    const unmatchedPayout=x.payout.filter((_,index)=>!usedPayout.has(index));
    const unmatchedPayin=x.payin.filter((_,index)=>!usedPayin.has(index));
    const unmatchedHtml=(unmatchedPayout.length||unmatchedPayin.length)
-     ? `<div class="merchant-channel-row unmatched-row">
-         <div class="merchant-cell">
-           <div class="merchant-name"><b>未匹配商户余额</b><div class="hint">通道名称与 Robot 商户名称不同</div></div>
-         </div>
-         <div class="channel-cell">${channelCards(unmatchedPayout,x.currency)}</div>
-         <div class="channel-cell">${channelCards(unmatchedPayin,x.currency)}</div>
-       </div>`:'';
+     ? `<div class="workflow-note unmatched-row">另有 ${unmatchedPayout.length} 条代付、${unmatchedPayin.length} 条代收通道未能与 Robot 商户名称精确匹配，因此不混入任何商户。</div>`:'';
 
    const detailHtml=merchants.length
      ? alignedRows+unmatchedHtml
@@ -1101,12 +1110,10 @@ function renderAll(){
      <td>${SYMBOLS[x.currency]||''} ${fmt(x.deposit)}</td>
      <td><span class="badge ${po?'b-green':'b-gray'}">${po}/${x.payout.length}</span></td>
      <td><span class="badge ${pi?'b-green':'b-gray'}">${pi}/${x.payin.length}</span></td>
-     <td>${fmt(pend)}</td>
      <td class="recommend ${cls}">${r.text}</td>
    </tr>
-   <tr class="detail-row"><td colspan="9">
+   <tr class="detail-row"><td colspan="8">
      <div class="currency-detail" id="detail-${x.currency}">
-       ${currencyAnalysisHtml(x)}
        <div class="detail-scroll">
          <div class="merchant-channel-table">
            <div class="merchant-channel-header">
@@ -1119,14 +1126,9 @@ function renderAll(){
        </div>
      </div>
    </td></tr>`;
- }).join(''):'<tr><td colspan="9">目前沒有商戶餘額資料</td></tr>';
+ }).join(''):'<tr><td colspan="8">目前沒有商戶餘額資料</td></tr>';
 
  const allRows=summary();
- document.getElementById('kCurrency').textContent=balanceCurrencies.size||allRows.length;
- document.getElementById('kPayout').textContent=allRows.filter(x=>x.payout.some(y=>y.status==='开启')).length;
- document.getElementById('kPayin').textContent=allRows.filter(x=>x.payin.some(y=>y.status==='开启')).length;
- document.getElementById('kAlert').textContent=alerts.length;
- document.getElementById('kDays').textContent=(state.withdraw.days||0)+' 天';
 
  document.getElementById('analysisGrid').innerHTML=analysis.length?
    analysis.map(({x,r})=>`<div class="analysis-box ${r.type==='risk'?'risk':r.type==='settle'?'settle':'watch'}"><small>${x.currency}</small><b>${r.text}</b><span>${r.reason}</span></div>`).join(''):
