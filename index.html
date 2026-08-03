@@ -69,6 +69,9 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .currency-progress{font-size:12px;color:var(--muted);margin-top:6px}
 @media(max-width:700px){.next-currency-card{align-items:flex-start;flex-direction:column}}
 .workflow-card{padding:0;overflow:hidden;margin-bottom:16px}.workflow-head{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:18px 20px;background:linear-gradient(135deg,#eef5ff,#fbfdff);border-bottom:1px solid #dce8fb}.workflow-title{display:flex;align-items:center;gap:12px}.workflow-title h3{margin:0 0 4px}.workflow-progress{min-width:210px}.progress-track{height:8px;border-radius:99px;background:#dce6f5;overflow:hidden;margin-top:8px}.progress-bar{height:100%;background:linear-gradient(90deg,#16b889,#2563eb);width:0;transition:width .25s}.workflow-body{padding:18px 20px}.workflow-now{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.workflow-stat{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfdff}.workflow-stat small{display:block;color:var(--muted);margin-bottom:6px}.workflow-stat b{font-size:22px}.workflow-stat.queue b{color:var(--blue)}.workflow-stat.interrupt{background:#fff8eb;border-color:#fedba8}.workflow-stat.interrupt b{color:#c66a08}.workflow-actions{display:flex;gap:10px;flex-wrap:wrap}.checklist-wrap{border-top:1px solid var(--line);padding:16px 20px;background:#fbfcfe}.checklist-tools{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.checklist-tools input{max-width:240px;padding:8px 10px}.currency-checklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(142px,1fr));gap:8px;max-height:260px;overflow:auto}.check-item{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:11px;padding:8px 9px;background:#fff}.check-item.active{border-color:#91b4ff;background:#eef5ff}.check-item.interrupting{border-color:#f4b65c;background:#fff7e8}.check-item.done{background:#eefaf5;color:#268467}.check-code{font-weight:850;flex:1}.icon-btn{border:0;background:#edf2f8;border-radius:8px;padding:5px 7px;cursor:pointer}.insert-btn{border:0;background:transparent;color:var(--blue);font-size:11px;font-weight:800;cursor:pointer;padding:4px}.workflow-note{font-size:12px;color:var(--muted);margin-top:10px}.btn.orange{background:#e98719;border-color:#e98719;color:#fff}
+.workflow-card.compact{display:grid;grid-template-columns:minmax(390px,1fr) auto;align-items:center;padding:14px 18px;gap:16px}.workflow-card.compact .workflow-head{padding:0;background:none;border:0}.workflow-card.compact .workflow-title .icon{width:36px;height:36px}.workflow-card.compact .workflow-title h3{font-size:15px}.workflow-card.compact .workflow-progress{min-width:180px}.workflow-card.compact .workflow-body{padding:0;display:flex;align-items:center;gap:12px}.workflow-card.compact .workflow-now{display:flex;margin:0;gap:8px}.workflow-card.compact .workflow-stat{padding:8px 12px;min-width:112px}.workflow-card.compact .workflow-stat small{margin-bottom:2px}.workflow-card.compact .workflow-stat b{font-size:16px}.workflow-card.compact .workflow-actions{flex-wrap:nowrap}.workflow-card.compact .workflow-note{display:none}.workflow-card.compact .checklist-wrap{grid-column:1/-1;margin:0 -18px -14px;padding:14px 18px}.merchant-account-name{font-size:12px;color:#536177;margin-top:5px;font-weight:700;overflow-wrap:anywhere}
+@media(max-width:1200px){.workflow-card.compact{grid-template-columns:1fr}.workflow-card.compact .workflow-body{justify-content:space-between}.workflow-card.compact .checklist-wrap{grid-column:auto}}
+@media(max-width:760px){.workflow-card.compact .workflow-head,.workflow-card.compact .workflow-body{align-items:stretch;flex-direction:column}.workflow-card.compact .workflow-now{display:grid;grid-template-columns:1fr 1fr}.workflow-card.compact .workflow-actions{flex-wrap:wrap}}
 @media(max-width:700px){.workflow-head,.checklist-tools{align-items:flex-start;flex-direction:column}.workflow-progress{width:100%}.workflow-now{grid-template-columns:1fr}.currency-checklist{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:900px){.merchant-channel-header,.merchant-channel-row{grid-template-columns:1fr}.merchant-channel-header{display:none}.detail-scroll>.merchant-channel-table{min-width:0}}
 </style>
@@ -95,7 +98,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <section class="page active" id="page-home">
 <div class="topbar"><div><h2>首頁總覽</h2><p id="lastUpdated">尚未匯入資料</p></div><div class="actions"><button class="btn" onclick="renderAll()">↻ 重新整理</button><button class="btn primary" onclick="generateReport()">產生主管回報</button><button class="btn danger" onclick="resetAll()">清空全部資料</button></div></div>
 
-<div class="card workflow-card">
+<div class="card workflow-card compact">
   <div class="workflow-head">
     <div class="workflow-title"><div class="icon blue">✓</div><div><h3>今日币种检查</h3><div class="hint">依固定顺序继续；临时插队完成后自动回到原队列</div></div></div>
     <div class="workflow-progress"><div style="display:flex;justify-content:space-between"><b id="currencyProgress">0 / 48</b><span class="hint" id="progressPercent">0%</span></div><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div></div>
@@ -107,14 +110,13 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     </div>
     <div class="workflow-actions">
       <button class="btn primary" id="startNextBtn" onclick="startNextCurrency()">开始下一币种</button>
-      <button class="btn orange" onclick="toggleChecklist(true)">选择插队币种</button>
-      <button class="btn" onclick="toggleChecklist()">展开今日清单</button>
-      <button class="btn" onclick="resetCurrencyProgress()">重置今日进度</button>
+      <button class="btn orange" onclick="toggleChecklist(true)">插队</button>
+      <button class="btn" onclick="toggleChecklist()">今日清单</button>
     </div>
     <div class="workflow-note" id="workflowNote">开始时会复制 Telegram Robot 指令、清空输入框，并切换至 Robot 页面。</div>
   </div>
   <div class="checklist-wrap" id="checklistWrap" hidden>
-    <div class="checklist-tools"><b>今日清单</b><input id="currencySearch" type="text" placeholder="搜索币种，例如 NGN" oninput="renderCurrencyChecklist()"></div>
+    <div class="checklist-tools"><b>今日清单</b><div class="actions"><input id="currencySearch" type="text" placeholder="搜索币种，例如 NGN" oninput="renderCurrencyChecklist()"><button class="btn" onclick="resetCurrencyProgress()">重置进度</button></div></div>
     <div class="currency-checklist" id="currencyChecklist"></div>
     <div class="workflow-note">「插队」会保留目前队列位置；📋 只复制指令，不改变进度。</div>
   </div>
@@ -715,6 +717,15 @@ function recommendation(x){
 function normalizeName(v){
   return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 }
+function displayAccountName(provider,account){
+  const providerText=String(provider||'').trim();
+  const accountText=String(account||'').trim();
+  if(!providerText||!accountText)return accountText;
+  const repeatedPrefix=(providerText+providerText).toLowerCase();
+  return accountText.toLowerCase().startsWith(repeatedPrefix)
+    ? accountText.slice(providerText.length)
+    : accountText;
+}
 function nameTokens(v){
   return String(v||'').toLowerCase().split(/[^a-z0-9]+/).map(normalizeName).filter(Boolean);
 }
@@ -1048,6 +1059,7 @@ function renderAll(){
        <div class="merchant-cell">
          <div class="merchant-name">
            <b>${m.provider||m.account}</b>
+           ${m.account?`<div class="merchant-account-name">${displayAccountName(m.provider,m.account)}</div>`:''}
            <div class="concentration"><div class="concentration-head"><span>占幣種總餘額</span><b>${concentration.toFixed(1)}%</b></div><div class="concentration-track"><div class="concentration-bar" style="width:${concentration}%"></div></div></div>
          </div>
          <div class="merchant-amount">
