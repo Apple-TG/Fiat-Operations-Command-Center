@@ -896,7 +896,7 @@ const CURRENCY_CHECKLIST=[
   'AUD','BOB','JPY','MDL','NZD','RWF','TWD','XAF','ZMW'
 ];
 
-function robotCommand(currency){return `/b @X-bot ${currency} *`}
+function robotCommand(currency){return `/b ${currency} *`}
 
 async function copyRobotCommand(currency,quiet=false){
   try{await navigator.clipboard.writeText(robotCommand(currency));if(!quiet)toast(`已复制 ${currency} Robot 指令`)}
