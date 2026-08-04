@@ -1145,12 +1145,36 @@ function generateTRC(){
   if(isNew){if(current)records.push(current);while(cells.length<13)cells.push('');current={merchant:cells[1],currency:cells[2],orderText:cells[3],arrivalText:cells[4],feeFiatText:cells[5],feeUsdText:cells[6],receivedText:cells[7],hashes:cells[8]?[cells[8]]:[],date:cells[9],owner:cells[10],merchantRateText:cells[11],preferredRateText:cells[12]};}
   else if(current){cells.filter(Boolean).forEach(v=>{if(/^(0x)?[a-f0-9]{40,}$/i.test(v))current.hashes.push(v);else if(/月|^\d{1,2}\/\d{1,2}$/.test(v)&&!current.date)current.date=v;else if(!current.owner&&!/^\d/.test(v))current.owner=v;else if(/^-?[\d,.]+$/.test(v)){if(!current.merchantRateText)current.merchantRateText=v;else if(!current.preferredRateText)current.preferredRateText=v;}})}
  });if(current)records.push(current);
- const rawNumber=v=>String(v||'').replace(/,/g,'').replace(/[^\d.\-]/g,'').trim();const calcText=n=>Number.isFinite(n)?n.toFixed(12).replace(/\.?0+$/,''):'';
- const outputs=[];records.forEach(r=>{const amount=Number(rawNumber(r.arrivalText)||rawNumber(r.orderText)),feeFiat=Number(rawNumber(r.feeFiatText)||0),feeUsd=Number(rawNumber(r.feeUsdText)||0),rate=Number(rawNumber(r.preferredRateText)||rawNumber(r.merchantRateText));if(!r.merchant||!r.currency||!amount||!rate)return;
-  let computed,formula;if(feeFiat&&feeUsd){computed=((amount-feeFiat)/rate)-feeUsd;formula=`((${rawNumber(amount)}-${rawNumber(feeFiat)})/${rawNumber(rate)})-${rawNumber(feeUsd)}`}else if(feeFiat){computed=(amount-feeFiat)/rate;formula=`(${rawNumber(amount)}-${rawNumber(feeFiat)})/${rawNumber(rate)}`}else if(feeUsd){computed=(amount/rate)-feeUsd;formula=`(${rawNumber(amount)}/${rawNumber(rate)})-${rawNumber(feeUsd)}`}else{computed=amount/rate;formula=`${rawNumber(amount)}/${rawNumber(rate)}`}
-  const actual=rawNumber(r.receivedText)||calcText(computed),uniqueHashes=[...new Set(r.hashes.filter(Boolean))],transferNote=uniqueHashes.length>1?`,(商户分${uniqueHashes.length}笔转)`:``;
-  outputs.push(`${r.merchant}出U,结算${r.currency} ${rawNumber(amount)},汇率${rawNumber(rate)}。\n${formula}=${actual} U${transferNote},请你确认,谢谢。  TXID：\n${uniqueHashes.join('\n')}`);
- });document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';document.getElementById('trcStatus').textContent=`已生成 ${outputs.length} 笔，不限制批量数量；实收USDT保留原始小数位。`;
+ const rawNumber=v=>String(v||'').replace(/,/g,'').replace(/[^\d.\-]/g,'').trim();
+ const calcText=n=>Number.isFinite(n)?n.toFixed(12).replace(/\.?0+$/,''):'';
+ const cleanHash=v=>String(v||'').trim().replace(/^\*+|\*+$/g,'').replace(/^https?:\/\/[^/]+\/tx\//i,'');
+ const prepared=records.map((r,index)=>{
+  const amount=Number(rawNumber(r.arrivalText)||rawNumber(r.orderText)),feeFiat=Number(rawNumber(r.feeFiatText)||0),feeUsd=Number(rawNumber(r.feeUsdText)||0),rate=Number(rawNumber(r.preferredRateText)||rawNumber(r.merchantRateText)),actualText=rawNumber(r.receivedText);
+  if(!r.merchant||!r.currency||!amount||!rate)return null;
+  const amountText=rawNumber(r.arrivalText)||rawNumber(r.orderText),rateText=rawNumber(r.preferredRateText)||rawNumber(r.merchantRateText),actualNumber=Number(actualText);
+  const candidates=[{value:amount/rate,formula:`${amountText}/${rateText}`}];
+  if(feeFiat)candidates.push({value:(amount-feeFiat)/rate,formula:`(${amountText}-${rawNumber(r.feeFiatText)})/${rateText}`});
+  if(feeUsd)candidates.push({value:(amount/rate)-feeUsd,formula:`(${amountText}/${rateText})-${rawNumber(r.feeUsdText)}`});
+  if(feeFiat&&feeUsd)candidates.push({value:((amount-feeFiat)/rate)-feeUsd,formula:`((${amountText}-${rawNumber(r.feeFiatText)})/${rateText})-${rawNumber(r.feeUsdText)}`});
+  const chosen=Number.isFinite(actualNumber)&&actualText?candidates.reduce((best,item)=>Math.abs(item.value-actualNumber)<Math.abs(best.value-actualNumber)?item:best):candidates[candidates.length-1];
+  const hashes=[...new Set(r.hashes.map(cleanHash).filter(Boolean))];
+  return {...r,index,amount,amountText,rateText,actual:actualText||calcText(chosen.value),formula:chosen.formula,hashes};
+ }).filter(Boolean);
+ const groups=[];const groupMap=new Map();
+ prepared.forEach(item=>{
+  const hashKey=item.hashes.length===1?item.hashes[0].toLowerCase():'';
+  const key=hashKey?`${normalizeName(item.merchant)}|${hashKey}`:`single-${item.index}`;
+  if(!groupMap.has(key)){const group=[];groupMap.set(key,group);groups.push(group)}
+  groupMap.get(key).push(item);
+ });
+ const outputs=groups.map(group=>{
+  if(group.length===1){const r=group[0],transferNote=r.hashes.length>1?`,(商户分${r.hashes.length}笔转)`:``;return `${r.merchant}出U,结算${r.currency} ${r.amountText},汇率${r.rateText}。\n${r.formula}=${r.actual} U${transferNote},请你确认,谢谢。  TXID：\n${r.hashes.join('\n')}`}
+  const countText=group.length===2?'两笔':`${group.length}笔`;
+  const details=group.map(r=>`结算${r.currency} ${r.amountText}，汇率${r.rateText}。\n${r.formula}=${r.actual} U。`).join('\n\n');
+  const actuals=group.map(r=>r.actual),totalDecimals=Math.max(...actuals.map(value=>(String(value).split('.')[1]||'').length)),total=actuals.reduce((sum,value)=>sum+Number(value||0),0).toFixed(totalDecimals).replace(/\.?0+$/,'');
+  return `${group[0].merchant}出U，${countText}结算合并一笔转账：\n\n${details}\n\n合计${actuals.join('+')}=${total} U，请你确认，谢谢。TXID：\n${group[0].hashes[0]}`;
+ });
+ document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';document.getElementById('trcStatus').textContent=`已生成 ${outputs.length} 则回报，不限制批量数量；同商户同TXID自动合并，实收USDT保留原始小数位。`;
 }
 function generateERC(){
  const raw=document.getElementById('ercInput').value.replace(/\r/g,'').trim();if(!raw){toast('请先贴上资料');return}
