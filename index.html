@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V3.7</title>
+<title>Fiat Operations Command Center</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
@@ -79,7 +79,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center V3.6</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
 <div class="group-title">上傳資料</div>
@@ -91,7 +91,6 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
-<div class="sidebar-note"><b>正式版 V3.6</b><br>所有資料保存在本機瀏覽器。更新檔案後不會自動消失。</div>
 </aside>
 
 <main class="main">
@@ -196,8 +195,8 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
 <section class="page" id="page-settlement">
 <div class="topbar"><div><h2>結算話術</h2><p>TRC 與 ERC 均支援批量貼上</p></div></div>
-<div class="tabs"><button class="tab" data-tool="template">結算／充值模板</button><button class="tab active" data-tool="trc">TRC 話術</button><button class="tab" data-tool="erc">ERC 話術</button></div>
-<div class="tool-pane active" id="tool-trc">
+<div class="tabs"><button class="tab active" data-tool="template">結算／充值模板</button><button class="tab" data-tool="trc">TRC 話術</button><button class="tab" data-tool="erc">ERC 話術</button></div>
+<div class="tool-pane" id="tool-trc">
   <div class="grid two">
     <div class="card">
       <div class="section-title"><div><h3>整列貼上生成</h3><div class="hint">支援有表頭及無表頭；無表頭依工作檔案固定順序讀取</div></div></div>
@@ -214,7 +213,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 </div>
 <div class="tool-pane" id="tool-erc"><div class="grid two"><div class="card"><textarea id="ercInput" rows="20" placeholder="貼上多組 ERC Excel/WPS 資料"></textarea><div class="actions" style="margin-top:12px"><button class="btn purple" onclick="generateERC()">生成 ERC 話術</button><button class="btn" onclick="clearERC()">清空</button></div></div><div class="card"><div class="actions" style="margin-bottom:10px"><button class="btn" onclick="copyText('ercOutput')">複製全部</button></div><div class="output" id="ercOutput">生成結果顯示於此</div></div></div></div>
 
-<div class="tool-pane" id="tool-template">
+<div class="tool-pane active" id="tool-template">
   <div class="grid two">
     <div class="card">
       <div class="section-title"><h3>Settle 结算</h3></div>
