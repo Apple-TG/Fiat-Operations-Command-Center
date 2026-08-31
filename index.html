@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center V3.6</title>
+<title>Fiat Operations Command Center V3.7</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
@@ -196,7 +196,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
 <section class="page" id="page-settlement">
 <div class="topbar"><div><h2>結算話術</h2><p>TRC 與 ERC 均支援批量貼上</p></div></div>
-<div class="tabs"><button class="tab active" data-tool="trc">TRC 話術</button><button class="tab" data-tool="erc">ERC 話術</button><button class="tab" data-tool="template">結算／充值模板</button></div>
+<div class="tabs"><button class="tab" data-tool="template">結算／充值模板</button><button class="tab active" data-tool="trc">TRC 話術</button><button class="tab" data-tool="erc">ERC 話術</button></div>
 <div class="tool-pane active" id="tool-trc">
   <div class="grid two">
     <div class="card">
@@ -227,11 +227,14 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
     <div class="card">
       <div class="section-title"><h3>Top-Up 充值</h3></div>
+      <div class="field"><label>商户名称</label><input id="tplTopupMerchant" type="text" placeholder="例：SupefinaNew"></div>
+      <div class="field"><label>币种</label><input id="tplTopupCurrency" type="text" placeholder="例：MXN"></div>
       <div class="field"><label>USDT</label><input id="tplTopupUsdt" type="number" value="40000"></div>
       <div class="field"><label>Rate</label><input id="tplTopupRate" type="number" step="any" value="1.14573786"></div>
       <div class="field"><label>Fee %</label><input id="tplTopupFee" type="number" step="any" value="0"></div>
       <div class="field"><label>Address</label><input id="tplTopupAddress" type="text" value="TJRVEktLxNrCvehZcW1u6evpKbvaEtNahX"></div>
       <div class="actions"><button class="btn primary" onclick="generateTopupTemplate()">生成 Top-Up</button><button class="btn" onclick="clearTopupTemplate()">清空</button></div>
+      <div class="hint" style="margin-top:8px">填写商户名称与币种后，生成时会自动把充值申请话术汇入下方「充值申请话术」卡片</div>
     </div>
   </div>
 
@@ -243,6 +246,21 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div class="card">
       <div class="section-title"><h3>Top-Up 生成话术</h3><button class="btn" onclick="copyText('tplTopupOutput')">复制</button></div>
       <div class="output" id="tplTopupOutput">生成结果显示于此</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="section-title"><div><h3>充值申请话术</h3><div class="hint">Top-Up 卡片填好商户名称与币种后生成，会自动汇入下方；也可以直接贴上登记表多笔资料批量生成——依固定順序讀取：商戶單號／商戶名稱／幣種／充U金額／兌換金額／法幣手續費／U手續費／商戶地址／Hash／日期／姓名／商戶匯率／優惠匯率／節約金額／XE價格；有手續費會自動代入公式，並依「兌換金額」智慧判斷應乘或除匯率</div></div></div>
+    <div class="grid two">
+      <div>
+        <textarea id="chargeInput" rows="14" placeholder="贴上登记表多笔资料（如 Google Sheet／Excel 直接复制整列，含表头或不含皆可）"></textarea>
+        <div class="actions" style="margin-top:12px"><button class="btn primary" onclick="generateCharge()">贴上后生成</button><button class="btn" onclick="clearCharge()">清空</button></div>
+        <div class="hint" id="chargeStatus" style="margin-top:10px"></div>
+      </div>
+      <div>
+        <div class="actions" style="margin-bottom:10px;justify-content:flex-end"><button class="btn" onclick="copyText('chargeOutput')">复制全部</button></div>
+        <div class="output" id="chargeOutput" style="min-height:290px">生成结果显示于此</div>
+      </div>
     </div>
   </div>
 </div>
@@ -836,10 +854,18 @@ function trimNumber(v,maxDigits=2){
  if(!Number.isFinite(n))return '';
  return n.toFixed(maxDigits).replace(/\.?0+$/,'');
 }
+function trimRate(v){
+ const s=String(v==null?'':v).trim();
+ if(/^-?\d+(\.\d+)?$/.test(s))return s.replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');
+ const n=Number(v);
+ if(!Number.isFinite(n))return '';
+ return n.toFixed(10).replace(/\.?0+$/,'').replace(/\.$/,'');
+}
 
 function generateSettleTemplate(){
  const amount=Number(document.getElementById('tplSettleAmount').value);
- const rate=Number(document.getElementById('tplSettleRate').value);
+ const rateRaw=document.getElementById('tplSettleRate').value.trim();
+ const rate=Number(rateRaw);
  const feePct=Number(document.getElementById('tplSettleFee').value)||0;
  const address=document.getElementById('tplSettleAddress').value.trim();
 
@@ -849,7 +875,7 @@ function generateSettleTemplate(){
  const fee=gross*feePct/100;
  const net=gross-fee;
 
- let out=`Settle\n${trimNumber(amount)}/${trimNumber(rate)}=${trimNumber(gross)} U`;
+ let out=`Settle\n${trimNumber(amount)}/${trimRate(rateRaw)}=${trimNumber(gross)} U`;
  if(feePct){
    out+=`\n${trimNumber(gross)}×${trimNumber(feePct)}%=${trimNumber(fee)}`;
    out+=`\n${trimNumber(gross)}-${trimNumber(fee)}=${trimNumber(net)} U`;
@@ -859,24 +885,48 @@ function generateSettleTemplate(){
 }
 
 function generateTopupTemplate(){
+ const merchant=document.getElementById('tplTopupMerchant').value.trim();
+ const currency=document.getElementById('tplTopupCurrency').value.trim();
  const usdt=Number(document.getElementById('tplTopupUsdt').value);
- const rate=Number(document.getElementById('tplTopupRate').value);
+ const rateRaw=document.getElementById('tplTopupRate').value.trim();
+ const rate=Number(rateRaw);
  const feePct=Number(document.getElementById('tplTopupFee').value)||0;
  const address=document.getElementById('tplTopupAddress').value.trim();
 
  if(!usdt||!rate){toast('请填写 USDT 与汇率');return}
 
- const gross=usdt*rate;
+ // 我方付出 USDT，商户按手续费比例从换算出的法币金额中扣除，因此法币金额要先算出、再扣手续费，
+ // 扣完才是我们真实到账（真实到账/真实收到）的钱 —— 不能用「加」的。
+ // 汇率方向智能判断：EUR/GBP 等币值高于 USDT 的强势货币用「除」；INR/MXN/CLP 等 1 USDT 兑换多单位的货币用「乘」。
+ const strongDivideCurrencies=['EUR','GBP','KWD','BHD','OMR','JOD','GIP','KYD'];
+ const useDivide=strongDivideCurrencies.includes(currency.toUpperCase())||(!!currency&&rate<10)||(!currency&&rate<10);
+ const opSymbol=useDivide?'/':'×';
+ const gross=useDivide?usdt/rate:usdt*rate;
  const fee=gross*feePct/100;
- const total=gross+fee;
+ const total=gross-fee;
 
- let out=`Top-Up\n${trimNumber(usdt)}×${trimNumber(rate)}=${trimNumber(gross)}`;
+ let out=`Top-Up\n${trimNumber(usdt)}${opSymbol}${trimRate(rateRaw)}=${trimNumber(gross)}`;
  if(feePct){
    out+=`\n${trimNumber(gross)}×${trimNumber(feePct)}%=${trimNumber(fee)}`;
-   out+=`\n${trimNumber(gross)}+${trimNumber(fee)}=${trimNumber(total)}`;
+   out+=`\n${trimNumber(gross)}-${trimNumber(fee)}=${trimNumber(total)}`;
  }
  out+=`\n\nAddress：${address}\nConfirm：`;
  document.getElementById('tplTopupOutput').textContent=out;
+
+ if(merchant&&currency){
+  const reportOpSymbol=useDivide?'/':'*';
+  let reportOut=`${merchant}申请充${trimNumber(usdt)}U,${currency} 汇率${trimRate(rateRaw)}。`;
+  if(feePct){
+   reportOut+=`\n${trimNumber(usdt)}${reportOpSymbol}${trimRate(rateRaw)}=${trimNumber(gross)}`;
+   reportOut+=`\n${trimNumber(gross)}-${trimNumber(fee)}(手续费${trimNumber(feePct)}%)= ${trimNumber(total)} ${currency}`;
+  }else{
+   reportOut+=`\n${trimNumber(usdt)}${reportOpSymbol}${trimRate(rateRaw)}= ${trimNumber(gross)} ${currency}`;
+  }
+  reportOut+=`。麻烦你了`;
+  if(address)reportOut+=`\n地址:${address}`;
+  document.getElementById('chargeOutput').textContent=reportOut;
+  document.getElementById('chargeStatus').textContent='已由 Top-Up 表单生成 1 则充值申请话术。';
+ }
 }
 
 function clearSettleTemplate(){
@@ -884,7 +934,7 @@ function clearSettleTemplate(){
  document.getElementById('tplSettleOutput').textContent='生成结果显示于此';
 }
 function clearTopupTemplate(){
- ['tplTopupUsdt','tplTopupRate','tplTopupFee','tplTopupAddress'].forEach(id=>document.getElementById(id).value='');
+ ['tplTopupMerchant','tplTopupCurrency','tplTopupUsdt','tplTopupRate','tplTopupFee','tplTopupAddress'].forEach(id=>document.getElementById(id).value='');
  document.getElementById('tplTopupOutput').textContent='生成结果显示于此';
 }
 
@@ -1139,9 +1189,11 @@ function toggleCurrencyDetail(currency){
 function splitRows(text){return text.trim().split(/\r?\n/).filter(Boolean).map(x=>x.split(/\t+/).map(v=>v.trim()))}
 function findHeaderIndex(headers,patterns){return headers.findIndex(h=>patterns.some(p=>h.toLowerCase().includes(p)))}
 function generateTRC(){
- const raw=document.getElementById('trcInput').value.replace(/\r/g,'').trim();if(!raw){toast('请先贴上资料');return}
+ const raw=document.getElementById('trcInput').value.replace(/\r/g,'').replace(/^\n+/,'').replace(/\s+$/,'');if(!raw){toast('请先贴上资料');return}
  const physicalLines=raw.split('\n').filter(line=>line.trim());const headerLine=physicalLines.find(line=>/商户单号|商戶單號/.test(line)&&/优惠汇率|優惠匯率/.test(line));const records=[];let current=null;
- physicalLines.forEach(line=>{if(line===headerLine)return;const cells=line.split('\t').map(x=>x.trim());const isNew=cells.length>=5&&cells[1]&&cells[2]&&/^[A-Z]{3,5}(?:\s*\(.*\))?$/.test(cells[2]);
+ const isNewLine=line=>{const cells=line.split('\t').map(x=>x.trim());return cells.length>=5&&cells[1]&&cells[2]&&/^[A-Z]{3,5}(?:\s*\(.*\))?$/.test(cells[2])};
+ const wrapSkip=new Set();physicalLines.forEach((line,i)=>{if(line===headerLine||line.includes('\t'))return;let j=i+1;while(j<physicalLines.length&&physicalLines[j]===headerLine)j++;if(physicalLines[j]&&isNewLine(physicalLines[j]))wrapSkip.add(i)});
+ physicalLines.forEach((line,i)=>{if(line===headerLine||wrapSkip.has(i))return;const cells=line.split('\t').map(x=>x.trim());const isNew=isNewLine(line);
   if(isNew){if(current)records.push(current);while(cells.length<13)cells.push('');current={merchant:cells[1],currency:cells[2],orderText:cells[3],arrivalText:cells[4],feeFiatText:cells[5],feeUsdText:cells[6],receivedText:cells[7],hashes:cells[8]?[cells[8]]:[],date:cells[9],owner:cells[10],merchantRateText:cells[11],preferredRateText:cells[12]};}
   else if(current){cells.filter(Boolean).forEach(v=>{if(/^(0x)?[a-f0-9]{40,}$/i.test(v))current.hashes.push(v);else if(/月|^\d{1,2}\/\d{1,2}$/.test(v)&&!current.date)current.date=v;else if(!current.owner&&!/^\d/.test(v))current.owner=v;else if(/^-?[\d,.]+$/.test(v)){if(!current.merchantRateText)current.merchantRateText=v;else if(!current.preferredRateText)current.preferredRateText=v;}})}
  });if(current)records.push(current);
@@ -1177,9 +1229,14 @@ function generateTRC(){
  document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';document.getElementById('trcStatus').textContent=`已生成 ${outputs.length} 则回报，不限制批量数量；同商户同TXID自动合并，实收USDT保留原始小数位。`;
 }
 function generateERC(){
- const raw=document.getElementById('ercInput').value.replace(/\r/g,'').trim();if(!raw){toast('请先贴上资料');return}
- const lines=raw.split('\n').filter(x=>x.trim()),headerIndex=lines.findIndex(x=>/商户单号|商戶單號/.test(x)&&/手续费|手續費/.test(x)),data=headerIndex>=0?lines.slice(headerIndex+1):lines,records=[];
- data.forEach(line=>{const c=line.split('\t').map(x=>x.trim());if(c.length<8||!c[1]||!c[2])return;while(c.length<12)c.push('');records.push({merchant:c[1],currency:c[2].replace(/\s+\(/,'('),orderText:c[3],arrivalText:c[4],feeFiatText:c[5],feeUsdText:c[6],receivedText:c[7],hashText:c[8],rateText:c[11]})});
+ const raw=document.getElementById('ercInput').value.replace(/\r/g,'').replace(/^\n+/,'').replace(/\s+$/,'');if(!raw){toast('请先贴上资料');return}
+ const physicalLines=raw.split('\n').filter(x=>x.trim());const headerLine=physicalLines.find(x=>/商户单号|商戶單號/.test(x)&&/手续费|手續費/.test(x));const records=[];let current=null;
+ const isNewLine=line=>{const cells=line.split('\t').map(x=>x.trim());return cells.length>=8&&cells[1]&&cells[2]&&/^[A-Z]{3,5}(?:\s*\(.*\))?$/.test(cells[2])};
+ const wrapSkip=new Set();physicalLines.forEach((line,i)=>{if(line===headerLine||line.includes('\t'))return;let j=i+1;while(j<physicalLines.length&&physicalLines[j]===headerLine)j++;if(physicalLines[j]&&isNewLine(physicalLines[j]))wrapSkip.add(i)});
+ physicalLines.forEach((line,i)=>{if(line===headerLine||wrapSkip.has(i))return;const cells=line.split('\t').map(x=>x.trim());const isNew=isNewLine(line);
+  if(isNew){if(current)records.push(current);while(cells.length<12)cells.push('');current={merchant:cells[1],currency:cells[2].replace(/\s+\(/,'('),orderText:cells[3],arrivalText:cells[4],feeFiatText:cells[5],feeUsdText:cells[6],receivedText:cells[7],hashText:cells[8],rateText:cells[11]};}
+  else if(current){cells.filter(Boolean).forEach(v=>{if(/0x[a-f0-9]{40,}/i.test(v))current.hashText=(current.hashText?current.hashText:'')+v;else if(!current.rateText&&/^-?[\d,.]+$/.test(v))current.rateText=v;})}
+ });if(current)records.push(current);
  const ntext=v=>String(v||'').replace(/,/g,'').replace(/[^\d.\-]/g,'').trim(),number=v=>{const n=Number(ntext(v));return Number.isFinite(n)?n:0},trimCalc=n=>n.toFixed(12).replace(/\.?0+$/,''),txHash=v=>{const s=String(v||'').trim(),m=s.match(/0x[a-f0-9]{64}/i);return m?m[0]:s};
  const outputs=records.map(r=>{const fiat=number(r.orderText),feeFiat=number(r.feeFiatText),feeUsd=number(r.feeUsdText),rate=number(r.rateText),receivedRaw=ntext(r.receivedText);if(!r.merchant||!r.currency||!fiat||!rate)return '';
   const netFiat=fiat-feeFiat,computed=netFiat/rate-feeUsd,actual=receivedRaw||trimCalc(computed),from=(r.currency.match(/from\s+([A-Z]+)/i)||[])[1]||'';
@@ -1188,6 +1245,92 @@ function generateERC(){
 }
 function clearTRC(){document.getElementById('trcInput').value='';document.getElementById('trcOutput').textContent='生成结果显示于此'}
 function clearERC(){document.getElementById('ercInput').value='';document.getElementById('ercOutput').textContent='生成结果显示于此'}
+function generateCharge(){
+ const raw=document.getElementById('chargeInput').value.replace(/\r/g,'').replace(/^\n+/,'').replace(/\s+$/,'');if(!raw){toast('请先贴上资料');return}
+ const rawNumber=v=>String(v||'').replace(/,/g,'').replace(/[^\d.\-]/g,'').trim();
+ const calcText=n=>Number.isFinite(n)?n.toFixed(12).replace(/\.?0+$/,'').replace(/\.$/,''):'';
+ const physicalLines=raw.split('\n').filter(line=>line.trim());
+ const headerLine=physicalLines.find(line=>/商户单号|商戶單號/.test(line)&&/(商户地址|商戶地址)/.test(line));
+ const isNewLine=line=>{const cells=line.split('\t').map(x=>x.trim());return cells.length>=5&&cells[1]&&cells[2]&&/^[A-Z]{3,5}(?:\s*\(.*\))?$/.test(cells[2])};
+ const wrapSkip=new Set();physicalLines.forEach((line,i)=>{if(line===headerLine||line.includes('\t'))return;let j=i+1;while(j<physicalLines.length&&physicalLines[j]===headerLine)j++;if(physicalLines[j]&&isNewLine(physicalLines[j]))wrapSkip.add(i)});
+ const records=[];let current=null;
+ physicalLines.forEach((line,i)=>{
+  if(line===headerLine||wrapSkip.has(i))return;
+  const cells=line.split('\t').map(x=>x.trim());
+  const isNew=isNewLine(line);
+  if(isNew){
+   if(current)records.push(current);
+   while(cells.length<15)cells.push('');
+   current={merchant:cells[1],currency:cells[2],chargeText:cells[3],exchangeText:cells[4],feeFiatText:cells[5],feeUsdText:cells[6],address:cells[7],hashes:cells[8]?[cells[8]]:[],date:cells[9],owner:cells[10],merchantRateText:cells[11],preferredRateText:cells[12]};
+  }else if(current){
+   cells.filter(Boolean).forEach(v=>{
+    if(/^(0x)?[a-f0-9]{40,}$/i.test(v))current.hashes.push(v);
+    else if(/^(https?:\/\/\S+|T[A-Za-z0-9]{33}|0x[a-fA-F0-9]{40})$/.test(v)&&!current.address)current.address=v;
+    else if((/月|\d{4}[\/-]\d{1,2}([\/-]\d{1,2})?|^\d{1,2}\/\d{1,2}$/.test(v))&&!current.date)current.date=v;
+    else if(!current.owner&&!/^-?[\d,.]/.test(v))current.owner=v;
+    else if(/^-?[\d,.]+$/.test(v)){if(!current.merchantRateText)current.merchantRateText=v;else if(!current.preferredRateText)current.preferredRateText=v;}
+   });
+  }
+ });
+ if(current)records.push(current);
+
+ const outputs=records.map(r=>{
+  const rateText=r.preferredRateText||r.merchantRateText;
+  if(!r.merchant||!r.currency||!r.chargeText||!rateText)return '';
+  const charge=Number(rawNumber(r.chargeText)),rate=Number(rawNumber(rateText));
+  if(!charge||!rate)return '';
+  const chargeStr=rawNumber(r.chargeText),rateStr=rawNumber(rateText);
+  const feeUsd=Number(rawNumber(r.feeUsdText))||0,feeFiat=Number(rawNumber(r.feeFiatText))||0;
+  const hasFeeUsd=!!rawNumber(r.feeUsdText),hasFeeFiat=!!rawNumber(r.feeFiatText);
+  const actualText=rawNumber(r.exchangeText),actual=Number(actualText),hasActual=!!actualText&&Number.isFinite(actual);
+
+  // build every plausible candidate formula: multiply/divide × with/without each fee that's present in the sheet
+  const feeUsdOptions=hasFeeUsd?[true,false]:[false];
+  const feeFiatOptions=hasFeeFiat?[true,false]:[false];
+  const candidates=[];
+  ['mul','div'].forEach(dir=>{
+   feeUsdOptions.forEach(useU=>{
+    feeFiatOptions.forEach(useF=>{
+     const net=charge-(useU?feeUsd:0);
+     let value=dir==='mul'?net*rate:net/rate;
+     if(useF)value-=feeFiat;
+     candidates.push({dir,useU,useF,value});
+    });
+   });
+  });
+  // pick the candidate: closest to the ledger's actual 兑换金额 if we have one, else assume all listed fees apply and pick direction by rate magnitude
+  let chosen;
+  if(hasActual){
+   chosen=candidates.reduce((best,c)=>Math.abs(c.value-actual)<Math.abs(best.value-actual)?c:best);
+  }else{
+   const dir=rate<10?'div':'mul';
+   chosen=candidates.find(c=>c.dir===dir&&c.useU===hasFeeUsd&&c.useF===hasFeeFiat)||candidates[0];
+  }
+
+  const opSymbol=chosen.dir==='mul'?'*':'/';
+  const netChargeStr=chosen.useU?calcText(charge-feeUsd):chargeStr;
+  const grossValue=chosen.dir==='mul'?(charge-(chosen.useU?feeUsd:0))*rate:(charge-(chosen.useU?feeUsd:0))/rate;
+  const grossStr=calcText(grossValue);
+  const resultStr=actualText||calcText(chosen.value);
+
+  const out=[`${r.merchant}申请充${chargeStr}U,${r.currency} 汇率${rateStr}。`];
+  const steps=[];
+  if(chosen.useU)steps.push(`${chargeStr}-${rawNumber(r.feeUsdText)}(U手续费)=${netChargeStr}`);
+  let finalFormula=`${netChargeStr}${opSymbol}${rateStr}`;
+  if(chosen.useF){
+   steps.push(`${finalFormula}=${grossStr}`);
+   finalFormula=`${grossStr}-${rawNumber(r.feeFiatText)}(法币手续费)`;
+  }
+  steps.push(`${finalFormula}= ${resultStr} ${r.currency}`);
+  out.push(steps.join('\n'));
+  out.push('麻烦你了');
+  if(r.address)out.push(`地址:${r.address}`);
+  return out.join('\n');
+ }).filter(Boolean);
+ document.getElementById('chargeOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';
+ document.getElementById('chargeStatus').textContent=`已识别 ${records.length} 笔、生成 ${outputs.length} 则充值申请话术；跨行断裂的储存格会自动合并，含手续费的公式会取最贴近登记「兑换金额」的算法。`;
+}
+function clearCharge(){document.getElementById('chargeInput').value='';document.getElementById('chargeOutput').textContent='生成结果显示于此';document.getElementById('chargeStatus').textContent=''}
 async function copyText(id){await navigator.clipboard.writeText(document.getElementById(id).textContent);toast('已复制')}
 function generateReport(){
  const rows=summary();const lines=['【Fiat Operations 综合回报】'];
