@@ -149,27 +149,16 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><button class="btn" onclick="clearUploadData('payin')">清空</button></div><div id="payinResult"></div></div></section>
 
 <section class="page" id="page-pending">
-<div class="topbar"><div><h2>Pending 數據</h2><p>上傳後台截圖，辨識 Count 與延遲資料，再結合商戶回覆生成夜班回報</p></div></div>
+<div class="topbar"><div><h2>Pending 數據</h2><p>貼上後台超時表格，結合商戶回覆生成夜班回報</p></div></div>
 <div class="grid two">
   <div class="card">
     <div class="field">
-      <label>1. 上傳 Pending 截圖</label>
-      <input type="file" id="pendingImage" accept="image/*" onchange="previewPendingImage()">
-      <img id="pendingPreview" class="ocr-preview">
-      <div class="progress" id="ocrProgress"><div id="ocrBar"></div></div>
-      <div class="hint" id="ocrStatus"></div>
-    </div>
-    <div class="actions">
-      <button class="btn primary" onclick="recognizePendingImage()">辨識截圖</button>
-      <button class="btn" onclick="loadPendingExample()">載入格式範例</button>
+      <label>1. 貼上後台 Pending 表格（直接在後台整張表拖曳選取、Ctrl+C，再貼這裡）</label>
+      <textarea id="pendingInput" rows="12" placeholder="Provider	Channel	Currency	Sum Amount	Count	Avg. Pend Hour	Max Hour	Min Hour"></textarea>
+      <div class="actions" style="margin-top:8px"><button class="btn" onclick="loadPendingExample()">載入格式範例</button></div>
     </div>
 
     <div class="field" style="margin-top:16px">
-      <label>辨識結果（可直接修正）</label>
-      <textarea id="pendingInput" rows="12" placeholder="Provider	Channel	Currency	Sum Amount	Count	Avg. Pend Hour	Max Hour	Min Hour"></textarea>
-    </div>
-
-    <div class="field">
       <label>2. 貼上商戶對延遲出款的回覆／處理進度</label>
       <textarea id="merchantReplies" rows="8" placeholder="例如：&#10;TopPayNew：消化速度正常，已持續優先處理。&#10;FunPay24：出款正常，無24小時以上訂單。&#10;Etpay：上午10點半至凌晨3點處理較快。"></textarea>
     </div>
@@ -180,10 +169,22 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     </div>
 
     <div class="actions">
-      <button class="btn primary" onclick="parsePending()">生成超時回報</button>
+      <button class="btn primary" onclick="parsePending()">3. 生成超時回報</button>
       <button class="btn" onclick="clearPending()">清空</button>
     </div>
     <div id="pendingResult"></div>
+
+    <details style="margin-top:16px">
+      <summary style="cursor:pointer;color:var(--muted);font-size:13px">改用截圖辨識（備用；表格若有浮水印，辨識容易出錯，建議優先用上方貼上）</summary>
+      <div class="field" style="margin-top:10px">
+        <label>上傳 Pending 截圖</label>
+        <input type="file" id="pendingImage" accept="image/*" onchange="previewPendingImage()">
+        <img id="pendingPreview" class="ocr-preview">
+        <div class="progress" id="ocrProgress"><div id="ocrBar"></div></div>
+        <div class="hint" id="ocrStatus"></div>
+      </div>
+      <div class="actions"><button class="btn" onclick="recognizePendingImage()">辨識截圖（結果會填入上方文字框）</button></div>
+    </details>
   </div>
 
   <div class="card">
@@ -553,6 +554,62 @@ async function loadChannels(type){
  toast('解析完成');
 }
 
+// 把整段贴上的内容打散成词元——不管来源是 tab 分隔、多个空格分隔、还是每个格子各自一行，
+// 都靠「币别代码」这个最不会认错的锚点，往前抓 Provider／Channel、往后收集连续数字。
+// 有些後台的 Count 是可點擊連結，複製時可能整格漏掉，所以数字够 5 个就正常對應；
+// 只抓到 4 个数字时，用「有沒有小数点」判斷哪个是 Count（Count 通常是整数，其餘四項都帶小数）。
+function parsePendingRows(raw){
+ const rawTokens=raw.split(/\s+/).map(x=>x.trim()).filter(Boolean);
+ const noiseWords=new Set(['provider','channel','currency','sum','amount','count','avg','avg.','pend','hour','max','min','action','view','detail','search']);
+ const tokens=rawTokens.filter(t=>{
+  const bare=t.replace(/[：:]/g,'');
+  if(!bare)return false;
+  if(noiseWords.has(bare.toLowerCase()))return false;
+  if(/^\d+H$/i.test(bare))return false;
+  if(!/[\p{L}\p{N}]/u.test(bare))return false;
+  return true;
+ });
+
+ const currencyRe=/^[A-Z]{3,6}(?:FIAT)?$/;
+ const numRe=/^-?[\d,]+(?:\.\d+)?$/;
+ const rows=[];
+ let missingCount=0;
+ for(let i=0;i<tokens.length;i++){
+  if(!currencyRe.test(tokens[i]))continue;
+  const currency=normCurrency(tokens[i]);
+  if(!currency)continue;
+  if(i<2)continue;
+  const provider=tokens[i-2],channel=tokens[i-1];
+
+  const nums=[];
+  let j=i+1;
+  while(j<tokens.length&&numRe.test(tokens[j])&&nums.length<6){nums.push(tokens[j]);j++;}
+  if(nums.length<4)continue;
+
+  let amount,count,avg,max,min,consumed;
+  if(nums.length>=5){
+   [amount,count,avg,max,min]=nums;
+   consumed=5;
+  }else{
+   const intIdx=nums.findIndex(v=>!v.includes('.'));
+   if(intIdx>=0){
+    const rest=nums.slice();
+    count=rest.splice(intIdx,1)[0];
+    [amount,avg,max,min]=rest;
+   }else{
+    [amount,avg,max,min]=nums;
+    count='0';
+    missingCount++;
+   }
+   consumed=4;
+  }
+  rows.push({provider,channel,currency,amount:num(amount),count:num(count),avg:num(avg),max:num(max),min:num(min)});
+  i+=consumed;
+ }
+ parsePendingRows.missingCount=missingCount;
+ return rows;
+}
+
 function previewPendingImage(){
  const file=document.getElementById('pendingImage').files[0];
  if(!file)return;
@@ -636,22 +693,9 @@ function parsePending(){
  const raw=document.getElementById('pendingInput').value.trim();
  if(!raw){toast('请先辨识截图或贴上修正后的资料');return}
 
- const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
- const rows=[];
- const first=lines[0].split(/\t+/);
- const hasHeader=first.some(x=>/provider|count|avg/i.test(x));
- const data=hasHeader?lines.slice(1):lines;
-
- data.forEach(line=>{
-   const p=line.split(/\t+/).map(x=>x.trim());
-   if(p.length<8)return;
-   const currency=normCurrency(p[2]);
-   if(!currency)return;
-   rows.push({
-     provider:p[0],channel:p[1],currency,
-     amount:num(p[3]),count:num(p[4]),avg:num(p[5]),max:num(p[6]),min:num(p[7])
-   });
- });
+ const rows=parsePendingRows(raw);
+ if(!rows.length){toast('未识别到有效资料，请确认贴上的内容包含 Provider/Channel/币别/数字栏位');return}
+ const missingCount=parsePendingRows.missingCount||0;
 
  state.pending=rows;
  setUpdated('pending');
@@ -698,7 +742,11 @@ function parsePending(){
  });
 
  document.getElementById('pendingOutput').textContent=sections.join('\n');
- document.getElementById('pendingResult').innerHTML=`<p>已读取 ${rows.length} 个渠道，合并为 ${Object.keys(groups).length} 个商户币种回报。</p>`;
+ let resultHtml=`<p>已读取 ${rows.length} 个渠道，合并为 ${Object.keys(groups).length} 个商户币种回报。</p>`;
+ if(missingCount>0){
+  resultHtml+=`<p style="color:#c0392b">⚠️ 有 ${missingCount} 个渠道侦测不到 Count（笔数），已暂以 0 计入，实际笔数请对照后台确认——可能是贴上时 Count 那一栏没被选取到（若该栏是可点击链接，复制时容易漏掉）。</p>`;
+ }
+ document.getElementById('pendingResult').innerHTML=resultHtml;
  renderAll();
  toast('提款超时回报已生成');
 }
