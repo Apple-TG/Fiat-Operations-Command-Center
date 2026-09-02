@@ -233,6 +233,8 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
       <div class="field"><label>Rate</label><input id="tplTopupRate" type="number" step="any" value="1.14573786"></div>
       <div class="field"><label>Fee %</label><input id="tplTopupFee" type="number" step="any" value="0"></div>
       <div class="field"><label>Address</label><input id="tplTopupAddress" type="text" value="TJRVEktLxNrCvehZcW1u6evpKbvaEtNahX"></div>
+      <div class="field" style="flex-direction:row;align-items:center;gap:8px"><input id="tplTopupRelay" type="checkbox" style="width:auto"><label for="tplTopupRelay" style="margin:0">透过中转账户支付（提醒财务）</label></div>
+      <div class="field" style="flex-direction:row;align-items:center;gap:8px"><input id="tplTopupNewAddress" type="checkbox" style="width:auto"><label for="tplTopupNewAddress" style="margin:0">新地址（提醒添加白名单）</label></div>
       <div class="actions"><button class="btn primary" onclick="generateTopupTemplate()">生成 Top-Up</button><button class="btn" onclick="clearTopupTemplate()">清空</button></div>
       <div class="hint" style="margin-top:8px">填写商户名称与币种后，生成时会自动把充值申请话术汇入下方「充值申请话术」卡片</div>
     </div>
@@ -918,14 +920,16 @@ function generateSettleTemplate(){
 
  if(!amount||!rate){toast('请填写金额与汇率');return}
 
- const gross=amount/rate;
- const fee=gross*feePct/100;
- const net=gross-fee;
+ // 手续费是从「原始收到的金额」里先扣，扣完净额再去除以汇率换算——不是先换算完再扣。
+ const fee=amount*feePct/100;
+ const net=amount-fee;
+ const result=net/rate;
 
- let out=`Settle\n${trimNumber(amount)}/${trimRate(rateRaw)}=${trimNumber(gross)} U`;
+ let out=`Settle\n`;
  if(feePct){
-   out+=`\n${trimNumber(gross)}×${trimNumber(feePct)}%=${trimNumber(fee)}`;
-   out+=`\n${trimNumber(gross)}-${trimNumber(fee)}=${trimNumber(net)} U`;
+   out+=`${trimNumber(amount)}-fee ${trimNumber(fee)}=${trimNumber(net)}\n${trimNumber(net)}/${trimRate(rateRaw)}=${trimNumber(result)} U`;
+ }else{
+   out+=`${trimNumber(amount)}/${trimRate(rateRaw)}=${trimNumber(result)} U`;
  }
  out+=`\n\nAddress：${address}\nConfirm：`;
  document.getElementById('tplSettleOutput').textContent=out;
@@ -939,38 +943,44 @@ function generateTopupTemplate(){
  const rate=Number(rateRaw);
  const feePct=Number(document.getElementById('tplTopupFee').value)||0;
  const address=document.getElementById('tplTopupAddress').value.trim();
+ const isRelay=document.getElementById('tplTopupRelay').checked;
+ const isNewAddress=document.getElementById('tplTopupNewAddress').checked;
 
  if(!usdt||!rate){toast('请填写 USDT 与汇率');return}
 
- // 我方付出 USDT，商户按手续费比例从换算出的法币金额中扣除，因此法币金额要先算出、再扣手续费，
- // 扣完才是我们真实到账（真实到账/真实收到）的钱 —— 不能用「加」的。
+ // 手续费是从我方要付出的 USDT 里先扣（％是算在 USDT 本身，不是算在换算後的法币上），
+ // 扣完的净 USDT 才拿去乘/除汇率，这样换算出来的法币金额才是商户真实会拿到的数字。
  // 汇率方向智能判断：EUR/GBP 等币值高于 USDT 的强势货币用「除」；INR/MXN/CLP 等 1 USDT 兑换多单位的货币用「乘」。
  const strongDivideCurrencies=['EUR','GBP','KWD','BHD','OMR','JOD','GIP','KYD'];
  const useDivide=strongDivideCurrencies.includes(currency.toUpperCase())||(!!currency&&rate<10)||(!currency&&rate<10);
  const opSymbol=useDivide?'/':'×';
- const gross=useDivide?usdt/rate:usdt*rate;
- const fee=gross*feePct/100;
- const total=gross-fee;
+ const fee=usdt*feePct/100;
+ const netUsdt=usdt-fee;
+ const result=useDivide?netUsdt/rate:netUsdt*rate;
 
- let out=`Top-Up\n${trimNumber(usdt)}${opSymbol}${trimRate(rateRaw)}=${trimNumber(gross)}`;
+ let out=`Top-Up\n`;
  if(feePct){
-   out+=`\n${trimNumber(gross)}×${trimNumber(feePct)}%=${trimNumber(fee)}`;
-   out+=`\n${trimNumber(gross)}-${trimNumber(fee)}=${trimNumber(total)}`;
+   out+=`${trimNumber(usdt)}-fee ${trimNumber(fee)}=${trimNumber(netUsdt)}\n${trimNumber(netUsdt)}${opSymbol}${trimRate(rateRaw)}=${trimNumber(result)}`;
+ }else{
+   out+=`${trimNumber(usdt)}${opSymbol}${trimRate(rateRaw)}=${trimNumber(result)}`;
  }
  out+=`\n\nAddress：${address}\nConfirm：`;
  document.getElementById('tplTopupOutput').textContent=out;
 
  if(merchant&&currency){
   const reportOpSymbol=useDivide?'/':'*';
-  let reportOut=`${merchant}申请充${trimNumber(usdt)}U,${currency} 汇率${trimRate(rateRaw)}。`;
+  let reportOut=isRelay?`【通过中转账户支付】\n`:'';
   if(feePct){
-   reportOut+=`\n${trimNumber(usdt)}${reportOpSymbol}${trimRate(rateRaw)}=${trimNumber(gross)}`;
-   reportOut+=`\n${trimNumber(gross)}-${trimNumber(fee)}(手续费${trimNumber(feePct)}%)= ${trimNumber(total)} ${currency}`;
+   reportOut+=`${merchant}申请充${trimNumber(usdt)}U,${currency} 汇率${trimRate(rateRaw)},充值手续费${trimNumber(feePct)}%\n`;
+   reportOut+=`${trimNumber(usdt)}-fee ${trimNumber(fee)}=${trimNumber(netUsdt)}\n`;
+   reportOut+=`${trimNumber(netUsdt)}${reportOpSymbol}${trimRate(rateRaw)}=${trimNumber(result)}\n`;
+   reportOut+=`麻烦你了`;
   }else{
-   reportOut+=`\n${trimNumber(usdt)}${reportOpSymbol}${trimRate(rateRaw)}= ${trimNumber(gross)} ${currency}`;
+   reportOut+=`${merchant}申请充${trimNumber(usdt)}U,${currency} 汇率${trimRate(rateRaw)}。\n`;
+   reportOut+=`${trimNumber(usdt)}${reportOpSymbol}${trimRate(rateRaw)}= ${trimNumber(result)} ${currency}。麻烦你了`;
   }
-  reportOut+=`。麻烦你了`;
   if(address)reportOut+=`\n地址:${address}`;
+  if(isNewAddress)reportOut+=`\n\n地址商户已两人确认，麻烦添加白名单然后充值`;
   document.getElementById('chargeOutput').textContent=reportOut;
   document.getElementById('chargeStatus').textContent='已由 Top-Up 表单生成 1 则充值申请话术。';
  }
@@ -982,6 +992,8 @@ function clearSettleTemplate(){
 }
 function clearTopupTemplate(){
  ['tplTopupMerchant','tplTopupCurrency','tplTopupUsdt','tplTopupRate','tplTopupFee','tplTopupAddress'].forEach(id=>document.getElementById(id).value='');
+ document.getElementById('tplTopupRelay').checked=false;
+ document.getElementById('tplTopupNewAddress').checked=false;
  document.getElementById('tplTopupOutput').textContent='生成结果显示于此';
 }
 
