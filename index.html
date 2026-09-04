@@ -1288,139 +1288,270 @@ function generateTRC(){
  document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';document.getElementById('trcStatus').textContent=`已生成 ${outputs.length} 则回报，不限制批量数量；同商户同TXID自动合并，实收USDT保留原始小数位。`;
 }
 function generateERC(){
- const raw=document.getElementById('ercInput').value.replace(/\r/g,'').replace(/^\n+/,'').replace(/\s+$/,'');if(!raw){toast('请先贴上资料');return}
- const physicalLines=raw.split('\n').filter(x=>x.trim());const headerLine=physicalLines.find(x=>/商户单号|商戶單號/.test(x)&&/手续费|手續費/.test(x));const records=[];let current=null;
- // 栏位顺序：商户单号／商户名称／币种（可写成 USDC(from CAD) 这种紧凑格式）／法币金额／实收USDT(可留空自动算)／
- // 法币手续费(可填絕對值或百分比如 2%)／U手续费／Hash／日期／姓名／商户汇率／优惠汇率
- const isNewLine=line=>{const cells=line.split('\t').map(x=>x.trim());return cells.length>=6&&cells[1]&&cells[2]&&/^[A-Za-z]{3,6}(?:\s*\(.*\))?$/.test(cells[2])};
- const wrapSkip=new Set();physicalLines.forEach((line,i)=>{if(line===headerLine||line.includes('\t'))return;let j=i+1;while(j<physicalLines.length&&physicalLines[j]===headerLine)j++;if(physicalLines[j]&&isNewLine(physicalLines[j]))wrapSkip.add(i)});
- physicalLines.forEach((line,i)=>{if(line===headerLine||wrapSkip.has(i))return;const cells=line.split('\t').map(x=>x.trim());const isNew=isNewLine(line);
-  if(isNew){
-   if(current)records.push(current);
-   while(cells.length<12)cells.push('');
-   // hash／汇率不信任固定栏位，改成在整行里找符合格式的值，欄位多寡、順序跑掉都不受影響
-   const numRe=/^-?[\d,]+(?:\.\d+)?%?$/;
-   const hashIdx=cells.findIndex(v=>/0x[a-f0-9]{40,}/i.test(v));
-   const hashInRow=hashIdx>=0?cells[hashIdx]:cells[7];
-   // 商户汇率／优惠汇率一定跟在 Hash 后面，只在 Hash 之后的欄位里找「连续两个相同数字」，
-   // 避免跟前面法币金额意外重复的欄位搞混
-   const searchFrom=hashIdx>=0?hashIdx+1:8;
-   let mRate='',pRate='';
-   for(let k=searchFrom;k<cells.length-1;k++){
-    if(numRe.test(cells[k])&&!cells[k].includes('%')&&cells[k]===cells[k+1]){mRate=cells[k];pRate=cells[k+1];break;}
-   }
-   if(!mRate){
-    const tailNums=cells.slice(searchFrom).filter(v=>numRe.test(v)&&!v.includes('%'));
-    if(tailNums.length){mRate=tailNums[0];pRate=tailNums[1]||tailNums[0];}
-    else if(numRe.test(cells[10])){mRate=cells[10];pRate=numRe.test(cells[11])?cells[11]:cells[10];}
-   }
-   current={merchant:cells[1],currency:cells[2].replace(/\s+\(/,'('),orderText:cells[3],receivedText:cells[4],feeFiatText:cells[5],feeUsdText:cells[6],hashText:hashInRow,merchantRateText:mRate,preferredRateText:pRate};
-  }
-  else if(current){cells.filter(Boolean).forEach(v=>{if(/0x[a-f0-9]{40,}/i.test(v))current.hashText=v;else if(!current.merchantRateText&&/^-?[\d,.]+%?$/.test(v))current.merchantRateText=v;else if(!current.preferredRateText&&/^-?[\d,.]+%?$/.test(v))current.preferredRateText=v;})}
- });if(current)records.push(current);
+ const raw=document.getElementById('ercInput').value.replace(/\r/g,'').replace(/^\n+/,'').replace(/\s+$/,'');
+ if(!raw){toast('请先贴上资料');return}
 
- const ntext=v=>String(v||'').replace(/,/g,'').replace(/[^\d.\-]/g,'').trim();
- const number=v=>{const n=Number(ntext(v));return Number.isFinite(n)?n:0};
+ const physicalLines=raw.split('\n').filter(x=>x.trim());
+ const headerLine=physicalLines.find(x=>/商户单号|商戶單號/.test(x)&&/手续费|手續費/.test(x));
+ const records=[];
+ let current=null;
+
+ // ERC 固定欄位：
+ // 0 商户单号／1 商户名称／2 币种／3 订单金额（原始结算金额）／
+ // 4 到账金额（可能是原始金额，也可能已扣 Fee）／5 法币手续费／6 U手续费／
+ // 7 实收U／8 Hash／9 日期／10 姓名／11 商户汇率／12 优惠汇率
+ // 重点：空白欄位必须保留，不能因为空白而把后面的欄位往前挪。
+ const isNewLine=line=>{
+   const cells=line.split('\t').map(x=>x.trim());
+   return cells.length>=6&&cells[1]&&cells[2]&&/^[A-Za-z]{3,6}(?:\s*\(.*\))?$/.test(cells[2]);
+ };
+ const wrapSkip=new Set();
+ physicalLines.forEach((line,i)=>{
+   if(line===headerLine||line.includes('\t'))return;
+   let j=i+1;
+   while(j<physicalLines.length&&physicalLines[j]===headerLine)j++;
+   if(physicalLines[j]&&isNewLine(physicalLines[j]))wrapSkip.add(i);
+ });
+
+ physicalLines.forEach((line,i)=>{
+   if(line===headerLine||wrapSkip.has(i))return;
+   const cells=line.split('\t').map(x=>x.trim());
+   const isNew=isNewLine(line);
+
+   if(isNew){
+     if(current)records.push(current);
+     while(cells.length<13)cells.push('');
+
+     const hashIdx=cells.findIndex(v=>/0x[a-f0-9]{40,}/i.test(v));
+     const hashInRow=hashIdx>=0?cells[hashIdx]:cells[8];
+
+     // 固定位置优先；若后方欄位存在额外内容，仍只读取固定的商户/优惠汇率欄位。
+     const mRate=cells[11]||'';
+     const pRate=cells[12]||mRate;
+
+     current={
+       merchant:cells[1],
+       currency:cells[2].replace(/\s+\(/,'('),
+       orderText:cells[3],
+       arrivalText:cells[4],
+       feeFiatText:cells[5],
+       feeUsdText:cells[6],
+       receivedUText:cells[7],
+       hashText:hashInRow,
+       merchantRateText:mRate,
+       preferredRateText:pRate
+     };
+   }else if(current){
+     // 只有在换行导致的异常格式下补抓 Hash，不改变既有固定欄位位置。
+     cells.filter(Boolean).forEach(v=>{
+       if(/0x[a-f0-9]{40,}/i.test(v))current.hashText=v;
+     });
+   }
+ });
+ if(current)records.push(current);
+
+ const ntext=v=>String(v??'').replace(/,/g,'').replace(/[^\d.\-]/g,'').trim();
+ const number=v=>{const n=Number(ntext(v));return Number.isFinite(n)?n:0;};
  const trimCalc=n=>Number.isFinite(n)?n.toFixed(12).replace(/\.?0+$/,'').replace(/\.$/,''):'';
- const money2=n=>{if(!Number.isFinite(n))return '';let s=n.toFixed(2);s=s.replace(/0+$/,'').replace(/\.$/,'');return s;};
- // TXID 一律用正则在整行里找真正的 hash，不依赖固定栏位——栏位错位也不影响 TXID 正确
- const txHash=v=>{const s=String(v||'').trim(),m=s.match(/0x[a-f0-9]{64}/i);return m?m[0]:s};
+ const money2=n=>{
+   if(!Number.isFinite(n))return '';
+   let s=n.toFixed(2);
+   s=s.replace(/0+$/,'').replace(/\.$/,'');
+   return s;
+ };
+ const txHash=v=>{
+   const s=String(v||'').trim(),m=s.match(/0x[a-f0-9]{64}/i);
+   return m?m[0]:s;
+ };
 
- // 逐笔算出各自的结果，同时保留分组用的 key（币种＋汇率＋TXID 都相同才视为同一则要合并的结算）
+ /*
+  核心逻辑：
+  订单金额永远视为原始结算金额；到账金额的填写方式不固定。
+  因此不能单凭「订单金额 = 到账金额」或 Fee 栏有数字判断是否扣 Fee。
+  当「实收U」存在时，以实收U为正确答案，在以下候选公式中找最接近者：
+    1. 订单金额 / 汇率
+    2. 到账金额 / 汇率
+    3. (订单金额 - 法币Fee) / 汇率
+    4. (到账金额 - 法币Fee) / 汇率
+  每个法币候选再分别考虑是否扣 U手续费。
+  最终选出的公式必须与实收U对应。
+ */
  const items=records.map(r=>{
-  let fiat=number(r.orderText),feeUsd=number(r.feeUsdText),rateText=r.preferredRateText||r.merchantRateText,rate=number(rateText);
-  if(!r.merchant||!r.currency||!fiat||!rate)return null;
-  let receivedRaw=ntext(r.receivedText);
-  const feeFiatRaw=String(r.feeFiatText||'').trim();
-  const isPctFee=/%$/.test(feeFiatRaw);
-  const fromMatch=r.currency.match(/^([A-Za-z]+)\s*\(from\s+([A-Za-z]+)\)$/i);
-  const baseline=fiat/rate;
-  let ignoreFiatFee=false;
+   const order=number(r.orderText);
+   const arrival=number(r.arrivalText);
+   const feeFiatRaw=String(r.feeFiatText||'').trim();
+   const feeUsd=number(r.feeUsdText);
+   const actualRaw=ntext(r.receivedUText);
+   const rateText=r.preferredRateText||r.merchantRateText;
+   const rate=number(rateText);
 
-  // 防呆①：实收USDT那栏如果只是把法币金额原样重复贴一次（不是真的结果），当成没填
-  if(receivedRaw&&Math.abs(Number(receivedRaw)-fiat)<0.005)receivedRaw='';
-  // 防呆②：U手续费如果数字大到跟「无手续费情况下的结果」幾乎相等，代表那其实就是真正的结果，
-  // 不是手续费（手续费不可能整笔全部扣光）。这种情况代表这笔本来就没有手续费，
-  // 连法币手续费那栏也一并当噪声忽略，避免公式跟最终答案对不上。
-  if(feeUsd&&Math.abs(feeUsd-baseline)<Math.max(0.01,baseline*0.0005)){
-   if(!receivedRaw)receivedRaw=r.feeUsdText;
-   feeUsd=0;
-   ignoreFiatFee=true;
-  }
+   if(!r.merchant||!r.currency||!rate||(!order&&!arrival))return null;
 
-  let netFiat=fiat,feeAmountFiat=0,feePctVal=0;
-  if(!ignoreFiatFee){
-   if(isPctFee){feePctVal=number(feeFiatRaw);feeAmountFiat=fiat*feePctVal/100;netFiat=fiat-feeAmountFiat;}
-   else if(feeFiatRaw){feeAmountFiat=number(feeFiatRaw);netFiat=fiat-feeAmountFiat;}
-  }
+   const isPctFee=/%$/.test(feeFiatRaw);
+   let feeAmountFiat=0;
+   if(isPctFee){
+     feeAmountFiat=order*number(feeFiatRaw)/100;
+   }else if(feeFiatRaw){
+     feeAmountFiat=number(feeFiatRaw);
+   }
 
-  const computed=netFiat/rate-feeUsd;
-  const actual=receivedRaw||money2(computed);
-  const groupKey=[r.currency,rate,txHash(r.hashText)].join('|');
-  return {merchant:r.merchant,currency:r.currency,fiat,fiatText:ntext(r.orderText),rateText,rate,feeUsd,feeUsdText:ntext(r.feeUsdText),
-    isPctFee,feePctVal,feeAmountFiat,netFiat,actual,hash:txHash(r.hashText),fromMatch,groupKey};
+   const candidates=[];
+   const addCandidate=(label,base,baseText,feeApplied)=>{
+     if(!Number.isFinite(base)||base<0)return;
+     const usdtBeforeFee=base/rate;
+     // 不扣 U Fee
+     candidates.push({
+       label,base,baseText,feeApplied,uFeeApplied:false,
+       value:usdtBeforeFee,
+       formula:`${baseText}/${rateText}`
+     });
+     // 扣 U Fee
+     if(feeUsd>0){
+       candidates.push({
+         label,base,baseText,feeApplied,uFeeApplied:true,
+         value:usdtBeforeFee-feeUsd,
+         formula:`(${baseText}/${rateText})-${ntext(r.feeUsdText)}U`
+       });
+     }
+   };
+
+   if(order) addCandidate('订单金额',order,ntext(r.orderText),false);
+   if(arrival) addCandidate('到账金额',arrival,ntext(r.arrivalText),false);
+   if(feeAmountFiat>0&&order>=feeAmountFiat)
+     addCandidate('订单金额-Fee',order-feeAmountFiat,`${ntext(r.orderText)}-Fee ${money2(feeAmountFiat)}`,true);
+   if(feeAmountFiat>0&&arrival>=feeAmountFiat)
+     addCandidate('到账金额-Fee',arrival-feeAmountFiat,`${ntext(r.arrivalText)}-Fee ${money2(feeAmountFiat)}`,true);
+
+   let selected=null;
+   const actualU=actualRaw?Number(actualRaw):NaN;
+
+   if(Number.isFinite(actualU)){
+     // 实收U为权威值：选择误差最小的候选。
+     selected=candidates.reduce((best,c)=>{
+       const err=Math.abs(c.value-actualU);
+       if(!best)return {...c,err};
+       // 若两种公式算出的结果完全相同，优先保留「订单金额」逻辑；
+       // 其中「订单金额-Fee」优先于单纯使用到账金额，方便明确展示 Fee 过程。
+       if(err < best.err - 0.00000001)return {...c,err};
+       if(Math.abs(err-best.err) <= 0.00000001){
+         const priority={
+           '订单金额-Fee':4,
+           '订单金额':3,
+           '到账金额-Fee':2,
+           '到账金额':1
+         };
+         if((priority[c.label]||0)>(priority[best.label]||0))return {...c,err};
+       }
+       return best;
+     },null);
+   }else{
+     // 没有实收U时，优先采用「到账金额 / 汇率」；
+     // 若订单金额-Fee 恰好等于到账金额，则明确显示已由 Fee 扣除。
+     if(feeAmountFiat>0&&Math.abs(order-feeAmountFiat-arrival)<0.000001){
+       selected=candidates.find(c=>c.label==='订单金额-Fee');
+     }
+     if(!selected)selected=candidates.find(c=>c.label==='到账金额')||candidates[0];
+   }
+
+   if(!selected)return null;
+
+   // 公式结果使用选中的计算结果；实收U仅用于判断哪一种填写方式正确。
+   const calculated=selected.value;
+   const actualDisplay=money2(calculated);
+
+   const fromMatch=r.currency.match(/^([A-Za-z]+)\s*\(from\s+([A-Za-z]+)\)$/i);
+   const groupKey=[r.currency,rate,txHash(r.hashText)].join('|');
+
+   return {
+     merchant:r.merchant,
+     currency:r.currency,
+     order,
+     arrival,
+     orderText:ntext(r.orderText),
+     arrivalText:ntext(r.arrivalText),
+     feeAmountFiat,
+     feeFiatText:feeFiatRaw,
+     feeUsd,
+     feeUsdText:ntext(r.feeUsdText),
+     rateText,
+     rate,
+     actualU,
+     selected,
+     actualDisplay,
+     hash:txHash(r.hashText),
+     fromMatch,
+     groupKey
+   };
  }).filter(Boolean);
 
- // 依 groupKey 把连续、条件相同的几笔合并成一则（对应「同一汇率/TXID 底下多个商户一起打款」的结算讯息）
  const groups=[];
  items.forEach(it=>{
-  const last=groups[groups.length-1];
-  if(last&&last.key===it.groupKey&&!it.isPctFee&&!it.feeAmountFiat&&!last.items[0].isPctFee&&!last.items[0].feeAmountFiat&&!it.fromMatch){
-   last.items.push(it);
-  }else{
-   groups.push({key:it.groupKey,items:[it]});
-  }
+   const last=groups[groups.length-1];
+   // 只有真正使用「无 Fee」公式且条件完全一致时才合并。
+   // 若每笔的实收U决定了不同 Fee 处理方式，则不得强行合并。
+   if(last&&last.key===it.groupKey&&!it.selected.feeApplied&&!it.selected.uFeeApplied&&
+      !last.items[0].selected.feeApplied&&!last.items[0].selected.uFeeApplied&&!it.fromMatch){
+     last.items.push(it);
+   }else{
+     groups.push({key:it.groupKey,items:[it]});
+   }
  });
 
  const outputs=groups.map(g=>{
-  if(g.items.length>1){
-   // 多商户合并结算（同币种/汇率/TXID，商户一起打款），加总法币金额后统一换算，并加注说明文字
-   const first=g.items[0];
-   const totalFiat=g.items.reduce((s,it)=>s+it.fiat,0);
-   const result=totalFiat/first.rate;
-   const sumFormula=g.items.map(it=>it.fiatText).join('+');
-   const lines=[`${first.merchant}结算出U 币种：${first.currency} 汇率：${first.rateText}（商户${g.items.length}笔合并打款）`];
-   lines.push(`${sumFormula}=${money2(totalFiat)}`);
-   lines.push(`${money2(totalFiat)}/${first.rateText}=${money2(result)} U`);
-   lines.push(`TXID：`);
-   lines.push(first.hash);
-   return lines.join('\n');
-  }
+   if(g.items.length>1){
+     const first=g.items[0];
+     const totalFiat=g.items.reduce((s,it)=>s+it.order,0);
+     const result=totalFiat/first.rate;
+     const sumFormula=g.items.map(it=>it.orderText).join('+');
+     const lines=[
+       `${first.merchant}结算出U 币种：${first.currency} 汇率：${first.rateText}（商户${g.items.length}笔合并打款）`,
+       `${sumFormula}=${money2(totalFiat)}`,
+       `${money2(totalFiat)}/${first.rateText}=${money2(result)} U`,
+       `TXID：`,
+       first.hash
+     ];
+     return lines.join('\n');
+   }
 
-  const it=g.items[0];
-  if(it.fromMatch){
-   // 紧凑单行格式：{merchant}出U,结算{资产}(from {来源币种}),(金额/汇率)-U手续费=结果
-   const asset=it.fromMatch[1],srcCurrency=it.fromMatch[2];
-   let formula=`(${it.fiatText}/${it.rateText})`;
-   if(it.feeUsd)formula+=`-${it.feeUsdText}U`;
-   const lines=[`${it.merchant}出U,结算${asset}(from ${srcCurrency}),${formula}=${it.actual} U, 请你确认,谢谢。`];
+   const it=g.items[0];
+
+   if(it.fromMatch){
+     const asset=it.fromMatch[1],srcCurrency=it.fromMatch[2];
+     let formula=it.selected.formula;
+     const lines=[`${it.merchant}出U,结算${asset}(from ${srcCurrency}),${formula}=${it.actualDisplay} U, 请你确认,谢谢。`];
+     lines.push(`TXID：`);
+     lines.push(it.hash);
+     return lines.join('\n');
+   }
+
+   const lines=[`${it.merchant}结算出U 币种：${it.currency} 汇率：${it.rateText}`];
+
+   if(it.selected.feeApplied){
+     // 只有实际U与「扣除法币 Fee」的候选公式吻合时，才展示 Fee 的计算过程。
+     // 例如 Utorg：21000-Fee 420=20580，再用净额换算 USDT。
+     const net=it.selected.base;
+     if(Math.abs(it.order-it.feeAmountFiat-it.arrival)<0.000001){
+       lines.push(`${it.orderText}-Fee ${money2(it.feeAmountFiat)}=${it.arrivalText}`);
+       let formula=`${it.arrivalText}/${it.rateText}`;
+       if(it.selected.uFeeApplied)formula=`(${formula})-${it.feeUsdText}U`;
+       lines.push(`${formula}=${it.actualDisplay} U`);
+     }else{
+       lines.push(`${it.selected.baseText}=${money2(net)} ${it.currency}`);
+       lines.push(`${it.selected.uFeeApplied?`(${money2(net)}/${it.rateText})-${it.feeUsdText}U`:`${money2(net)}/${it.rateText}`}=${it.actualDisplay} U`);
+     }
+   }else{
+     // SLYSE 等特殊情况：实收U已经对应原始金额换算，不展示多余的 Fee 推导。
+     lines.push(`${it.selected.formula}=${it.actualDisplay} U`);
+   }
+
    lines.push(`TXID：`);
    lines.push(it.hash);
    return lines.join('\n');
-  }
-
-  const lines=[`${it.merchant}结算出U 币种：${it.currency} 汇率：${it.rateText}`];
-  if(it.isPctFee){
-   lines.push(`settlement fee ${trimCalc(it.feePctVal)}%`);
-   lines.push(`${it.fiatText}* ${trimCalc(100-it.feePctVal)}% = ${money2(it.netFiat)}  (Fee ${money2(it.feeAmountFiat)} ${it.currency})`);
-   lines.push(`${money2(it.netFiat)} / ${it.rateText}${it.feeUsd?` - ${it.feeUsdText}U`:''} = ${it.actual} U`);
-  }else if(it.feeAmountFiat){
-   lines.push(`${it.fiatText}-Fee ${money2(it.feeAmountFiat)}=${money2(it.netFiat)}`);
-   let formula=`${money2(it.netFiat)}/${it.rateText}`;
-   if(it.feeUsd)formula=`(${formula})-${it.feeUsdText}U`;
-   lines.push(`${formula}=${it.actual} U`);
-  }else{
-   let formula=`${it.fiatText}/${it.rateText}`;
-   if(it.feeUsd)formula=`(${formula})-${it.feeUsdText}U`;
-   lines.push(`${formula}=${it.actual} U`);
-  }
-  lines.push(`TXID：`);
-  lines.push(it.hash);
-  return lines.join('\n');
  });
 
  document.getElementById('ercOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';
 }
+
 function clearTRC(){document.getElementById('trcInput').value='';document.getElementById('trcOutput').textContent='生成结果显示于此'}
 function clearERC(){document.getElementById('ercInput').value='';document.getElementById('ercOutput').textContent='生成结果显示于此'}
 function generateCharge(){
