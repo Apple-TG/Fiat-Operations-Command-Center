@@ -13,16 +13,17 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .sidebar{background:linear-gradient(180deg,#0d1b30,#122944);color:#fff;padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;overflow-y:auto}
 .brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#1fd3a3,#2563eb);display:grid;place-items:center;font-weight:900}
 .brand h1{font-size:17px;margin:0}.brand p{font-size:12px;color:#9fb0c8;margin:3px 0 0}.group-title{font-size:11px;color:#7690b4;margin:17px 10px 7px;text-transform:uppercase;letter-spacing:.08em}
-.nav-btn{width:100%;border:0;background:transparent;color:#cbd7e8;text-align:left;padding:12px 13px;border-radius:11px;cursor:pointer;margin:3px 0}.nav-btn:hover,.nav-btn.active{background:linear-gradient(90deg,#1b5ee9,#2c74f2);color:#fff}
+.nav-btn{width:100%;border:0;background:transparent;color:#cbd7e8;text-align:left;padding:12px 13px;border-radius:11px;cursor:pointer;margin:3px 0;transition:background .2s ease,color .2s ease}.nav-btn:hover,.nav-btn.active{background:linear-gradient(90deg,#1b5ee9,#2c74f2);color:#fff}
 .sidebar-note{margin-top:auto;background:#173657;border:1px solid #25496e;border-radius:14px;padding:14px;font-size:12px;line-height:1.7;color:#d6e1ef}
-.main{padding:24px 26px 38px;min-width:0}.page{display:none}.page.active{display:block}.topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}.topbar h2{margin:0 0 6px;font-size:27px}.topbar p{margin:0;color:var(--muted);font-size:13px}
-.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 14px;font-weight:700;cursor:pointer}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.purple{background:var(--purple);border-color:var(--purple);color:#fff}.btn.danger{color:var(--red)}
+.main{padding:24px 26px 38px;min-width:0}.page{display:none}.page.active{display:block}.topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap;gap:12px}.topbar h2{margin:0 0 6px;font-size:27px}.topbar p{margin:0;color:var(--muted);font-size:13px}
+.pr-actions{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px}.pr-actions .btn,.pr-actions .pr-fee-exempt-wrap{flex:0 0 auto}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 14px;font-weight:700;cursor:pointer;transition:border-color .2s ease,background .2s ease,color .2s ease,box-shadow .2s ease}.btn:hover{border-color:#b7c6e0;box-shadow:0 4px 12px rgba(15,29,51,.08)}.btn:disabled{cursor:not-allowed;opacity:.55;box-shadow:none}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:#1d55d6;border-color:#1d55d6}.btn.purple{background:var(--purple);border-color:var(--purple);color:#fff}.btn.danger{color:var(--red)}.btn.danger:hover{border-color:var(--red);background:#fff5f6}
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}.kpi{display:flex;gap:12px;align-items:center}.icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:20px;font-weight:900}.icon.blue{background:#e8f0ff;color:var(--blue)}.icon.green{background:#e5f8ef;color:var(--green)}.icon.orange{background:#fff2df;color:var(--orange)}.icon.purple{background:#f0e9ff;color:var(--purple)}.kpi small{display:block;color:var(--muted);margin-bottom:5px}.kpi strong{font-size:24px}
 .grid{display:grid;gap:16px}.grid.main-grid{grid-template-columns:1fr}.grid.two{grid-template-columns:1fr 1fr}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-title h3{margin:0;font-size:17px}.hint{color:var(--muted);font-size:12px}
 .currency-table{width:100%;border-collapse:collapse}.currency-table th,.currency-table td{padding:12px 10px;border-bottom:1px solid var(--line);font-size:13px;text-align:left;white-space:nowrap}.currency-table th{font-size:11px;color:var(--muted);background:#f9fbfd}.currency{font-weight:800;color:var(--blue)}.money{font-variant-numeric:tabular-nums;font-weight:650}.usd{color:#536177}.badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:800}.b-green{background:#e6f8ef;color:#087b56}.b-orange{background:#fff1df;color:#b86208}.b-red{background:#ffe9ec;color:#b72234}.b-gray{background:#edf0f4;color:#586274}.recommend{font-weight:800}.recommend.red{color:var(--red)}.recommend.green{color:var(--green)}.recommend.orange{color:var(--orange)}
 .side-stack{display:grid;gap:14px}.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.quick{border:1px solid var(--line);border-radius:14px;padding:16px 10px;text-align:center;background:#fbfdff;cursor:pointer}.quick b{display:block;margin:8px 0 4px}.quick small{color:var(--muted)}
 .alert-list,.status-list{display:grid;gap:10px}.alert{display:flex;gap:9px;font-size:13px;line-height:1.45}.dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:0 0 auto}.dot.red{background:var(--red)}.dot.orange{background:var(--orange)}.dot.green{background:var(--green)}.status-row{display:flex;justify-content:space-between;font-size:12px}.status-row span:last-child{font-weight:800}
-.field{display:grid;gap:6px;margin-bottom:12px}.field label{font-size:12px;color:var(--muted)}textarea,input[type="text"],input[type="number"],select{width:100%;border:1px solid #d6deea;border-radius:10px;padding:11px;background:#fff}.output{white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:220px;line-height:1.7}.upload-box{border:2px dashed #cdd7e6;border-radius:16px;padding:28px;text-align:center;background:#fbfdff}.tabs{display:flex;gap:8px;margin-bottom:14px}.tab{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}.tab.active{background:#eaf1ff;color:var(--blue);border-color:#bed1ff;font-weight:800}.tool-pane{display:none}.tool-pane.active{display:block}
+.field{display:grid;gap:6px;margin-bottom:12px}.field label{font-size:12px;color:var(--muted)}textarea,input[type="text"],input[type="number"],select{width:100%;border:1px solid #d6deea;border-radius:10px;padding:11px;background:#fff;transition:border-color .2s ease,box-shadow .2s ease}textarea:focus,input[type="text"]:focus,input[type="number"]:focus,select:focus{outline:none;border-color:#8fb0f5;box-shadow:0 0 0 3px rgba(37,99,235,.12)}.output{white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:220px;line-height:1.7}.upload-box{border:2px dashed #cdd7e6;border-radius:16px;padding:28px;text-align:center;background:#fbfdff;transition:border-color .2s ease,background .2s ease}.upload-box:hover{border-color:#a9c3f5;background:#f5f9ff}.tabs{display:flex;gap:8px;margin-bottom:14px}.tab{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;cursor:pointer;transition:border-color .2s ease,background .2s ease,color .2s ease}.tab:hover{border-color:#bed1ff}.tab.active{background:#eaf1ff;color:var(--blue);border-color:#bed1ff;font-weight:800}.tool-pane{display:none}.tool-pane.active{display:block}
 .result-table{width:100%;border-collapse:collapse;margin-top:14px}.result-table th,.result-table td{border-bottom:1px solid var(--line);padding:10px;font-size:12px;text-align:left}.analysis-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.analysis-box{border-radius:14px;padding:15px;border:1px solid var(--line);display:grid;gap:6px}.analysis-box small{color:var(--muted);font-weight:700}.analysis-box b{font-size:17px}.analysis-box span{font-size:12px;line-height:1.55;color:#536177}.analysis-box.risk{background:#fff7f7;border-color:#ffd4d9}.analysis-box.settle{background:#f0fbf6;border-color:#ccefdc}.analysis-box.watch{background:#fff9ed;border-color:#ffe4b9}.toast{position:fixed;right:20px;bottom:20px;background:#13243d;color:#fff;padding:12px 16px;border-radius:10px;display:none;z-index:99}
 @media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.grid.main-grid{grid-template-columns:1fr}.side-stack{grid-template-columns:1fr 1fr}}
 @media(max-width:800px){.app{display:block}.sidebar{height:auto;position:static}.main{padding:16px}.kpis,.grid.two,.analysis-grid,.side-stack{grid-template-columns:1fr}.currency-table{min-width:950px}.card.table-card{overflow:auto}}
@@ -75,6 +76,53 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 @media(max-width:700px){.workflow-head,.checklist-tools{align-items:flex-start;flex-direction:column}.workflow-progress{width:100%}.workflow-now{grid-template-columns:1fr}.currency-checklist{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:900px){.merchant-channel-header,.merchant-channel-row{grid-template-columns:1fr}.merchant-channel-header{display:none}.detail-scroll>.merchant-channel-table{min-width:0}}
 </style>
+
+<style>
+.pr-stats{display:flex;gap:8px;flex-wrap:wrap}
+.pr-stats .stat{min-width:90px}
+.pr-filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.pr-filter{padding:7px 13px;display:inline-flex;align-items:center;gap:6px}
+.pr-count{font-size:.95em;font-weight:800}
+.pr-filter.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.pr-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;margin-top:8px}
+.pr-table{width:100%;min-width:1780px;border-collapse:separate;border-spacing:0;font-size:12px}
+.pr-table th,.pr-table td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;white-space:nowrap}
+.pr-table th{position:sticky;top:0;background:#f8fafc;z-index:2;font-size:11px;color:#536177}
+.pr-table tbody tr:last-child td{border-bottom:0}
+.pr-table tbody tr:hover{background:#fafcff}
+.pr-pass{background:#f3fbf7}
+.pr-check{background:#fff7f7}
+.pr-note{background:#fffaf0}
+.pr-status{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:850}
+.pr-status.pass{background:#e6f8ef;color:#087b56}
+.pr-status.check{background:#ffe9ec;color:#b72234}
+.pr-tag{display:inline-block;padding:3px 7px;border-radius:999px;background:#edf1f6;color:#586274;font-size:10px;font-weight:750}
+.pr-bad{color:var(--red);font-weight:800}
+.pr-good{color:var(--green);font-weight:800}
+.pr-note-cell{white-space:normal!important;min-width:320px;max-width:420px;line-height:1.5}
+.pr-calc{white-space:normal!important;min-width:330px;line-height:1.55}
+.pr-speech{white-space:pre-wrap!important;min-width:420px;max-width:560px;background:#fbfcfe;border:1px solid #e1e6ed;border-radius:10px;padding:10px;line-height:1.55}
+.pr-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.pr-id-btn{border:0;background:transparent;color:var(--blue);cursor:pointer;padding:3px 4px;border-radius:7px;font:inherit;font-size:11px}
+.pr-id-btn:hover{background:#eef4ff}
+.pr-muted{color:var(--muted);font-size:11px}
+.pr-hidden{display:none}
+.pr-diff-alert{margin-top:6px;padding:7px 9px;background:#fff0f2;border:1px solid #ffd3d9;border-radius:9px;color:#b72234;font-weight:750;font-size:11.5px;display:flex;align-items:center;gap:6px}
+.pr-diff-alert .pr-diff-amt{font-weight:900}
+.pr-rule-note{margin-bottom:16px;padding:12px 14px;background:linear-gradient(135deg,#eef5ff,#f5f9ff);border:1px solid #cfe0fb;border-radius:12px;color:#2b4a7a;font-size:12px;line-height:1.7}
+.pr-fee-exempt-wrap{display:inline-block}
+.pr-fee-exempt-panel{position:fixed;z-index:50;width:320px;max-width:90vw;box-shadow:0 20px 48px rgba(15,29,51,.18)}
+.pr-import-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px}
+
+/* ===== 复制按钮：点击反馈（变色 + 打勾） ===== */
+.btn,.pr-id-btn,.icon-btn,.channel-summary{transition:background-color .28s ease,border-color .28s ease,color .28s ease,box-shadow .28s ease,transform .18s ease}
+.btn.copy-ok,#prCopyAll.copy-ok{background:var(--green)!important;border-color:var(--green)!important;color:#fff!important;box-shadow:0 6px 16px rgba(15,159,110,.28)}
+.pr-id-btn.copy-ok{background:var(--green)!important;color:#fff!important}
+.icon-btn.copy-ok{background:var(--green)!important;color:#fff!important}
+.btn.copy-ok,.pr-id-btn.copy-ok,.icon-btn.copy-ok{animation:copyPop .32s ease}
+.copy-tick{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+@keyframes copyPop{0%{transform:scale(1)}45%{transform:scale(1.07)}100%{transform:scale(1)}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -90,6 +138,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <button class="nav-btn" data-page="pending">⌁　Pending 數據</button>
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
+<button class="nav-btn" data-page="payout-record">▣　Payout Record</button>
 <button class="nav-btn" data-page="report">▤　報表中心</button>
 </aside>
 
@@ -188,7 +237,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   </div>
 
   <div class="card">
-    <div class="section-title"><h3>提款超時回報話術</h3><button class="btn" onclick="copyText('pendingOutput')">複製全部</button></div>
+    <div class="section-title"><h3>提款超時回報話術</h3><button class="btn" onclick="copyText('pendingOutput',this)">複製全部</button></div>
     <div class="output" id="pendingOutput">生成結果顯示於此</div>
   </div>
 </div>
@@ -196,23 +245,8 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
 <section class="page" id="page-settlement">
 <div class="topbar"><div><h2>結算話術</h2><p>TRC 與 ERC 均支援批量貼上</p></div></div>
-<div class="tabs"><button class="tab active" data-tool="template">結算／充值模板</button><button class="tab" data-tool="trc">TRC 話術</button><button class="tab" data-tool="erc">ERC 話術</button></div>
-<div class="tool-pane" id="tool-trc">
-  <div class="grid two">
-    <div class="card">
-      <div class="section-title"><div><h3>整列貼上生成</h3><div class="hint">支援有表頭及無表頭；無表頭依工作檔案固定順序讀取</div></div></div>
-      <textarea id="trcInput" rows="20" placeholder="貼上 Excel / WPS 多筆資料"></textarea>
-      
-      <div class="actions"><button class="btn primary" onclick="generateTRC()">贴上后生成</button><button class="btn" onclick="clearTRC()">清空</button></div>
-      <div class="hint" id="trcStatus" style="margin-top:10px"></div>
-    </div>
-    <div class="card">
-      <div class="section-title"><h3>批量回报内文</h3><button class="btn" onclick="copyText('trcOutput')">复制全部</button></div>
-      <div class="output" id="trcOutput">生成结果显示于此</div>
-    </div>
-  </div>
-</div>
-<div class="tool-pane" id="tool-erc"><div class="grid two"><div class="card"><textarea id="ercInput" rows="20" placeholder="貼上多組 ERC Excel/WPS 資料"></textarea><div class="actions" style="margin-top:12px"><button class="btn purple" onclick="generateERC()">生成 ERC 話術</button><button class="btn" onclick="clearERC()">清空</button></div></div><div class="card"><div class="actions" style="margin-bottom:10px"><button class="btn" onclick="copyText('ercOutput')">複製全部</button></div><div class="output" id="ercOutput">生成結果顯示於此</div></div></div></div>
+<div class="tabs"><button class="tab active" data-tool="template">結算／充值模板</button><button class="tab" data-tool="erc">結算話術</button></div>
+<div class="tool-pane" id="tool-erc"><div class="grid two"><div class="card"><textarea id="ercInput" rows="20" placeholder="貼上多筆結算資料（TRC／ERC 皆適用，欄位順序一致）"></textarea><div class="actions" style="margin-top:12px"><button class="btn primary" onclick="generateERC()">生成結算話術</button><button class="btn" onclick="clearERC()">清空</button></div></div><div class="card"><div class="actions" style="margin-bottom:10px"><button class="btn" onclick="copyText('ercOutput',this)">複製全部</button></div><div class="output" id="ercOutput">生成結果顯示於此</div></div></div></div>
 
 <div class="tool-pane active" id="tool-template">
   <div class="grid two">
@@ -242,11 +276,11 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
   <div class="grid two" style="margin-top:16px">
     <div class="card">
-      <div class="section-title"><h3>Settle 生成话术</h3><button class="btn" onclick="copyText('tplSettleOutput')">复制</button></div>
+      <div class="section-title"><h3>Settle 生成话术</h3><button class="btn" onclick="copyText('tplSettleOutput',this)">复制</button></div>
       <div class="output" id="tplSettleOutput">生成结果显示于此</div>
     </div>
     <div class="card">
-      <div class="section-title"><h3>Top-Up 生成话术</h3><button class="btn" onclick="copyText('tplTopupOutput')">复制</button></div>
+      <div class="section-title"><h3>Top-Up 生成话术</h3><button class="btn" onclick="copyText('tplTopupOutput',this)">复制</button></div>
       <div class="output" id="tplTopupOutput">生成结果显示于此</div>
     </div>
   </div>
@@ -260,7 +294,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
         <div class="hint" id="chargeStatus" style="margin-top:10px"></div>
       </div>
       <div>
-        <div class="actions" style="margin-bottom:10px;justify-content:flex-end"><button class="btn" onclick="copyText('chargeOutput')">复制全部</button></div>
+        <div class="actions" style="margin-bottom:10px;justify-content:flex-end"><button class="btn" onclick="copyText('chargeOutput',this)">复制全部</button></div>
         <div class="output" id="chargeOutput" style="min-height:290px">生成结果显示于此</div>
       </div>
     </div>
@@ -269,7 +303,49 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
 </section>
 
-<section class="page" id="page-report"><div class="topbar"><div><h2>報表中心</h2><p>依目前資料產生主管回報</p></div></div><div class="card"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="generateReport()">重新生成</button><button class="btn" onclick="copyText('reportOutput')">複製</button></div><div class="output" id="reportOutput">尚未生成</div></div></section>
+
+<section class="page" id="page-payout-record">
+<div class="topbar">
+  <div><h2>Payout Record</h2><p>批量验证 Payout Record、智能读取 Note，并生成结算话术 <span class="badge b-gray" id="prFileName" style="margin-left:6px">尚未导入</span></p></div>
+  <div class="actions pr-actions">
+    <button class="btn primary" id="prFileBtn">📁 选择文件导入</button>
+    <input id="prFile" type="file" accept=".xlsx,.xls,.csv,.txt,.json" hidden>
+    <div class="pr-fee-exempt-wrap">
+      <button class="btn" id="prFeeExemptToggle">⚙ Fiat Fee 例外设置</button>
+      <div class="card pr-fee-exempt-panel" id="prFeeExemptPanel" hidden>
+        <div class="field" style="margin-bottom:8px">
+          <label>Fee(Fiat) 例外商户（逗号或换行分隔）</label>
+          <textarea id="prFeeExemptInput" rows="3" placeholder="例如：MerchantA, MerchantB"></textarea>
+        </div>
+        <div class="actions"><button class="btn primary" id="prFeeExemptSave">保存名单</button><span class="hint" id="prFeeExemptStatus" style="align-self:center"></span></div>
+      </div>
+    </div>
+    <button class="btn" id="prCopyAll" disabled>复制全部</button>
+    <button class="btn danger" id="prClear">清空</button>
+  </div>
+</div>
+
+<div class="pr-rule-note">
+  🔗 <b>话术规则：</b>话术合并① 该笔必须「验证通过（Pass）」；② Note 未被手动标注为「合并打款」。Check 需检视后手动复制话术。
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="pr-filterbar" id="prFilters" style="margin-top:0">
+    <button type="button" class="btn pr-filter active" data-filter="all">全部 <b class="pr-count">0</b></button>
+    <button type="button" class="btn pr-filter" data-filter="pass">Pass <b class="pr-count">0</b></button>
+    <button type="button" class="btn pr-filter" data-filter="check">Check <b class="pr-count">0</b></button>
+    <button type="button" class="btn pr-filter" data-filter="note">Note <b class="pr-count">0</b></button>
+    <button type="button" class="btn pr-filter" data-filter="diff">金额差异 <b class="pr-count">0</b></button>
+    <button type="button" class="btn pr-filter" data-filter="erc">Erc <b class="pr-count">0</b></button>
+  </div>
+</div>
+
+<div class="card table-card" style="margin-top:16px">
+  <div id="prResult" class="hint" style="padding:8px 0">尚未导入 Payout Record</div>
+</div>
+</section>
+
+<section class="page" id="page-report"><div class="topbar"><div><h2>報表中心</h2><p>依目前資料產生主管回報</p></div></div><div class="card"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="generateReport()">重新生成</button><button class="btn" onclick="copyText('reportOutput',this)">複製</button></div><div class="output" id="reportOutput">尚未生成</div></div></section>
 </main>
 </div>
 <div class="toast" id="toast"></div>
@@ -292,11 +368,26 @@ state.currencyProgress=state.currencyProgress&&typeof state.currencyProgress==='
 state.currencyProgress.checked=Array.isArray(state.currencyProgress.checked)?state.currencyProgress.checked:[];
 state.currencyProgress.mode=state.currencyProgress.mode||'';
 state.currencyProgress.resume=state.currencyProgress.resume||'';
+state.prFeeExempt=Array.isArray(state.prFeeExempt)?state.prFeeExempt:[];
 
 const SYMBOLS={INR:'₹',PKR:'Rs',RUB:'₽',NGN:'₦',BDT:'৳',ARS:'$',KES:'KSh',UAH:'₴',PHP:'₱',IDR:'Rp',THB:'฿',EUR:'€',GBP:'£',TRY:'₺',UZS:'UZS',KRW:'₩',MYR:'RM',MXN:'MX$',BRL:'R$',VND:'₫',KZT:'₸'};
 function save(){localStorage.setItem(STORE_KEY,JSON.stringify(state));}
 function now(){return new Date().toLocaleString('zh-TW',{hour12:false});}
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',1800)}
+// 复制按钮点击后的「已复制」变色反馈；label 省略时按钮内容全部替换为「✓ 已复制」，
+// 传入较短 label（如 '✓'）可用于图标型按钮，避免撑破版面。原始内容会在动画结束后自动还原。
+function flashCopied(btn,label){
+  if(!btn)return;
+  if(btn._copyResetTimer)clearTimeout(btn._copyResetTimer);
+  if(btn.dataset.copyOrig===undefined)btn.dataset.copyOrig=btn.innerHTML;
+  const text=label===undefined?'✓ 已复制':(label?`✓ ${label}`:'✓');
+  btn.classList.remove('copy-ok');void btn.offsetWidth;btn.classList.add('copy-ok');
+  btn.innerHTML=`<span class="copy-tick">${text}</span>`;
+  btn._copyResetTimer=setTimeout(()=>{
+    btn.classList.remove('copy-ok');
+    if(btn.dataset.copyOrig!==undefined)btn.innerHTML=btn.dataset.copyOrig;
+  },1300);
+}
 function showPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');const b=[...document.querySelectorAll('.nav-btn')].find(x=>x.dataset.page===name);if(b)b.classList.add('active');window.scrollTo(0,0)}
 document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tool]').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tool-pane').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('tool-'+b.dataset.tool).classList.add('active')});
@@ -1007,10 +1098,10 @@ const CURRENCY_CHECKLIST=[
 
 function robotCommand(currency){return `/b ${currency} *`}
 
-async function copyRobotCommand(currency,quiet=false){
-  try{await navigator.clipboard.writeText(robotCommand(currency));if(!quiet)toast(`已复制 ${currency} Robot 指令`)}
+async function copyRobotCommand(currency,quiet=false,btn){
+  try{await navigator.clipboard.writeText(robotCommand(currency));if(!quiet){toast(`已复制 ${currency} Robot 指令`);flashCopied(btn,'');}}
   catch(e){
-    const area=document.createElement('textarea');area.value=robotCommand(currency);area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();document.execCommand('copy');area.remove();if(!quiet)toast(`已复制 ${currency} Robot 指令`);
+    const area=document.createElement('textarea');area.value=robotCommand(currency);area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();document.execCommand('copy');area.remove();if(!quiet){toast(`已复制 ${currency} Robot 指令`);flashCopied(btn,'');}
   }
 }
 
@@ -1105,7 +1196,7 @@ function renderCurrencyChecklist(){
   const checked=new Set(state.currencyProgress.checked||[]),active=String(state.currencyProgress.current||'').replace(' ✓','');
   box.innerHTML=CURRENCY_CHECKLIST.filter(c=>!q||c.includes(q)).map(c=>{
     const done=checked.has(c),isActive=c===active&&!!state.currencyProgress.mode,isInterrupt=isActive&&state.currencyProgress.mode==='interrupt';
-    return `<div class="check-item ${done?'done':''} ${isActive?'active':''} ${isInterrupt?'interrupting':''}"><span>${done?'✓':isActive?'▶':'○'}</span><span class="check-code">${c}</span><button class="insert-btn" onclick="interruptCurrency('${c}')">插队</button><button class="icon-btn" title="复制 ${c} 指令" onclick="copyRobotCommand('${c}')">📋</button></div>`;
+    return `<div class="check-item ${done?'done':''} ${isActive?'active':''} ${isInterrupt?'interrupting':''}"><span>${done?'✓':isActive?'▶':'○'}</span><span class="check-code">${c}</span><button class="insert-btn" onclick="interruptCurrency('${c}')">插队</button><button class="icon-btn" title="复制 ${c} 指令" onclick="copyRobotCommand('${c}',false,this)">📋</button></div>`;
   }).join('')||'<div class="hint">找不到币种</div>';
 }
 
@@ -1247,46 +1338,6 @@ function toggleCurrencyDetail(currency){
 
 function splitRows(text){return text.trim().split(/\r?\n/).filter(Boolean).map(x=>x.split(/\t+/).map(v=>v.trim()))}
 function findHeaderIndex(headers,patterns){return headers.findIndex(h=>patterns.some(p=>h.toLowerCase().includes(p)))}
-function generateTRC(){
- const raw=document.getElementById('trcInput').value.replace(/\r/g,'').replace(/^\n+/,'').replace(/\s+$/,'');if(!raw){toast('请先贴上资料');return}
- const physicalLines=raw.split('\n').filter(line=>line.trim());const headerLine=physicalLines.find(line=>/商户单号|商戶單號/.test(line)&&/优惠汇率|優惠匯率/.test(line));const records=[];let current=null;
- const isNewLine=line=>{const cells=line.split('\t').map(x=>x.trim());return cells.length>=5&&cells[1]&&cells[2]&&/^[A-Z]{3,5}(?:\s*\(.*\))?$/.test(cells[2])};
- const wrapSkip=new Set();physicalLines.forEach((line,i)=>{if(line===headerLine||line.includes('\t'))return;let j=i+1;while(j<physicalLines.length&&physicalLines[j]===headerLine)j++;if(physicalLines[j]&&isNewLine(physicalLines[j]))wrapSkip.add(i)});
- physicalLines.forEach((line,i)=>{if(line===headerLine||wrapSkip.has(i))return;const cells=line.split('\t').map(x=>x.trim());const isNew=isNewLine(line);
-  if(isNew){if(current)records.push(current);while(cells.length<13)cells.push('');current={merchant:cells[1],currency:cells[2],orderText:cells[3],arrivalText:cells[4],feeFiatText:cells[5],feeUsdText:cells[6],receivedText:cells[7],hashes:cells[8]?[cells[8]]:[],date:cells[9],owner:cells[10],merchantRateText:cells[11],preferredRateText:cells[12]};}
-  else if(current){cells.filter(Boolean).forEach(v=>{if(/^(0x)?[a-f0-9]{40,}$/i.test(v))current.hashes.push(v);else if(/月|^\d{1,2}\/\d{1,2}$/.test(v)&&!current.date)current.date=v;else if(!current.owner&&!/^\d/.test(v))current.owner=v;else if(/^-?[\d,.]+$/.test(v)){if(!current.merchantRateText)current.merchantRateText=v;else if(!current.preferredRateText)current.preferredRateText=v;}})}
- });if(current)records.push(current);
- const rawNumber=v=>String(v||'').replace(/,/g,'').replace(/[^\d.\-]/g,'').trim();
- const calcText=n=>Number.isFinite(n)?n.toFixed(12).replace(/\.?0+$/,''):'';
- const cleanHash=v=>String(v||'').trim().replace(/^\*+|\*+$/g,'').replace(/^https?:\/\/[^/]+\/tx\//i,'');
- const prepared=records.map((r,index)=>{
-  const amount=Number(rawNumber(r.arrivalText)||rawNumber(r.orderText)),feeFiat=Number(rawNumber(r.feeFiatText)||0),feeUsd=Number(rawNumber(r.feeUsdText)||0),rate=Number(rawNumber(r.preferredRateText)||rawNumber(r.merchantRateText)),actualText=rawNumber(r.receivedText);
-  if(!r.merchant||!r.currency||!amount||!rate)return null;
-  const amountText=rawNumber(r.arrivalText)||rawNumber(r.orderText),rateText=rawNumber(r.preferredRateText)||rawNumber(r.merchantRateText),actualNumber=Number(actualText);
-  const candidates=[{value:amount/rate,formula:`${amountText}/${rateText}`}];
-  if(feeFiat)candidates.push({value:(amount-feeFiat)/rate,formula:`(${amountText}-${rawNumber(r.feeFiatText)})/${rateText}`});
-  if(feeUsd)candidates.push({value:(amount/rate)-feeUsd,formula:`(${amountText}/${rateText})-${rawNumber(r.feeUsdText)}U`});
-  if(feeFiat&&feeUsd)candidates.push({value:((amount-feeFiat)/rate)-feeUsd,formula:`((${amountText}-${rawNumber(r.feeFiatText)})/${rateText})-${rawNumber(r.feeUsdText)}U`});
-  const chosen=Number.isFinite(actualNumber)&&actualText?candidates.reduce((best,item)=>Math.abs(item.value-actualNumber)<Math.abs(best.value-actualNumber)?item:best):candidates[candidates.length-1];
-  const hashes=[...new Set(r.hashes.map(cleanHash).filter(Boolean))];
-  return {...r,index,amount,amountText,rateText,actual:actualText||calcText(chosen.value),formula:chosen.formula,hashes};
- }).filter(Boolean);
- const groups=[];const groupMap=new Map();
- prepared.forEach(item=>{
-  const hashKey=item.hashes.length===1?item.hashes[0].toLowerCase():'';
-  const key=hashKey?`${normalizeName(item.merchant)}|${hashKey}`:`single-${item.index}`;
-  if(!groupMap.has(key)){const group=[];groupMap.set(key,group);groups.push(group)}
-  groupMap.get(key).push(item);
- });
- const outputs=groups.map(group=>{
-  if(group.length===1){const r=group[0],transferNote=r.hashes.length>1?`,(商户分${r.hashes.length}笔转)`:``;return `${r.merchant}出U,结算${r.currency} ${r.amountText},汇率${r.rateText}。\n${r.formula}=${r.actual} U${transferNote},请你确认,谢谢。  TXID：\n${r.hashes.join('\n')}`}
-  const countText=group.length===2?'两笔':`${group.length}笔`;
-  const details=group.map(r=>`结算${r.currency} ${r.amountText}，汇率${r.rateText}。\n${r.formula}=${r.actual} U。`).join('\n\n');
-  const actuals=group.map(r=>r.actual),totalDecimals=Math.max(...actuals.map(value=>(String(value).split('.')[1]||'').length)),total=actuals.reduce((sum,value)=>sum+Number(value||0),0).toFixed(totalDecimals).replace(/\.?0+$/,'');
-  return `${group[0].merchant}出U，${countText}结算合并一笔转账：\n\n${details}\n\n合计${actuals.join('+')}=${total} U，请你确认，谢谢。TXID：\n${group[0].hashes[0]}`;
- });
- document.getElementById('trcOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';document.getElementById('trcStatus').textContent=`已生成 ${outputs.length} 则回报，不限制批量数量；同商户同TXID自动合并，实收USDT保留原始小数位。`;
-}
 function generateERC(){
  const raw=document.getElementById('ercInput').value.replace(/\r/g,'').replace(/^\n+/,'').replace(/\s+$/,'');
  if(!raw){toast('请先贴上资料');return}
@@ -1445,19 +1496,27 @@ function generateERC(){
        return best;
      },null);
    }else{
-     // 没有实收U时，优先采用「到账金额 / 汇率」；
-     // 若订单金额-Fee 恰好等于到账金额，则明确显示已由 Fee 扣除。
+     // 没有实收U时：若订单金额-Fee 恰好等于到账金额，明确显示由 Fee 扣除；
+     // 否则，只要有填手续费（法币或U），就该套用——不能因为没有额外的到账金额/实收U
+     // 来「验证」，就把明明填了的手续费整个忽略掉，那样会静默算出偏高的错误结果。
      if(feeAmountFiat>0&&Math.abs(order-feeAmountFiat-arrival)<0.000001){
        selected=candidates.find(c=>c.label==='订单金额-Fee');
      }
-     if(!selected)selected=candidates.find(c=>c.label==='到账金额')||candidates[0];
+     if(!selected&&arrival)selected=candidates.find(c=>c.label==='到账金额');
+     if(!selected&&(feeAmountFiat>0||feeUsd>0)){
+       selected=candidates.find(c=>c.label==='订单金额-Fee'&&c.uFeeApplied===(feeUsd>0))
+              ||candidates.find(c=>c.label==='订单金额-Fee')
+              ||candidates.find(c=>c.label==='订单金额'&&c.uFeeApplied===(feeUsd>0));
+     }
+     if(!selected)selected=candidates[0];
    }
 
    if(!selected)return null;
 
-   // 公式结果使用选中的计算结果；实收U仅用于判断哪一种填写方式正确。
+   // 公式结果使用选中的计算结果来挑选公式；如果原本就有给「实收U」，画面上直接显示原始数字
+   // （不重新用浮点数除法算一次，避免出现浮点误差的长尾小数）；没有给的话才用完整精度计算值。
    const calculated=selected.value;
-   const actualDisplay=money2(calculated);
+   const actualDisplay=actualRaw||money2(calculated);
 
    const fromMatch=r.currency.match(/^([A-Za-z]+)\s*\(from\s+([A-Za-z]+)\)$/i);
    const groupKey=[r.currency,rate,txHash(r.hashText)].join('|');
@@ -1500,15 +1559,14 @@ function generateERC(){
  const outputs=groups.map(g=>{
    if(g.items.length>1){
      const first=g.items[0];
-     const totalFiat=g.items.reduce((s,it)=>s+it.order,0);
-     const result=totalFiat/first.rate;
-     const sumFormula=g.items.map(it=>it.orderText).join('+');
+     const decimalsOf=s=>{const p=String(s).split('.');return p[1]?p[1].length:0;};
+     const maxDecimals=Math.max(0,...g.items.map(it=>decimalsOf(it.actualDisplay)));
+     const rawTotal=g.items.reduce((s,it)=>s+Number(it.actualDisplay||0),0);
+     const totalDisplay=rawTotal.toFixed(maxDecimals).replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');
+     const sumFormula=g.items.map(it=>it.actualDisplay).join('+');
      const lines=[
        `${first.merchant}结算出U 币种：${first.currency} 汇率：${first.rateText}（商户${g.items.length}笔合并打款）`,
-       `${sumFormula}=${money2(totalFiat)}`,
-       `${money2(totalFiat)}/${first.rateText}=${money2(result)} U`,
-       `TXID：`,
-       first.hash
+       `${sumFormula}=${totalDisplay} U, 请你确认,谢谢。TXID：${first.hash}`
      ];
      return lines.join('\n');
    }
@@ -1518,41 +1576,50 @@ function generateERC(){
    if(it.fromMatch){
      const asset=it.fromMatch[1],srcCurrency=it.fromMatch[2];
      let formula=it.selected.formula;
-     const lines=[`${it.merchant}出U,结算${asset}(from ${srcCurrency}),${formula}=${it.actualDisplay} U, 请你确认,谢谢。`];
-     lines.push(`TXID：`);
-     lines.push(it.hash);
+     const lines=[`${it.merchant}出U,结算${asset}(from ${srcCurrency}),${formula}=${it.actualDisplay} U, 请你确认,谢谢。TXID：${it.hash}`];
      return lines.join('\n');
    }
 
-   const lines=[`${it.merchant}结算出U 币种：${it.currency} 汇率：${it.rateText}`];
+   // TRC / ERC 結算話術固定使用：
+   // 商戶出U,結算幣種 金額,匯率匯率。計算公式=實收U, 請你確認,謝謝。TXID：HashId
+   // 只調整話術中文與排列；Fee / 匯率 / 實收U 的既有計算與判斷完全不變。
+   const speechAmount=it.selected.label==='订单金额-Fee'||it.selected.label==='订单金额'
+     ? it.orderText
+     : it.arrivalText||it.orderText;
+   const lines=[`${it.merchant}出U,结算${it.currency} ${speechAmount},汇率${it.rateText}。`];
 
    if(it.selected.feeApplied){
-     // 只有实际U与「扣除法币 Fee」的候选公式吻合时，才展示 Fee 的计算过程。
-     // 例如 Utorg：21000-Fee 420=20580，再用净额换算 USDT。
+     // 話術顯示只改「原始貼入金額的精度」：貼上幾位小數就保留幾位。
+     // 驗證、候選公式與 Fee 判斷完全不變。
      const net=it.selected.base;
+     const rawFee=/[%％]/.test(it.feeFiatText)?money2(it.feeAmountFiat):(it.feeFiatText||money2(it.feeAmountFiat));
      if(Math.abs(it.order-it.feeAmountFiat-it.arrival)<0.000001){
-       lines.push(`${it.orderText}-Fee ${money2(it.feeAmountFiat)}=${it.arrivalText}`);
+       lines.push(`${it.orderText}-Fee ${rawFee}=${it.arrivalText}`);
        let formula=`${it.arrivalText}/${it.rateText}`;
        if(it.selected.uFeeApplied)formula=`(${formula})-${it.feeUsdText}U`;
-       lines.push(`${formula}=${it.actualDisplay} U`);
+       lines.push(`${formula}=${it.actualDisplay} U, 请你确认,谢谢。TXID：${it.hash}`);
      }else{
-       lines.push(`${it.selected.baseText}=${money2(net)} ${it.currency}`);
-       lines.push(`${it.selected.uFeeApplied?`(${money2(net)}/${it.rateText})-${it.feeUsdText}U`:`${money2(net)}/${it.rateText}`}=${it.actualDisplay} U`);
+       let baseSpeech=it.selected.baseText;
+       if(it.selected.label==='订单金额-Fee'){
+         baseSpeech=`${it.orderText}-Fee ${rawFee}`;
+       }else if(it.selected.label==='到账金额-Fee'){
+         baseSpeech=`${it.arrivalText}-Fee ${rawFee}`;
+       }
+       lines.push(`${baseSpeech}=${trimCalc(net)} ${it.currency}`);
+       const netSpeech=trimCalc(net);
+         lines.push(`${it.selected.uFeeApplied?`(${netSpeech}/${it.rateText})-${it.feeUsdText}U`:`${netSpeech}/${it.rateText}`}=${it.actualDisplay} U, 请你确认,谢谢。TXID：${it.hash}`);
      }
    }else{
      // SLYSE 等特殊情况：实收U已经对应原始金额换算，不展示多余的 Fee 推导。
-     lines.push(`${it.selected.formula}=${it.actualDisplay} U`);
+     lines.push(`${it.selected.formula}=${it.actualDisplay} U, 请你确认,谢谢。TXID：${it.hash}`);
    }
 
-   lines.push(`TXID：`);
-   lines.push(it.hash);
    return lines.join('\n');
  });
 
  document.getElementById('ercOutput').textContent=outputs.length?outputs.join('\n\n'):'未识别到有效资料。';
 }
 
-function clearTRC(){document.getElementById('trcInput').value='';document.getElementById('trcOutput').textContent='生成结果显示于此'}
 function clearERC(){document.getElementById('ercInput').value='';document.getElementById('ercOutput').textContent='生成结果显示于此'}
 function generateCharge(){
  const raw=document.getElementById('chargeInput').value.replace(/\r/g,'').replace(/^\n+/,'').replace(/\s+$/,'');if(!raw){toast('请先贴上资料');return}
@@ -1640,7 +1707,34 @@ function generateCharge(){
  document.getElementById('chargeStatus').textContent=`已识别 ${records.length} 笔、生成 ${outputs.length} 则充值申请话术；跨行断裂的储存格会自动合并，含手续费的公式会取最贴近登记「兑换金额」的算法。`;
 }
 function clearCharge(){document.getElementById('chargeInput').value='';document.getElementById('chargeOutput').textContent='生成结果显示于此';document.getElementById('chargeStatus').textContent=''}
-async function copyText(id){await navigator.clipboard.writeText(document.getElementById(id).textContent);toast('已复制')}
+async function copyText(id,btn){
+ const text=document.getElementById(id).textContent;
+ try{
+  if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error('no clipboard api');
+  await navigator.clipboard.writeText(text);
+  toast('已复制');
+  flashCopied(btn);
+  return;
+ }catch(e){}
+ // 备用方案：现代 Clipboard API 在用「打开本机档案」(file://) 或非 HTTPS 环境下常被浏览器挡掉，
+ // 改用传统的隐藏 textarea + execCommand('copy')，兼容性更好。
+ try{
+  const ta=document.createElement('textarea');
+  ta.value=text;
+  ta.style.position='fixed';
+  ta.style.left='-9999px';
+  ta.style.top='0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  const ok=document.execCommand('copy');
+  document.body.removeChild(ta);
+  toast(ok?'已复制':'复制失败，请手动选取文字复制');
+  if(ok)flashCopied(btn);
+ }catch(e2){
+  toast('复制失败，请手动选取文字复制');
+ }
+}
 function generateReport(){
  const rows=summary();const lines=['【Fiat Operations 综合回报】'];
  rows.forEach(x=>{const r=recommendation(x),usable=usableBalanceForCurrency(x.currency,x.payout);lines.push(`${x.currency}：总余额 ${SYMBOLS[x.currency]||''}${fmt(x.fiat)}，可动用 ${SYMBOLS[x.currency]||''}${fmt(usable.amount)}，Withdrawal 日均 ${SYMBOLS[x.currency]||''}${fmt(x.withdraw)}，Deposit 日均 ${SYMBOLS[x.currency]||''}${fmt(x.deposit)}；${r.text}。${r.reason}`)});
@@ -1649,5 +1743,465 @@ function generateReport(){
 function resetAll(){if(!confirm('确定清空所有已保存资料？'))return;localStorage.removeItem(STORE_KEY);location.reload()}
 renderAll();
 renderCurrencyProgress();
+</script>
+
+<script>
+(function(){
+'use strict';
+const PR={data:[],filter:'all'};
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const raw=v=>String(v??'').trim();
+const num=v=>{
+  if(v===null||v===undefined||String(v).trim()==='')return NaN;
+  const s=String(v).replace(/,/g,'').replace(/[^\d.\-+eE]/g,'');
+  const n=Number(s);return Number.isFinite(n)?n:NaN;
+};
+const finite=v=>Number.isFinite(v);
+const money=v=>finite(v)?Number(v).toLocaleString('en-US',{maximumFractionDigits:2,useGrouping:false}):'';
+const money4=v=>finite(v)?Number(v).toLocaleString('en-US',{maximumFractionDigits:8,useGrouping:false}):'';
+const rateText=v=>{
+  const n=num(v); return finite(n)?n.toLocaleString('en-US',{maximumFractionDigits:12,useGrouping:false}):'';
+};
+const norm=v=>String(v??'').toLowerCase().replace(/[\s_\-（）()［］\[\]：:./]/g,'');
+const cleanCurrency=v=>{
+  const s=String(v??'').trim();
+  const m=s.match(/([A-Za-z]{3,6})\s*$/);
+  if(!m)return s;
+  return m[1].replace(/FIAT$/i,'').toUpperCase();
+};
+const displayCurrency=v=>String(v??'').replace(/FIAT$/i,'').trim();
+
+const fields={
+ thirdPartyId:['thirdpartysettlementid','third party settlement id','settlementid','settlement id'],
+ provider:['provider','merchantname','merchant','商户','商戶'],
+ currency:['currency','curr','fiatcurrency','币种','幣種'],
+ amountFiat:['amountfiat','amount(fiat)','fiatamount','fiat','金额(fiat)','金額(fiat)','amount'],
+ amountUSDT:['amountusdt','amount(usdt)','usdtamount','receivedusdt','receivedamountusdt','金额(usdt)','金額(usdt)'],
+ feeFiat:['feefiat','fee(fiat)','fiatfee','fiat手续费','fiat手續費'],
+ feeUSDT:['feeusdt','fee(usdt)','usdtfee','usdt手续费','usdt手續費'],
+ discount:['discountrate','discount rate','折扣率','折扣汇率'],
+ merchantRate:['merchantrate','merchant rate','商户汇率','商戶匯率','汇率','匯率'],
+ hash:['hashid','hash id','txid','transactionid','transaction id','交易hash','交易哈希'],
+ note:['note','备注','備註','remark','remarks'],
+ network:['network','chain','protocol','网络','網絡'],
+ order:['orderid','order id','订单号','訂單號']
+};
+
+function findField(headers,arr){
+  const hs=headers.map(String);
+  const ns=hs.map(norm);
+  for(const wanted of arr){
+    const n=norm(wanted);
+    const i=ns.findIndex(h=>h===n);
+    if(i>=0)return hs[i];
+  }
+  for(const wanted of arr){
+    const n=norm(wanted);
+    if(!n)continue;
+    const i=ns.findIndex(h=>{
+      const tokens=h.split(/[^a-z0-9]+/).filter(Boolean);
+      const wn=n.split(/[^a-z0-9]+/).filter(Boolean);
+      return h===n || (tokens.length&&wn.length&&wn.every(t=>tokens.includes(t)));
+    });
+    if(i>=0)return hs[i];
+  }
+  // conservative fuzzy: only distinctive field names
+  for(const wanted of arr){
+    const n=norm(wanted);
+    if(n.length<5)continue;
+    const i=ns.findIndex(h=>h.includes(n));
+    if(i>=0)return hs[i];
+  }
+  return '';
+}
+
+function splitDelimited(line){
+  const out=[];let cur='',q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q;
+    }else if((ch===','||ch==='\t')&&!q){out.push(cur);cur='';}
+    else cur+=ch;
+  }
+  out.push(cur);return out;
+}
+function csvRows(text){
+  const lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim()!=='');
+  if(!lines.length)return [];
+  const h=splitDelimited(lines[0]).map(x=>x.trim());
+  return lines.slice(1).map(line=>{
+    const p=splitDelimited(line),r={};
+    h.forEach((k,i)=>r[k]=p[i]??'');return r;
+  });
+}
+async function readPRFile(file){
+  const name=file.name.toLowerCase();
+  if(name.endsWith('.csv')||name.endsWith('.txt'))return csvRows(await file.text());
+  if(name.endsWith('.json')){
+    const j=JSON.parse(await file.text());
+    if(Array.isArray(j))return j;
+    if(Array.isArray(j.rows))return j.rows;
+    throw new Error('JSON 格式不是資料列阵列。');
+  }
+  if(name.endsWith('.xls')||name.endsWith('.xlsx')){
+    if(typeof XLSX==='undefined')throw new Error('Excel 解析引擎未载入，请重新整理页面后再试。');
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:false,raw:false});
+    const rows=[];
+    wb.SheetNames.forEach(sn=>{
+      const ws=wb.Sheets[sn];
+      const r=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      if(r.length)rows.push(...r);
+    });
+    return rows;
+  }
+  throw new Error('不支持的文件格式。');
+}
+
+function noteParse(value){
+  const s=String(value??'').replace(/\r/g,' ').replace(/\n/g,' ').trim();
+  if(!s)return {has:false,amount:NaN,type:''};
+  const patterns=[
+    {re:/(?:TOTAL|total)\s*[:=：]?\s*([\-+]?\d[\d,]*(?:\.\d+)?)/i,type:'TOTAL'},
+    {re:/(?:actual\s*(?:received|receive)|actual|received|final\s*(?:received|amount)|net\s*(?:received|amount)|最终(?:实收|到账)|實收|实收|实到|净收|净到账|实际(?:回U|到账|收到))\s*[:=：]?\s*([\-+]?\d[\d,]*(?:\.\d+)?)/i,type:'实际实收'},
+    {re:/(?:合并打款|combined\s*(?:payment|payout))[^0-9\-+]*([\-+]?\d[\d,]*(?:\.\d+)?)/i,type:'合并打款'}
+  ];
+  for(const p of patterns){
+    const m=s.match(p.re);
+    if(m){const n=num(m[1]);if(finite(n))return {has:true,amount:n,type:p.type};}
+  }
+  return {has:true,amount:NaN,type:''};
+}
+
+function txidFromRow(row,hashKey){
+  // TXID 只直接抓取表头识别到的 HashId / TXID 栏位。
+  // 严禁从 Address 或其他栏位扫描，否则 TRC Address 会被误当成 TXID。
+  const direct=String(hashKey?row[hashKey]:'').trim();
+  if(!direct)return {value:'',network:''};
+  const erc=direct.match(/0x[a-f0-9]{64}/i);
+  if(erc)return {value:erc[0],network:'ERC'};
+  return {value:direct,network:''};
+}
+
+// Payout Record 的 Amount(Fiat) 是「已经扣掉 Fee(Fiat) 之后」的净额，不是订单原始总额
+// （这点跟 ERC Settle 的「订单金额」相反，那边才是要从原始金额里扣 Fee）——所以换算 USDT
+// 一律直接用 Amount(Fiat) 本身，Fee(Fiat) 不影响实际算出来的 U（它只影响话术要不要把
+// 金额还原成「结算原始金额」显示，这部分交给 prGrossInfo() 在显示时依商户名单动态判断，
+// 不写死在这里，因为同一份资料换个商户名单设定，U 的结果不该变、只有显示的抬头金额会变）。
+function smartCalc(x){
+  const {af,au,fu,dr}=x;
+  if(!finite(af)||!finite(dr)||dr<=0)return null;
+  const candidates=[
+    {id:1,net:af/dr,usesUsdFee:false},
+    {id:3,net:af/dr-(finite(fu)?fu:0),usesUsdFee:true}
+  ];
+  if(finite(au)){
+    candidates.forEach(c=>c.err=Math.abs(c.net-au));
+    candidates.sort((a,b)=>a.err-b.err);
+    return {chosen:candidates[0],candidates};
+  }
+  const preferred=finite(fu)&&fu!==0?3:1;
+  return {chosen:candidates.find(c=>c.id===preferred)||candidates[0],candidates};
+}
+
+// Fee(Fiat) 例外商户名单：名单内的商户，Amount(Fiat) 本身就是正确的结算金额，
+// Fee(Fiat) 只是另外从商户余额扣款、跟这笔结算金额无关，所以话术不把它加回去还原。
+function normalizeProviderKey(v){return String(v||'').trim().toLowerCase();}
+function isPrFeeExempt(provider){
+  const list=Array.isArray(state.prFeeExempt)?state.prFeeExempt:[];
+  return list.includes(normalizeProviderKey(provider));
+}
+// 依目前的例外名单，动态算出话术要显示的「结算金额」：
+// 不例外且有 Fee(Fiat) 时，把 Fee(Fiat) 加回 Amount(Fiat) 还原成原始结算金额；
+// 名单内的商户，或本来就没有 Fee(Fiat) 的记录，则维持 Amount(Fiat) 原样。
+function prGrossInfo(x){
+  const hasFiatFee=!isPrFeeExempt(x.provider)&&finite(x.ff)&&x.ff!==0;
+  const grossFiat=hasFiatFee?x.af+x.ff:x.af;
+  return {hasFiatFee,grossFiat};
+}
+
+function analyzePR(row,cols){
+  const af=num(cols.amountFiat?row[cols.amountFiat]:undefined);
+  const au=num(cols.amountUSDT?row[cols.amountUSDT]:undefined);
+  const ff=num(cols.feeFiat?row[cols.feeFiat]:undefined);
+  const fu=num(cols.feeUSDT?row[cols.feeUSDT]:undefined);
+  const dr=num(cols.discount?row[cols.discount]:undefined);
+  const mr=num(cols.merchantRate?row[cols.merchantRate]:undefined);
+  const note=noteParse(cols.note?row[cols.note]:'');
+  const tx=txidFromRow(row,cols.hash);
+  const provider=String(cols.provider?row[cols.provider]:'').trim();
+  const currency=displayCurrency(String(cols.currency?row[cols.currency]:'').trim());
+  const smart=smartCalc({af,au,ff,fu,dr});
+  const noteAmount=note.amount;
+  const noteDiff=finite(noteAmount)&&finite(au)&&Math.abs(noteAmount-au)>.01;
+  const calcDiff=smart&&finite(au)?smart.chosen.net-au:NaN;
+  const calcMismatch=finite(calcDiff)&&Math.abs(calcDiff)>.01;
+  const issues=[];
+  if(!cols.amountFiat||!finite(af))issues.push('Amount(Fiat) 缺失或无法解析');
+  if(!cols.discount||!finite(dr)||dr<=0)issues.push('Discount Rate 缺失或无效');
+  if(!tx.value)issues.push('HashId / TXID 缺失');
+  if(finite(af)&&af<0)issues.push('Amount(Fiat) 为负数');
+  if(finite(ff)&&ff<0)issues.push('Fee(Fiat) 为负数');
+  if(finite(au)&&au<0)issues.push('Amount(USDT) 为负数');
+  if(finite(fu)&&fu<0)issues.push('Fee(USDT) 为负数');
+  if(calcMismatch)issues.push('USDT 结算结果与 Record 不一致');
+  return {
+    row,cols,provider,currency,af,au,ff,fu,dr,mr,note,noteAmount,noteDiff,smart,calcDiff,calcMismatch,
+    hash:tx.value,network:tx.network,issues,ok:issues.length===0,
+    noteText:cols.note?String(row[cols.note]??'').trim():''
+  };
+}
+
+function prActualDisplay(x){
+  return finite(x.noteAmount)?money4(x.noteAmount):(finite(x.au)?money4(x.au):'');
+}
+// 单笔的「结算公式」：金额 / 汇率（视情形扣 Fee）= 实收 U。抽成共用函式，
+// 让单笔话术与合并话术里各自的计算式保持完全一致。
+// 结算金额（含是否加回 Fee(Fiat)）依 prGrossInfo() 依当下的例外名单动态判断，
+// 不受分析当下的名单状态锁死——名单改了，重新渲染就会用新设定。
+function prFormulaParts(x){
+  const rate=rateText(x.dr);
+  const cur=displayCurrency(x.currency||'币种');
+  const actual=prActualDisplay(x);
+  const {hasFiatFee,grossFiat}=prGrossInfo(x);
+  const amount=money(grossFiat);
+  const s=x.smart?.chosen;
+  let formulaBody='';
+  if(s){
+    const base=hasFiatFee?`(${amount} - Fee ${money(x.ff)})/${rate}`:`${money(x.af)}/${rate}`;
+    formulaBody=s.usesUsdFee?`(${base}) - Fee ${money(x.fu)}U`:base;
+  }
+  const formula=formulaBody?`${formulaBody}=${actual} U`:`${actual} U`;
+  return {amount,rate,cur,actual,formula,formulaBody,hasFiatFee,grossFiat};
+}
+function speechPR(x){
+  const {amount,rate,cur,actual,formula}=prFormulaParts(x);
+  const first=`${x.provider||'商户'}出U,结算${cur} ${amount},汇率${rate}。`;
+  if(x.note.type==='合并打款'&&finite(x.noteAmount)){
+    return `${first}\n合并打款实收${actual} U,请你确认，谢谢。  TXID：\n${x.hash}`;
+  }
+  return `${first}\n${formula},请你确认，谢谢。  TXID：\n${x.hash}`;
+}
+
+// 合并规则：只要 HashId / TXID 相同就合并为同一则回报话术（与 ERC Settle 结算话术的合并方式一致）。
+// 商户名称、币种、汇率不需要相同——若这些不同，会分段列出每笔各自的「结算XX,汇率XX。」+计算式，
+// 最后再统一加总成一行确认话术；若商户与汇率都相同，则沿用单一抬头＋加总公式的简洁格式。
+// 仍需满足两个技术上的必要前提，才不会算出错误或没有意义的结果（这两点会显示在 Payout Record 页面上）：
+// 1) 该笔必须「验证通过」（否则数据本身有问题，不该被计入确认话术）；
+// 2) Note 尚未被手动标注为「合并打款」（那种记录已经是使用者自行合并过的实收金额，
+//    再混进公式加总会把同一笔钱重复计算)。
+function buildPRSpeechGroups(all){
+  const map=new Map();
+  all.forEach(x=>{
+    if(!x.ok||!x.hash||x.note.type==='合并打款')return;
+    const key=x.hash;
+    if(!map.has(key))map.set(key,[]);
+    map.get(key).push(x);
+  });
+  const groupOf=new Map();
+  map.forEach(items=>{
+    if(items.length<2)return;
+    const first=items[0];
+    const parts=items.map(it=>({it,...prFormulaParts(it)}));
+    const decimalsOf=s=>{const p=String(s).split('.');return p[1]?p[1].length:0;};
+    const actuals=parts.map(p=>p.actual);
+    const maxDecimals=Math.max(0,...actuals.map(decimalsOf));
+    const rawTotal=actuals.reduce((s,a)=>s+Number(a||0),0);
+    const totalDisplay=rawTotal.toFixed(maxDecimals).replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');
+    const sumFormula=actuals.join('+');
+    const sameProviderRate=items.every(it=>it.provider===first.provider&&it.dr===first.dr);
+    let text;
+    if(sameProviderRate){
+      const cur=displayCurrency(first.currency||'币种');
+      const rate=rateText(first.dr);
+      const totalFiat=items.every(it=>finite(it.af))?money(parts.reduce((s,p)=>s+p.grossFiat,0)):'';
+      text=`${first.provider||'商户'}出U,结算${cur}${totalFiat?` ${totalFiat}`:''},汇率${rate}。（商户${items.length}笔合并打款）\n${sumFormula}=${totalDisplay} U,请你确认，谢谢。  TXID：\n${first.hash}`;
+    }else{
+      const blocks=parts.map(p=>`${p.it.provider||'商户'}出U,结算${p.cur} ${p.amount},汇率${p.rate}。\n${p.formula}`).join('\n');
+      text=`${blocks}\n\n${sumFormula}=${totalDisplay} U,请你确认，谢谢。  （商户${items.length}笔合并打款）TXID：\n${first.hash}`;
+    }
+    items.forEach(it=>groupOf.set(it,{text,count:items.length}));
+  });
+  return groupOf;
+}
+
+function safeCell(v){return finite(v)?money(v):'';}
+function prCopy(text){
+  if(!text)return;
+  navigator.clipboard?.writeText(text).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  });
+}
+
+function renderPR(){
+  const all=PR.data;
+  const pass=all.filter(x=>x.ok).length;
+  const check=all.length-pass;
+  const notes=all.filter(x=>x.note.has).length;
+  const diffs=all.filter(x=>x.noteDiff).length;
+  const erc=all.filter(x=>x.network==='ERC').length;
+  const counts={all:all.length,pass,check,note:notes,diff:diffs,erc};
+  document.querySelectorAll('.pr-filter').forEach(btn=>{
+    const count=counts[btn.dataset.filter] ?? 0;
+    const badge=btn.querySelector('.pr-count');
+    if(badge) badge.textContent=count;
+  });
+  $('prCopyAll').disabled=!all.some(x=>x.ok);
+
+  let data=all;
+  if(PR.filter==='pass')data=all.filter(x=>x.ok);
+  if(PR.filter==='check')data=all.filter(x=>!x.ok);
+  if(PR.filter==='note')data=all.filter(x=>x.note.has);
+  if(PR.filter==='diff')data=all.filter(x=>x.noteDiff);
+  if(PR.filter==='erc')data=all.filter(x=>x.network==='ERC');
+
+  if(!data.length){
+    $('prResult').innerHTML='<div class="hint" style="padding:20px">没有符合目前筛选条件的记录。</div>';return;
+  }
+
+  const ordered=[...data].sort((a,b)=>Number(b.ok)-Number(a.ok));
+  const speechGroups=buildPRSpeechGroups(all);
+  $('prResult').innerHTML=`<div class="hint">显示 ${ordered.length} / ${all.length} 笔</div>
+  <div class="pr-table-wrap"><table class="pr-table"><thead><tr>
+    <th>验证</th><th>#</th><th>Merchant</th><th>Currency</th>
+    <th>Amount(Fiat)</th><th>Amount(USDT)</th><th>Fee(Fiat)</th><th>Fee(USDT)</th>
+    <th>Merchant Rate</th><th>Discount Rate</th><th>HashId / TXID</th>
+    <th>Note</th><th>金额差异</th><th>智能计算</th><th>回报话术</th>
+  </tr></thead><tbody>${
+    ordered.map((x,i)=>{
+      const rowClass=x.noteDiff?'pr-note':(x.ok?'pr-pass':'pr-check');
+      const diffNum=finite(x.noteAmount)&&finite(x.au)?x.noteAmount-x.au:NaN;
+      const diff=finite(diffNum)?money(diffNum):'';
+      const diffSigned=finite(diffNum)?(diffNum>0?'+':'')+diff:'';
+      const calcDiffSigned=finite(x.calcDiff)?(x.calcDiff>0?'+':'')+money(x.calcDiff):'';
+      const calc=x.smart?.chosen;
+      const fp=calc?prFormulaParts(x):null;
+      const calcHtml=calc
+        ? `${fp.hasFiatFee?`<div>已还原结算金额：<b>${safeCell(fp.grossFiat)}</b> Fiat（Amount(Fiat) ${safeCell(x.af)} + Fee(Fiat) ${safeCell(x.ff)}）</div>`:''}
+           <div>${esc(fp.formulaBody)} = <b>${finite(x.noteAmount)?money4(x.noteAmount):finite(x.au)?money4(x.au):''} U</b></div>
+           ${x.noteDiff?`<div class="pr-diff-alert">⚠ Note 与 Amount(USDT) 有差异，相差 <span class="pr-diff-amt">${diffSigned} U</span></div>`:''}
+           ${x.calcMismatch?`<div class="pr-diff-alert">⚠ 计算结果与 Amount(USDT) 不一致，相差 <span class="pr-diff-amt">${calcDiffSigned} U</span></div>`:''}`
+        : '';
+      const otherIssues=x.issues.filter(t=>t!=='USDT 结算结果与 Record 不一致');
+      const noteHtml=x.note.has
+        ? `<b>Note：</b>${esc(x.noteText)||''}${x.note.type?`<div class="pr-muted">识别：${esc(x.note.type)}${finite(x.noteAmount)?`｜${money4(x.noteAmount)} U`:''}</div>`:''}`
+        : '';
+      const merged=speechGroups.get(x);
+      const speech=merged?merged.text:speechPR(x);
+      const hashHtml=x.hash?`<button class="pr-id-btn" data-copy="${esc(x.hash)}" title="点击复制">${esc(x.hash.length>14?x.hash.slice(0,5)+'...'+x.hash.slice(-5):x.hash)}</button>`:'';
+      return `<tr class="${rowClass}">
+        <td><span class="pr-status ${x.ok?'pass':'check'}">${x.ok?'Pass':'Check'}</span></td>
+        <td>${i+1}</td>
+        <td>${esc(x.provider)}</td>
+        <td>${esc(x.currency)}</td>
+        <td>${safeCell(x.af)}</td>
+        <td>${safeCell(x.au)}</td>
+        <td>${safeCell(x.ff)}</td>
+        <td>${safeCell(x.fu)}</td>
+        <td>${rateText(x.mr)}</td>
+        <td>${rateText(x.dr)}</td>
+        <td class="pr-id">${hashHtml}</td>
+        <td class="pr-note-cell">${noteHtml}</td>
+        <td class="${x.noteDiff?'pr-bad':''}">${diff}</td>
+        <td class="pr-calc">${calcHtml}${otherIssues.length?`<div class="pr-bad">${otherIssues.map(esc).join('；')}</div>`:''}</td>
+        <td class="pr-speech">${esc(speech)}${merged?`<div class="pr-muted">🔗 已与其他 ${merged.count-1} 笔（相同 TXID）合并为一则话术</div>`:''}</td>
+      </tr>`;
+    }).join('')
+  }</tbody></table></div>`;
+
+  document.querySelectorAll('[data-copy]').forEach(btn=>{
+    btn.onclick=()=>{prCopy(btn.getAttribute('data-copy')||'');toast('已复制 TXID / HashId');flashCopied(btn);};
+  });
+}
+
+async function runPR(file){
+  try{
+    $('prFileName').textContent=file.name;
+    $('prFileName').className='badge b-orange';
+    const rows=await readPRFile(file);
+    if(!rows.length)throw new Error('文件没有可解析的数据行。');
+    const headers=[...new Set(rows.flatMap(r=>Object.keys(r)))];
+    const cols={};Object.keys(fields).forEach(k=>cols[k]=findField(headers,fields[k]));
+    const data=rows.map(r=>analyzePR(r,cols)).filter(x=>Object.values(x.row).some(v=>String(v??'').trim()!==''));
+    if(!data.length)throw new Error('没有有效数据行。');
+    PR.data=data;PR.filter='all';renderPR();
+    $('prFileName').className='badge b-green';
+    $('prFileName').textContent=`${file.name} · ${data.length} 笔`;
+    toast(`Payout Record 已解析 ${data.length} 笔`);
+  }catch(e){
+    $('prFileName').className='badge b-red';
+    $('prFileName').textContent='解析失败';
+    $('prResult').innerHTML=`<div class="recommend red" style="padding:16px">解析失败：${esc(e.message)}</div>`;
+    $('prCopyAll').disabled=true;
+  }
+}
+
+$('prFile').addEventListener('change',e=>{
+  const f=e.target.files?.[0];if(f)runPR(f);
+});
+$('prFileBtn').addEventListener('click',()=>$('prFile').click());
+$('prFeeExemptInput').value=(state.prFeeExempt||[]).join(', ');
+function positionPrFeeExemptPanel(){
+  const btn=$('prFeeExemptToggle');
+  const panel=$('prFeeExemptPanel');
+  const r=btn.getBoundingClientRect();
+  const width=panel.offsetWidth||320;
+  let left=r.right-width;
+  left=Math.max(8,Math.min(left,window.innerWidth-width-8));
+  panel.style.left=`${left}px`;
+  panel.style.top=`${r.bottom+8}px`;
+}
+$('prFeeExemptToggle').addEventListener('click',e=>{
+  e.stopPropagation();
+  const willOpen=$('prFeeExemptPanel').hidden;
+  $('prFeeExemptPanel').hidden=!willOpen;
+  if(willOpen)positionPrFeeExemptPanel();
+});
+$('prFeeExemptPanel').addEventListener('click',e=>e.stopPropagation());
+document.addEventListener('click',()=>{$('prFeeExemptPanel').hidden=true;});
+window.addEventListener('resize',()=>{if(!$('prFeeExemptPanel').hidden)positionPrFeeExemptPanel();});
+$('prFeeExemptSave').addEventListener('click',()=>{
+  const list=$('prFeeExemptInput').value.split(/[,，\n]/).map(normalizeProviderKey).filter(Boolean);
+  state.prFeeExempt=[...new Set(list)];
+  save();
+  $('prFeeExemptInput').value=state.prFeeExempt.join(', ');
+  $('prFeeExemptStatus').textContent=`已保存（${state.prFeeExempt.length} 个商户）`;
+  setTimeout(()=>{$('prFeeExemptStatus').textContent='';},2500);
+  if(PR.data.length)renderPR();
+});
+$('prClear').addEventListener('click',()=>{
+  PR.data=[];PR.filter='all';$('prFile').value='';$('prFileName').className='badge b-gray';$('prFileName').textContent='尚未导入';
+  $('prResult').innerHTML='<div class="hint" style="padding:20px">尚未导入 Payout Record</div>';
+  document.querySelectorAll('.pr-filter').forEach(btn=>{
+    const badge=btn.querySelector('.pr-count');
+    if(badge) badge.textContent='0';
+  });
+  $('prCopyAll').disabled=true;
+});
+document.querySelectorAll('.pr-filter').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.pr-filter').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');PR.filter=btn.dataset.filter;renderPR();
+  });
+});
+$('prCopyAll').addEventListener('click',()=>{
+  const groups=buildPRSpeechGroups(PR.data);
+  const seen=new Set();
+  const texts=[];
+  PR.data.filter(x=>x.ok).forEach(x=>{
+    const merged=groups.get(x);
+    if(merged){
+      if(seen.has(merged.text))return;
+      seen.add(merged.text);
+      texts.push(merged.text);
+    }else{
+      texts.push(speechPR(x));
+    }
+  });
+  const text=texts.join('\n\n');
+  if(text){prCopy(text);toast('已复制全部 Pass 话术');flashCopied($('prCopyAll'));}
+});
+})();
 </script>
 </body></html>
