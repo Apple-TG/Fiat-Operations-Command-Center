@@ -1862,14 +1862,26 @@ async function readPRFile(file){
 function noteParse(value){
   const s=String(value??'').replace(/\r/g,' ').replace(/\n/g,' ').trim();
   if(!s)return {has:false,amount:NaN,type:''};
-  const patterns=[
-    {re:/(?:TOTAL|total)\s*[:=：]?\s*([\-+]?\d[\d,]*(?:\.\d+)?)/i,type:'TOTAL'},
-    {re:/(?:actual\s*(?:received|receive)|actual|received|final\s*(?:received|amount)|net\s*(?:received|amount)|最终(?:实收|到账)|實收|实收|实到|净收|净到账|实际(?:回U|到账|收到))\s*[:=：]?\s*([\-+]?\d[\d,]*(?:\.\d+)?)/i,type:'实际实收'},
-    {re:/(?:合并打款|combined\s*(?:payment|payout))[^0-9\-+]*([\-+]?\d[\d,]*(?:\.\d+)?)/i,type:'合并打款'}
-  ];
-  for(const p of patterns){
-    const m=s.match(p.re);
-    if(m){const n=num(m[1]);if(finite(n))return {has:true,amount:n,type:p.type};}
+  // Payin to Payout / 代收转代付：内部把已收的代收款直接转去支付代付，不是对外结算，
+  // 也不用通知财务，整笔记录直接从表格里忽略（不列入 Pass/Check 统计、不产生话术）。
+  if(/payin\s*(?:to|-+>|→)\s*payout|代收\s*转\s*代付/i.test(s)){
+    return {has:true,amount:NaN,type:'代收转代付',ignore:true};
+  }
+  const totalMatch=s.match(/(?:TOTAL|total)\s*[:=：]?\s*([\-+]?\d[\d,]*(?:\.\d+)?)/i);
+  if(totalMatch){const n=num(totalMatch[1]);if(finite(n))return {has:true,amount:n,type:'TOTAL'};}
+  const actualMatch=s.match(/(?:actual\s*(?:received|receive)|actual|received|final\s*(?:received|amount)|net\s*(?:received|amount)|最终(?:实收|到账)|實收|实收|实到|净收|净到账|实际(?:回U|到账|收到))\s*[:=：]?\s*([\-+]?\d[\d,]*(?:\.\d+)?)/i);
+  if(actualMatch){const n=num(actualMatch[1]);if(finite(n))return {has:true,amount:n,type:'实际实收'};}
+  // 合并打款：Note 常见写法是「合并打款 A+B=Total」，要取的是「=」后面的最终合计金额，
+  // 不能取公式里第一个分项数字（旧写法会把 A 误当成合并后的总额）。「=」也常被中文输入法
+  // 打成全形「＝」，或写成「合计/共计/共」，都要认得，不然一样会退回抓到第一个分项数字。
+  // 若完全没有等号/合计字样，才退回抓第一个数字（例如单纯写「合并打款 150」的情况）。
+  const combinedMatch=s.match(/(?:合并打款|combined\s*(?:payment|payout))([\s\S]*)/i);
+  if(combinedMatch){
+    const rest=combinedMatch[1];
+    const eqMatches=[...rest.matchAll(/(?:=|＝|合计|共计|共)\s*([\-+]?\d[\d,]*(?:\.\d+)?)/g)];
+    const picked=eqMatches.length?eqMatches[eqMatches.length-1][1]:(rest.match(/([\-+]?\d[\d,]*(?:\.\d+)?)/)||[])[1];
+    const n=num(picked);
+    if(finite(n))return {has:true,amount:n,type:'合并打款'};
   }
   return {has:true,amount:NaN,type:''};
 }
@@ -1921,6 +1933,33 @@ function prGrossInfo(x){
   return {hasFiatFee,grossFiat};
 }
 
+// 把「计算/验证」需要的栏位跟「Note 依赖的判定结果」拆开：analyzePR() 先算出每一笔自己的
+// 原始栏位与 Note，finalizePRRow() 才依目前的 note 状态算出 noteDiff / calcMismatch / issues / ok。
+// 这样同一 TXID 底下的 Note 互相沿用之后，可以只重跑 finalizePRRow() 得到正确结果，
+// 不用整个重新解析一次。
+function finalizePRRow(x){
+  const {af,au,ff,fu,dr,smart,noteAmount}=x;
+  const noteDiff=finite(noteAmount)&&finite(au)&&Math.abs(noteAmount-au)>.01;
+  const calcDiff=smart&&finite(au)?smart.chosen.net-au:NaN;
+  // 若 Note（含从同一 TXID 沿用来的）写明最终核对金额，且这个金额跟公式算出来的净额一致，
+  // 代表差异只是 Amount(USDT) 栏位本身没更新／不准，Note 已经核对过没问题了，
+  // 就不该再判定为「计算结果与 Record 不一致」逼使用者对完 Note 才发现其实没问题。
+  const noteResolvesCalc=finite(noteAmount)&&smart&&Math.abs(smart.chosen.net-noteAmount)<=.01;
+  const calcMismatch=finite(calcDiff)&&Math.abs(calcDiff)>.01&&!noteResolvesCalc;
+  const issues=[];
+  if(!x.cols.amountFiat||!finite(af))issues.push('Amount(Fiat) 缺失或无法解析');
+  if(!x.cols.discount||!finite(dr)||dr<=0)issues.push('Discount Rate 缺失或无效');
+  if(!x.hash)issues.push('HashId / TXID 缺失');
+  if(finite(af)&&af<0)issues.push('Amount(Fiat) 为负数');
+  if(finite(ff)&&ff<0)issues.push('Fee(Fiat) 为负数');
+  if(finite(au)&&au<0)issues.push('Amount(USDT) 为负数');
+  if(finite(fu)&&fu<0)issues.push('Fee(USDT) 为负数');
+  if(calcMismatch)issues.push('USDT 结算结果与 Record 不一致');
+  x.noteDiff=noteDiff;x.calcDiff=calcDiff;x.calcMismatch=calcMismatch;
+  x.issues=issues;x.ok=issues.length===0;
+  return x;
+}
+
 function analyzePR(row,cols){
   const af=num(cols.amountFiat?row[cols.amountFiat]:undefined);
   const au=num(cols.amountUSDT?row[cols.amountUSDT]:undefined);
@@ -1934,23 +1973,48 @@ function analyzePR(row,cols){
   const currency=displayCurrency(String(cols.currency?row[cols.currency]:'').trim());
   const smart=smartCalc({af,au,ff,fu,dr});
   const noteAmount=note.amount;
-  const noteDiff=finite(noteAmount)&&finite(au)&&Math.abs(noteAmount-au)>.01;
-  const calcDiff=smart&&finite(au)?smart.chosen.net-au:NaN;
-  const calcMismatch=finite(calcDiff)&&Math.abs(calcDiff)>.01;
-  const issues=[];
-  if(!cols.amountFiat||!finite(af))issues.push('Amount(Fiat) 缺失或无法解析');
-  if(!cols.discount||!finite(dr)||dr<=0)issues.push('Discount Rate 缺失或无效');
-  if(!tx.value)issues.push('HashId / TXID 缺失');
-  if(finite(af)&&af<0)issues.push('Amount(Fiat) 为负数');
-  if(finite(ff)&&ff<0)issues.push('Fee(Fiat) 为负数');
-  if(finite(au)&&au<0)issues.push('Amount(USDT) 为负数');
-  if(finite(fu)&&fu<0)issues.push('Fee(USDT) 为负数');
-  if(calcMismatch)issues.push('USDT 结算结果与 Record 不一致');
-  return {
-    row,cols,provider,currency,af,au,ff,fu,dr,mr,note,noteAmount,noteDiff,smart,calcDiff,calcMismatch,
-    hash:tx.value,network:tx.network,issues,ok:issues.length===0,
+  return finalizePRRow({
+    row,cols,provider,currency,af,au,ff,fu,dr,mr,note,noteAmount,smart,
+    hash:tx.value,network:tx.network,ignore:!!note.ignore,
     noteText:cols.note?String(row[cols.note]??'').trim():''
-  };
+  });
+}
+
+// 同一个 HashId/TXID 通常代表同一笔链上转帐；如果这一组里有一笔写了 Note、
+// 另一笔没写，理论上是同一笔钱的另一段，也该拿这个 Note 去核对整组的金额与汇率——
+// 不然没写 Note 的那一笔会因为自己的 Amount(USDT) 对不上而被判定为 Check，
+// 使用者还得手动对一次 Note 才发现其实没问题，也无法话术合并。
+// 做法：把这组「各自依自己 Amount(Fiat)/汇率算出来的净额」加总，跟 Note 写的合计金额比对——
+// 对得上就代表这组合起来就是 Note 核对过的结果，两笔都能核对成功、也能合并话术；
+// 注意这里只解除「计算结果与 Record 不一致」的判定，不去覆盖每一笔自己的 noteAmount，
+// 避免话术合并加总时把同一笔钱重复算两次。
+function propagateNotesByHash(data){
+  const groups=new Map();
+  data.forEach(x=>{
+    if(!x.hash)return;
+    if(!groups.has(x.hash))groups.set(x.hash,[]);
+    groups.get(x.hash).push(x);
+  });
+  groups.forEach(items=>{
+    if(items.length<2)return;
+    const withNote=items.find(x=>x.note.has&&finite(x.noteAmount));
+    if(!withNote)return;
+    const groupNet=items.reduce((s,x)=>s+(x.smart?x.smart.chosen.net:0),0);
+    const groupResolved=Math.abs(groupNet-withNote.noteAmount)<=.01;
+    if(!groupResolved)return;
+    items.forEach(x=>{
+      if(!x.note.has){
+        x.noteText=`（同一 TXID 的 Note）：${withNote.noteText}`;
+        x.noteInherited=true;
+      }
+      if(x.calcMismatch){
+        x.calcMismatch=false;
+        x.issues=x.issues.filter(t=>t!=='USDT 结算结果与 Record 不一致');
+        x.ok=x.issues.length===0;
+      }
+    });
+  });
+  return data;
 }
 
 function prActualDisplay(x){
@@ -1994,7 +2058,7 @@ function speechPR(x){
 function buildPRSpeechGroups(all){
   const map=new Map();
   all.forEach(x=>{
-    if(!x.ok||!x.hash||x.note.type==='合并打款')return;
+    if(!x.ok||!x.hash)return;
     const key=x.hash;
     if(!map.has(key))map.set(key,[]);
     map.get(key).push(x);
@@ -2002,6 +2066,15 @@ function buildPRSpeechGroups(all){
   const groupOf=new Map();
   map.forEach(items=>{
     if(items.length<2)return;
+    // 如果这组里有一笔本身就是 Note 写明「合并打款 A+B=Total」的自述合计，
+    // 直接沿用它自己的话术当作整组共用的合并话术——不能再用「各自 actual 相加」的方式，
+    // 因为它的 actual 本来就已经是全组的合计总额，再加总会把这笔钱重复算一次。
+    const selfMerged=items.find(x=>x.note.type==='合并打款');
+    if(selfMerged){
+      const text=speechPR(selfMerged);
+      items.forEach(it=>groupOf.set(it,{text,count:items.length}));
+      return;
+    }
     const first=items[0];
     const parts=items.map(it=>({it,...prFormulaParts(it)}));
     const decimalsOf=s=>{const p=String(s).split('.');return p[1]?p[1].length:0;};
@@ -2123,12 +2196,14 @@ async function runPR(file){
     if(!rows.length)throw new Error('文件没有可解析的数据行。');
     const headers=[...new Set(rows.flatMap(r=>Object.keys(r)))];
     const cols={};Object.keys(fields).forEach(k=>cols[k]=findField(headers,fields[k]));
-    const data=rows.map(r=>analyzePR(r,cols)).filter(x=>Object.values(x.row).some(v=>String(v??'').trim()!==''));
+    const parsed=rows.map(r=>analyzePR(r,cols)).filter(x=>Object.values(x.row).some(v=>String(v??'').trim()!==''));
+    const ignoredCount=parsed.filter(x=>x.ignore).length;
+    const data=propagateNotesByHash(parsed.filter(x=>!x.ignore));
     if(!data.length)throw new Error('没有有效数据行。');
     PR.data=data;PR.filter='all';renderPR();
     $('prFileName').className='badge b-green';
     $('prFileName').textContent=`${file.name} · ${data.length} 笔`;
-    toast(`Payout Record 已解析 ${data.length} 笔`);
+    toast(`Payout Record 已解析 ${data.length} 笔${ignoredCount?`（另有 ${ignoredCount} 笔代收转代付内部转帐已忽略）`:''}`);
   }catch(e){
     $('prFileName').className='badge b-red';
     $('prFileName').textContent='解析失败';
@@ -2185,22 +2260,58 @@ document.querySelectorAll('.pr-filter').forEach(btn=>{
     btn.classList.add('active');PR.filter=btn.dataset.filter;renderPR();
   });
 });
-$('prCopyAll').addEventListener('click',()=>{
+$('prCopyAll').addEventListener('click',async()=>{
   const groups=buildPRSpeechGroups(PR.data);
   const seen=new Set();
   const texts=[];
-  PR.data.filter(x=>x.ok).forEach(x=>{
-    const merged=groups.get(x);
-    if(merged){
-      if(seen.has(merged.text))return;
-      seen.add(merged.text);
-      texts.push(merged.text);
-    }else{
-      texts.push(speechPR(x));
+  let rowErrors=0;
+  const passRows=PR.data.filter(x=>x.ok);
+  // 逐笔组文字时个别包一层 try/catch：单一笔资料出问题只算它遗漏，
+  // 不会让整批「复制全部」因为一笔例外就整个失败、什么都没复制到。
+  passRows.forEach(x=>{
+    try{
+      const merged=groups.get(x);
+      if(merged){
+        if(seen.has(merged.text))return;
+        seen.add(merged.text);
+        texts.push(merged.text);
+      }else{
+        const t=speechPR(x);
+        if(!t)throw new Error('empty speech');
+        texts.push(t);
+      }
+    }catch(e){
+      rowErrors++;
     }
   });
   const text=texts.join('\n\n');
-  if(text){prCopy(text);toast('已复制全部 Pass 话术');flashCopied($('prCopyAll'));}
+  if(!text){
+    toast('没有可复制的 Pass 话术');
+    return;
+  }
+  // 剪贴簿写入是非同步的，一定要 await 实际结果才能判断有没有真的复制成功，
+  // 不能像旧版一样呼叫完就立刻显示「已复制」。
+  let copyOk=false;
+  try{
+    if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error('no clipboard api');
+    await navigator.clipboard.writeText(text);
+    copyOk=true;
+  }catch(e){
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';ta.style.top='0';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      copyOk=document.execCommand('copy');
+      ta.remove();
+    }catch(e2){copyOk=false;}
+  }
+  if(!copyOk){
+    toast('复制失败，请手动选取文字复制');
+    return;
+  }
+  const complete=rowErrors===0;
+  toast(complete?`已复制全部 Pass 话术（共 ${texts.length} 则）`:`已复制，但有 ${rowErrors} 笔处理失败`);
+  flashCopied($('prCopyAll'),complete?'已全部复制':'已部分复制');
 });
 })();
 </script>
