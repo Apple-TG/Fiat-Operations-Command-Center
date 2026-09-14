@@ -96,6 +96,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .pr-status{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:850}
 .pr-status.pass{background:#e6f8ef;color:#087b56}
 .pr-status.check{background:#ffe9ec;color:#b72234}
+.pr-status.internal{background:#eef1f5;color:#586273}
 .pr-tag{display:inline-block;padding:3px 7px;border-radius:999px;background:#edf1f6;color:#586274;font-size:10px;font-weight:750}
 .pr-bad{color:var(--red);font-weight:800}
 .pr-good{color:var(--green);font-weight:800}
@@ -252,10 +253,10 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   <div class="grid two">
     <div class="card">
       <div class="section-title"><h3>Settle 结算</h3></div>
-      <div class="field"><label>Fiat Amount</label><input id="tplSettleAmount" type="number" value="400000000"></div>
-      <div class="field"><label>Rate</label><input id="tplSettleRate" type="number" step="any" value="26460"></div>
-      <div class="field"><label>Fee %</label><input id="tplSettleFee" type="number" step="any" value="0"></div>
-      <div class="field"><label>Address</label><input id="tplSettleAddress" type="text" value="TPSzwHR6UmSr3f4p7hYfxQ2C6yLyX73wWG"></div>
+      <div class="field"><label>Fiat Amount</label><input id="tplSettleAmount" type="number" value="" placeholder="填写 Fiat Amount"></div>
+      <div class="field"><label>Rate</label><input id="tplSettleRate" type="number" step="any" value="" placeholder="填写 Rate"></div>
+      <div class="field"><label>Fee %</label><input id="tplSettleFee" type="number" step="any" value="" placeholder="填写 Fee %"></div>
+      <div class="field"><label>Address</label><input id="tplSettleAddress" type="text" value="" placeholder="填写 Address"></div>
       <div class="actions"><button class="btn primary" onclick="generateSettleTemplate()">生成 Settle</button><button class="btn" onclick="clearSettleTemplate()">清空</button></div>
     </div>
 
@@ -263,10 +264,10 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
       <div class="section-title"><h3>Top-Up 充值</h3></div>
       <div class="field"><label>商户名称</label><input id="tplTopupMerchant" type="text" placeholder="例：SupefinaNew"></div>
       <div class="field"><label>币种</label><input id="tplTopupCurrency" type="text" placeholder="例：MXN"></div>
-      <div class="field"><label>USDT</label><input id="tplTopupUsdt" type="number" value="40000"></div>
-      <div class="field"><label>Rate</label><input id="tplTopupRate" type="number" step="any" value="1.14573786"></div>
-      <div class="field"><label>Fee %</label><input id="tplTopupFee" type="number" step="any" value="0"></div>
-      <div class="field"><label>Address</label><input id="tplTopupAddress" type="text" value="TJRVEktLxNrCvehZcW1u6evpKbvaEtNahX"></div>
+      <div class="field"><label>USDT</label><input id="tplTopupUsdt" type="number" value="" placeholder="填写 USDT"></div>
+      <div class="field"><label>Rate</label><input id="tplTopupRate" type="number" step="any" value="" placeholder="填写 Rate"></div>
+      <div class="field"><label>Fee %</label><input id="tplTopupFee" type="number" step="any" value="" placeholder="填写 Fee %"></div>
+      <div class="field"><label>Address</label><input id="tplTopupAddress" type="text" value="" placeholder="填写 Address"></div>
       <div class="field" style="flex-direction:row;align-items:center;gap:8px"><input id="tplTopupRelay" type="checkbox" style="width:auto"><label for="tplTopupRelay" style="margin:0">透过中转账户支付（提醒财务）</label></div>
       <div class="field" style="flex-direction:row;align-items:center;gap:8px"><input id="tplTopupNewAddress" type="checkbox" style="width:auto"><label for="tplTopupNewAddress" style="margin:0">新地址（提醒添加白名单）</label></div>
       <div class="actions"><button class="btn primary" onclick="generateTopupTemplate()">生成 Top-Up</button><button class="btn" onclick="clearTopupTemplate()">清空</button></div>
@@ -335,7 +336,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <button type="button" class="btn pr-filter" data-filter="pass">Pass <b class="pr-count">0</b></button>
     <button type="button" class="btn pr-filter" data-filter="check">Check <b class="pr-count">0</b></button>
     <button type="button" class="btn pr-filter" data-filter="note">Note <b class="pr-count">0</b></button>
-    <button type="button" class="btn pr-filter" data-filter="diff">金额差异 <b class="pr-count">0</b></button>
+    <button type="button" class="btn pr-filter" data-filter="internal">内转 <b class="pr-count">0</b></button>
     <button type="button" class="btn pr-filter" data-filter="erc">Erc <b class="pr-count">0</b></button>
   </div>
 </div>
@@ -1086,6 +1087,8 @@ function clearTopupTemplate(){
  document.getElementById('tplTopupRelay').checked=false;
  document.getElementById('tplTopupNewAddress').checked=false;
  document.getElementById('tplTopupOutput').textContent='生成结果显示于此';
+ document.getElementById('chargeOutput').textContent='生成结果显示于此';
+ document.getElementById('chargeStatus').textContent='';
 }
 
 
@@ -1862,10 +1865,9 @@ async function readPRFile(file){
 function noteParse(value){
   const s=String(value??'').replace(/\r/g,' ').replace(/\n/g,' ').trim();
   if(!s)return {has:false,amount:NaN,type:''};
-  // Payin to Payout / 代收转代付：内部把已收的代收款直接转去支付代付，不是对外结算，
-  // 也不用通知财务，整笔记录直接从表格里忽略（不列入 Pass/Check 统计、不产生话术）。
+  // Payin to Payout / 代收转代付：属于内部转帐，只保留纪录，不生成对外回报话术。
   if(/payin\s*(?:to|-+>|→)\s*payout|代收\s*转\s*代付/i.test(s)){
-    return {has:true,amount:NaN,type:'代收转代付',ignore:true};
+    return {has:true,amount:NaN,type:'代收转代付',internal:true,noSpeech:true};
   }
   const totalMatch=s.match(/(?:TOTAL|total)\s*[:=：]?\s*([\-+]?\d[\d,]*(?:\.\d+)?)/i);
   if(totalMatch){const n=num(totalMatch[1]);if(finite(n))return {has:true,amount:n,type:'TOTAL'};}
@@ -1890,10 +1892,13 @@ function txidFromRow(row,hashKey){
   // TXID 只直接抓取表头识别到的 HashId / TXID 栏位。
   // 严禁从 Address 或其他栏位扫描，否则 TRC Address 会被误当成 TXID。
   const direct=String(hashKey?row[hashKey]:'').trim();
-  if(!direct)return {value:'',network:''};
+  if(!direct)return {value:'',network:'',valid:false};
   const erc=direct.match(/0x[a-f0-9]{64}/i);
-  if(erc)return {value:erc[0],network:'ERC'};
-  return {value:direct,network:''};
+  if(erc)return {value:erc[0],network:'ERC',valid:true};
+  // TRC / 常见链上 HashId：必须是完整 64 位十六进制 TXID。
+  const trc=direct.match(/\b[a-f0-9]{64}\b/i);
+  if(trc)return {value:trc[0],network:'',valid:true};
+  return {value:direct,network:'',valid:false};
 }
 
 // Payout Record 的 Amount(Fiat) 是「已经扣掉 Fee(Fiat) 之后」的净额，不是订单原始总额
@@ -1950,13 +1955,18 @@ function finalizePRRow(x){
   if(!x.cols.amountFiat||!finite(af))issues.push('Amount(Fiat) 缺失或无法解析');
   if(!x.cols.discount||!finite(dr)||dr<=0)issues.push('Discount Rate 缺失或无效');
   if(!x.hash)issues.push('HashId / TXID 缺失');
+  else if(x.hashValid===false)issues.push('HashId / TXID 格式无效');
   if(finite(af)&&af<0)issues.push('Amount(Fiat) 为负数');
   if(finite(ff)&&ff<0)issues.push('Fee(Fiat) 为负数');
   if(finite(au)&&au<0)issues.push('Amount(USDT) 为负数');
   if(finite(fu)&&fu<0)issues.push('Fee(USDT) 为负数');
   if(calcMismatch)issues.push('USDT 结算结果与 Record 不一致');
   x.noteDiff=noteDiff;x.calcDiff=calcDiff;x.calcMismatch=calcMismatch;
-  x.issues=issues;x.ok=issues.length===0;
+  x.internal=!!x.internal || !!x.note.internal || x.hashValid===false;
+  x.noSpeech=!!x.noSpeech || !!x.note.noSpeech || x.internal;
+  x.issues=issues;
+  // 内转仅作纪录：不参与 CHECK / PASS 验证，也不生成回报话术。
+  x.ok=x.internal ? true : issues.length===0;
   return x;
 }
 
@@ -1975,7 +1985,8 @@ function analyzePR(row,cols){
   const noteAmount=note.amount;
   return finalizePRRow({
     row,cols,provider,currency,af,au,ff,fu,dr,mr,note,noteAmount,smart,
-    hash:tx.value,network:tx.network,ignore:!!note.ignore,
+    hash:tx.value,network:tx.network,hashValid:tx.valid,
+    internal:!!note.internal,noSpeech:!!note.noSpeech,
     noteText:cols.note?String(row[cols.note]??'').trim():''
   });
 }
@@ -2003,6 +2014,7 @@ function propagateNotesByHash(data){
     const groupResolved=Math.abs(groupNet-withNote.noteAmount)<=.01;
     if(!groupResolved)return;
     items.forEach(x=>{
+      if(x.noSpeech)return;
       if(!x.note.has){
         x.noteText=`（同一 TXID 的 Note）：${withNote.noteText}`;
         x.noteInherited=true;
@@ -2040,6 +2052,7 @@ function prFormulaParts(x){
   return {amount,rate,cur,actual,formula,formulaBody,hasFiatFee,grossFiat};
 }
 function speechPR(x){
+  if(x.noSpeech)return '';
   const {amount,rate,cur,actual,formula}=prFormulaParts(x);
   const first=`${x.provider||'商户'}出U,结算${cur} ${amount},汇率${rate}。`;
   if(x.note.type==='合并打款'&&finite(x.noteAmount)){
@@ -2058,7 +2071,7 @@ function speechPR(x){
 function buildPRSpeechGroups(all){
   const map=new Map();
   all.forEach(x=>{
-    if(!x.ok||!x.hash)return;
+    if(!x.ok||!x.hash||x.noSpeech)return;
     const key=x.hash;
     if(!map.has(key))map.set(key,[]);
     map.get(key).push(x);
@@ -2109,12 +2122,12 @@ function prCopy(text){
 
 function renderPR(){
   const all=PR.data;
-  const pass=all.filter(x=>x.ok).length;
-  const check=all.length-pass;
+  const pass=all.filter(x=>x.ok&&!x.internal).length;
+  const check=all.filter(x=>!x.ok&&!x.internal).length;
   const notes=all.filter(x=>x.note.has).length;
-  const diffs=all.filter(x=>x.noteDiff).length;
+  const internal=all.filter(x=>x.internal).length;
   const erc=all.filter(x=>x.network==='ERC').length;
-  const counts={all:all.length,pass,check,note:notes,diff:diffs,erc};
+  const counts={all:all.length,pass,check,note:notes,internal,erc};
   document.querySelectorAll('.pr-filter').forEach(btn=>{
     const count=counts[btn.dataset.filter] ?? 0;
     const badge=btn.querySelector('.pr-count');
@@ -2123,10 +2136,10 @@ function renderPR(){
   $('prCopyAll').disabled=!all.some(x=>x.ok);
 
   let data=all;
-  if(PR.filter==='pass')data=all.filter(x=>x.ok);
-  if(PR.filter==='check')data=all.filter(x=>!x.ok);
+  if(PR.filter==='pass')data=all.filter(x=>x.ok&&!x.internal);
+  if(PR.filter==='check')data=all.filter(x=>!x.ok&&!x.internal);
   if(PR.filter==='note')data=all.filter(x=>x.note.has);
-  if(PR.filter==='diff')data=all.filter(x=>x.noteDiff);
+  if(PR.filter==='internal')data=all.filter(x=>x.internal);
   if(PR.filter==='erc')data=all.filter(x=>x.network==='ERC');
 
   if(!data.length){
@@ -2143,7 +2156,7 @@ function renderPR(){
     <th>Note</th><th>金额差异</th><th>智能计算</th><th>回报话术</th>
   </tr></thead><tbody>${
     ordered.map((x,i)=>{
-      const rowClass=x.noteDiff?'pr-note':(x.ok?'pr-pass':'pr-check');
+      const rowClass=x.internal?'pr-internal':(x.noteDiff?'pr-note':(x.ok?'pr-pass':'pr-check'));
       const diffNum=finite(x.noteAmount)&&finite(x.au)?x.noteAmount-x.au:NaN;
       const diff=finite(diffNum)?money(diffNum):'';
       const diffSigned=finite(diffNum)?(diffNum>0?'+':'')+diff:'';
@@ -2161,10 +2174,10 @@ function renderPR(){
         ? `<b>Note：</b>${esc(x.noteText)||''}${x.note.type?`<div class="pr-muted">识别：${esc(x.note.type)}${finite(x.noteAmount)?`｜${money4(x.noteAmount)} U`:''}</div>`:''}`
         : '';
       const merged=speechGroups.get(x);
-      const speech=merged?merged.text:speechPR(x);
+      const speech=x.noSpeech?'':(merged?merged.text:speechPR(x));
       const hashHtml=x.hash?`<button class="pr-id-btn" data-copy="${esc(x.hash)}" title="点击复制">${esc(x.hash.length>14?x.hash.slice(0,5)+'...'+x.hash.slice(-5):x.hash)}</button>`:'';
       return `<tr class="${rowClass}">
-        <td><span class="pr-status ${x.ok?'pass':'check'}">${x.ok?'Pass':'Check'}</span></td>
+        <td><span class="pr-status ${x.internal?'pass':(x.ok?'pass':'check')}">${x.internal?'内转':(x.ok?'Pass':'Check')}</span></td>
         <td>${i+1}</td>
         <td>${esc(x.provider)}</td>
         <td>${esc(x.currency)}</td>
@@ -2178,7 +2191,7 @@ function renderPR(){
         <td class="pr-note-cell">${noteHtml}</td>
         <td class="${x.noteDiff?'pr-bad':''}">${diff}</td>
         <td class="pr-calc">${calcHtml}${otherIssues.length?`<div class="pr-bad">${otherIssues.map(esc).join('；')}</div>`:''}</td>
-        <td class="pr-speech">${esc(speech)}${merged?`<div class="pr-muted">🔗 已与其他 ${merged.count-1} 笔（相同 TXID）合并为一则话术</div>`:''}</td>
+        <td class="pr-speech">${x.noSpeech?`<span class="pr-muted">内转｜仅纪录，不生成话术</span>`:esc(speech)}${merged?`<div class="pr-muted">🔗 已与其他 ${merged.count-1} 笔（相同 TXID）合并为一则话术</div>`:''}</td>
       </tr>`;
     }).join('')
   }</tbody></table></div>`;
@@ -2197,13 +2210,13 @@ async function runPR(file){
     const headers=[...new Set(rows.flatMap(r=>Object.keys(r)))];
     const cols={};Object.keys(fields).forEach(k=>cols[k]=findField(headers,fields[k]));
     const parsed=rows.map(r=>analyzePR(r,cols)).filter(x=>Object.values(x.row).some(v=>String(v??'').trim()!==''));
-    const ignoredCount=parsed.filter(x=>x.ignore).length;
-    const data=propagateNotesByHash(parsed.filter(x=>!x.ignore));
+    const data=propagateNotesByHash(parsed);
     if(!data.length)throw new Error('没有有效数据行。');
+    const internalCount=data.filter(x=>x.internal).length;
     PR.data=data;PR.filter='all';renderPR();
     $('prFileName').className='badge b-green';
     $('prFileName').textContent=`${file.name} · ${data.length} 笔`;
-    toast(`Payout Record 已解析 ${data.length} 笔${ignoredCount?`（另有 ${ignoredCount} 笔代收转代付内部转帐已忽略）`:''}`);
+    toast(`Payout Record 已解析 ${data.length} 笔${internalCount?`（${internalCount} 笔归类为内转，仅纪录不回报）`:''}`);
   }catch(e){
     $('prFileName').className='badge b-red';
     $('prFileName').textContent='解析失败';
@@ -2265,7 +2278,7 @@ $('prCopyAll').addEventListener('click',async()=>{
   const seen=new Set();
   const texts=[];
   let rowErrors=0;
-  const passRows=PR.data.filter(x=>x.ok);
+  const passRows=PR.data.filter(x=>x.ok&&!x.noSpeech);
   // 逐笔组文字时个别包一层 try/catch：单一笔资料出问题只算它遗漏，
   // 不会让整批「复制全部」因为一笔例外就整个失败、什么都没复制到。
   passRows.forEach(x=>{
