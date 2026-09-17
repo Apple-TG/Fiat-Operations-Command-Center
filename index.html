@@ -1865,14 +1865,25 @@ async function readPRFile(file){
 function noteParse(value){
   const s=String(value??'').replace(/\r/g,' ').replace(/\n/g,' ').trim();
   if(!s)return {has:false,amount:NaN,type:''};
-  // Payin to Payout / 代收转代付：属于内部转帐，只保留纪录，不生成对外回报话术。
-  if(/payin\s*(?:to|-+>|→)\s*payout|代收\s*转\s*代付/i.test(s)){
+  // Payin to Payout / 代收转代付：只要 Note 出现相关字眼，一律归类为内转。
+  // 支援常见中英文写法，例如「payin转payout」「payin to payout」「代收转代付」。
+  if(
+    /payin[\s\S]{0,80}(?:to|转|轉|-+>|→)[\s\S]{0,80}payout/i.test(s) ||
+    /代收[\s\S]{0,80}(?:转|轉|→)[\s\S]{0,80}代付/i.test(s)
+  ){
     return {has:true,amount:NaN,type:'代收转代付',internal:true,noSpeech:true};
   }
   const totalMatch=s.match(/(?:TOTAL|total)\s*[:=：]?\s*([\-+]?\d[\d,]*(?:\.\d+)?)/i);
   if(totalMatch){const n=num(totalMatch[1]);if(finite(n))return {has:true,amount:n,type:'TOTAL'};}
   const actualMatch=s.match(/(?:actual\s*(?:received|receive)|actual|received|final\s*(?:received|amount)|net\s*(?:received|amount)|最终(?:实收|到账)|實收|实收|实到|净收|净到账|实际(?:回U|到账|收到))\s*[:=：]?\s*([\-+]?\d[\d,]*(?:\.\d+)?)/i);
   if(actualMatch){const n=num(actualMatch[1]);if(finite(n))return {has:true,amount:n,type:'实际实收'};}
+  // Settle 计算型 Note：取最后一个等号后的最终金额。
+  // 例如：Settle 18498.75/107.8=171.6 171.6×2%=3.43 171.6-3.43=168.2 U
+  const settleMatch=s.match(/(?:settle|settlement)[\s\S]*?(?:=|＝)\s*([\-+]?\d[\d,]*(?:\.\d+)?)\s*U?\s*$/i);
+  if(settleMatch){
+    const n=num(settleMatch[1]);
+    if(finite(n))return {has:true,amount:n,type:'Settle计算'};
+  }
   // 合并打款：Note 常见写法是「合并打款 A+B=Total」，要取的是「=」后面的最终合计金额，
   // 不能取公式里第一个分项数字（旧写法会把 A 误当成合并后的总额）。「=」也常被中文输入法
   // 打成全形「＝」，或写成「合计/共计/共」，都要认得，不然一样会退回抓到第一个分项数字。
@@ -1888,17 +1899,22 @@ function noteParse(value){
   return {has:true,amount:NaN,type:''};
 }
 
-function txidFromRow(row,hashKey){
-  // TXID 只直接抓取表头识别到的 HashId / TXID 栏位。
+function txidFromRow(row,hashKey,thirdPartyKey){
+  // TXID 优先直接抓取 HashId / TXID 栏位；若 HashId / TXID 与 Third Party Settlement Id
+  // 格式一致，则视为内转纪录，不应因为非链上 64 位格式而判定 Check。
   // 严禁从 Address 或其他栏位扫描，否则 TRC Address 会被误当成 TXID。
   const direct=String(hashKey?row[hashKey]:'').trim();
-  if(!direct)return {value:'',network:'',valid:false};
+  const thirdParty=String(thirdPartyKey?row[thirdPartyKey]:'').trim();
+  if(!direct)return {value:'',network:'',valid:false,internal:false};
+  if(thirdParty && direct===thirdParty){
+    return {value:direct,network:'',valid:true,internal:true,internalReason:'HashId / TXID 与 Third Party Settlement Id 一致'};
+  }
   const erc=direct.match(/0x[a-f0-9]{64}/i);
-  if(erc)return {value:erc[0],network:'ERC',valid:true};
+  if(erc)return {value:erc[0],network:'ERC',valid:true,internal:false};
   // TRC / 常见链上 HashId：必须是完整 64 位十六进制 TXID。
   const trc=direct.match(/\b[a-f0-9]{64}\b/i);
-  if(trc)return {value:trc[0],network:'',valid:true};
-  return {value:direct,network:'',valid:false};
+  if(trc)return {value:trc[0],network:'',valid:true,internal:false};
+  return {value:direct,network:'',valid:false,internal:false};
 }
 
 // Payout Record 的 Amount(Fiat) 是「已经扣掉 Fee(Fiat) 之后」的净额，不是订单原始总额
@@ -1946,10 +1962,12 @@ function finalizePRRow(x){
   const {af,au,ff,fu,dr,smart,noteAmount}=x;
   const noteDiff=finite(noteAmount)&&finite(au)&&Math.abs(noteAmount-au)>.01;
   const calcDiff=smart&&finite(au)?smart.chosen.net-au:NaN;
-  // 若 Note（含从同一 TXID 沿用来的）写明最终核对金额，且这个金额跟公式算出来的净额一致，
-  // 代表差异只是 Amount(USDT) 栏位本身没更新／不准，Note 已经核对过没问题了，
-  // 就不该再判定为「计算结果与 Record 不一致」逼使用者对完 Note 才发现其实没问题。
-  const noteResolvesCalc=finite(noteAmount)&&smart&&Math.abs(smart.chosen.net-noteAmount)<=.01;
+  // 若计算结果与 Record 的 Amount(USDT) 不一致，但 Note 显示的核对金额与 Amount(USDT) 一致，
+  // 代表 Note 已确认该笔 Record 的实际金额，可直接 PASS，不再因为公式差异判定 Check。
+  const noteResolvesCalc=finite(noteAmount)&&(
+    (finite(au)&&Math.abs(noteAmount-au)<=.01) ||
+    x.note?.type==='Settle计算'
+  );
   const calcMismatch=finite(calcDiff)&&Math.abs(calcDiff)>.01&&!noteResolvesCalc;
   const issues=[];
   if(!x.cols.amountFiat||!finite(af))issues.push('Amount(Fiat) 缺失或无法解析');
@@ -1962,7 +1980,7 @@ function finalizePRRow(x){
   if(finite(fu)&&fu<0)issues.push('Fee(USDT) 为负数');
   if(calcMismatch)issues.push('USDT 结算结果与 Record 不一致');
   x.noteDiff=noteDiff;x.calcDiff=calcDiff;x.calcMismatch=calcMismatch;
-  x.internal=!!x.internal || !!x.note.internal || x.hashValid===false;
+  x.internal=!!x.internal || !!x.note.internal;
   x.noSpeech=!!x.noSpeech || !!x.note.noSpeech || x.internal;
   x.issues=issues;
   // 内转仅作纪录：不参与 CHECK / PASS 验证，也不生成回报话术。
@@ -1978,7 +1996,7 @@ function analyzePR(row,cols){
   const dr=num(cols.discount?row[cols.discount]:undefined);
   const mr=num(cols.merchantRate?row[cols.merchantRate]:undefined);
   const note=noteParse(cols.note?row[cols.note]:'');
-  const tx=txidFromRow(row,cols.hash);
+  const tx=txidFromRow(row,cols.hash,cols.thirdPartyId);
   const provider=String(cols.provider?row[cols.provider]:'').trim();
   const currency=displayCurrency(String(cols.currency?row[cols.currency]:'').trim());
   const smart=smartCalc({af,au,ff,fu,dr});
@@ -1986,7 +2004,9 @@ function analyzePR(row,cols){
   return finalizePRRow({
     row,cols,provider,currency,af,au,ff,fu,dr,mr,note,noteAmount,smart,
     hash:tx.value,network:tx.network,hashValid:tx.valid,
-    internal:!!note.internal,noSpeech:!!note.noSpeech,
+    internal:!!note.internal || !!tx.internal,
+    noSpeech:!!note.noSpeech || !!tx.internal,
+    internalReason:tx.internalReason||'',
     noteText:cols.note?String(row[cols.note]??'').trim():''
   });
 }
@@ -2167,7 +2187,8 @@ function renderPR(){
         ? `${fp.hasFiatFee?`<div>已还原结算金额：<b>${safeCell(fp.grossFiat)}</b> Fiat（Amount(Fiat) ${safeCell(x.af)} + Fee(Fiat) ${safeCell(x.ff)}）</div>`:''}
            <div>${esc(fp.formulaBody)} = <b>${finite(x.noteAmount)?money4(x.noteAmount):finite(x.au)?money4(x.au):''} U</b></div>
            ${x.noteDiff?`<div class="pr-diff-alert">⚠ Note 与 Amount(USDT) 有差异，相差 <span class="pr-diff-amt">${diffSigned} U</span></div>`:''}
-           ${x.calcMismatch?`<div class="pr-diff-alert">⚠ 计算结果与 Amount(USDT) 不一致，相差 <span class="pr-diff-amt">${calcDiffSigned} U</span></div>`:''}`
+           ${x.calcMismatch?`<div class="pr-diff-alert">⚠ 计算结果与 Amount(USDT) 不一致，相差 <span class="pr-diff-amt">${calcDiffSigned} U</span></div>`:''}
+           ${x.internalReason?`<div class="pr-muted">内转依据：${esc(x.internalReason)}</div>`:''}`
         : '';
       const otherIssues=x.issues.filter(t=>t!=='USDT 结算结果与 Record 不一致');
       const noteHtml=x.note.has
