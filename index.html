@@ -422,7 +422,41 @@ function parseRobot(){
    });
  }
 
- // 1) 正常逐行格式
+ // 新版表格格式：Provider | Account | Current Balance (INR / USD)
+ // 依 Account 保留每一筆，允許同一 Provider 有多個帳戶及負數／零餘額。
+ const newLines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ const headerIndex=newLines.findIndex(line=>/provider/i.test(line)&&/account/i.test(line)&&/current\s*balance/i.test(line));
+ if(headerIndex>=0){
+   const header=newLines[headerIndex];
+   const currencies=header.match(/current\s*balance\s*\(\s*([A-Z]{3,5})\s*\/\s*([A-Z]{3,5})\s*\)/i);
+   if(currencies){
+     const fiatCurrency=currencies[1].toUpperCase();
+     for(let i=headerIndex+1;i<newLines.length;i++){
+       const line=newLines[i];
+       let cols=line.split(/\t+/).map(v=>v.trim()).filter(Boolean);
+       if(cols.length<3){
+         const match=line.match(/^([^\s]+)\s+(.+?)\s+(-?[\d,]+(?:\.\d+)?\s*\/\s*-?[\d,]+(?:\.\d+)?)$/);
+         if(match) cols=[match[1],match[2],match[3]];
+       }
+       if(cols.length<3) continue;
+       const amounts=cols[2].match(/^\s*(-?[\d,]+(?:\.\d+)?)\s*\/\s*(-?[\d,]+(?:\.\d+)?)\s*$/);
+       if(!amounts) continue;
+       pushRow(cols[0],cols[1],fiatCurrency,amounts[1],amounts[2]);
+     }
+   }
+   if(rows.length){
+     state.balances=rows;
+     setUpdated('balances');
+     renderRobotResult();
+     renderAll();
+     showPage('home');
+     completeActiveCurrency(rows.map(r=>r.currency));
+     toast(`已解析 ${rows.length} 筆商戶餘額`);
+     return;
+   }
+ }
+
+ // 1) 舊版正常逐行格式
  const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
  for(let j=0;j<lines.length;j++){
    const provider=lines[j];
@@ -1042,9 +1076,13 @@ function generateTopupTemplate(){
 
  // 手续费是从我方要付出的 USDT 里先扣（％是算在 USDT 本身，不是算在换算後的法币上），
  // 扣完的净 USDT 才拿去乘/除汇率，这样换算出来的法币金额才是商户真实会拿到的数字。
- // 汇率方向智能判断：EUR/GBP 等币值高于 USDT 的强势货币用「除」；INR/MXN/CLP 等 1 USDT 兑换多单位的货币用「乘」。
- const strongDivideCurrencies=['EUR','GBP','KWD','BHD','OMR','JOD','GIP','KYD'];
- const useDivide=strongDivideCurrencies.includes(currency.toUpperCase())||(!!currency&&rate<10)||(!currency&&rate<10);
+ // 匯率方向規則：一般幣種的匯率代表「1 USDT 可兌換多少法幣」，使用乘法。
+ // 已由實際 EUR 充值案例確認：EUR 匯率按「1 EUR = X USDT」提供，因此使用除法。
+ // 其他幣種匯率按「1 USDT = X 法幣」提供，因此使用乘法。
+ // 不依匯率數字大小猜測方向。
+ const EUR_QUOTE_DIRECTION='FIAT_TO_USDT';
+ const normalizedCurrency=String(currency||'').trim().toUpperCase();
+ const useDivide=normalizedCurrency==='EUR' && EUR_QUOTE_DIRECTION==='FIAT_TO_USDT';
  const opSymbol=useDivide?'/':'×';
  const fee=usdt*feePct/100;
  const netUsdt=usdt-fee;
