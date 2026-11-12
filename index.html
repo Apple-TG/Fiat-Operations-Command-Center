@@ -200,7 +200,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
     <ol class="sync-steps">
       <li>第一次使用：把上面藍色按鈕<b>拖到瀏覽器書籤列</b>。</li>
       <li>在已登入的後台（happywork2026.com）任一頁面，點書籤「⇪ 同步到 Fiat Ops」。</li>
-      <li>書籤會依序查詢全部幣種（約 1 分鐘），自動開啟本頁並寫入商戶餘額、Withdrawal 日均與資金缺口。</li>
+      <li>書籤會依序讀取後台資料（約 1–2 分鐘）：商戶餘額與資金缺口、代付／代收通道、Withdrawal／Deposit Stats、最近 7 天 Payout Record，然後自動開啟本頁寫入。只讀取，不會改動後台。</li>
     </ol>
   </div>
 </div>
@@ -213,11 +213,11 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 </section>
 
 
-<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>後台同步時會自動更新日均；此處上傳為備用，上傳後會覆蓋同步結果</p></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><button class="btn" onclick="clearUploadData('withdraw')">清空</button></div><div id="withdrawResult"></div></div></section>
-<section class="page" id="page-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="depositFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="depositDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('deposit')">解析並保存</button><button class="btn" onclick="clearUploadData('deposit')">清空</button></div><div id="depositResult"></div></div></section>
+<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>首頁 Withdrawal 日均以這裡為準。書籤同步會自動抓後台 Withdrawal Stats（最近 7 個完整日）；手動上傳的檔案優先。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="withdrawSource"></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><button class="btn" onclick="clearUploadData('withdraw')">清空</button></div><div id="withdrawResult"></div></div></section>
+<section class="page" id="page-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>書籤同步會自動抓後台 Deposit Stats（最近 7 個完整日）；手動上傳的檔案優先。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="depositSource"></div></div><div class="card upload-box"><input type="file" id="depositFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="depositDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('deposit')">解析並保存</button><button class="btn" onclick="clearUploadData('deposit')">清空</button></div><div id="depositResult"></div></div></section>
 
-<section class="page" id="page-payout"><div class="topbar"><div><h2>代付通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payoutFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payout')">解析並保存</button><button class="btn" onclick="clearUploadData('payout')">清空</button></div><div id="payoutResult"></div></div></section>
-<section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><button class="btn" onclick="clearUploadData('payin')">清空</button></div><div id="payinResult"></div></div></section>
+<section class="page" id="page-payout"><div class="topbar"><div><h2>代付通道</h2><p>來源：後台 Payment Manage › Withdraw，書籤同步時自動更新。上傳 PaymentManageList 為備用，下次同步會被後台資料取代。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="payoutSource"></div></div><div class="card upload-box"><input type="file" id="payoutFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payout')">解析並保存</button><button class="btn" onclick="clearUploadData('payout')">清空</button></div><div id="payoutResult"></div></div></section>
+<section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>來源：後台 Payment Manage › Deposit，書籤同步時自動更新。上傳 PaymentManageList 為備用，下次同步會被後台資料取代。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="payinSource"></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><button class="btn" onclick="clearUploadData('payin')">清空</button></div><div id="payinResult"></div></div></section>
 
 <section class="page" id="page-settlement">
 <div class="topbar"><div><h2>結算話術</h2><p>TRC 與 ERC 均支援批量貼上</p></div></div>
@@ -284,7 +284,8 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 <div class="topbar">
   <div><h2>Payout Record</h2><p>批量验证 Payout Record、智能读取 Note，并生成结算话术 <span class="badge b-gray" id="prFileName" style="margin-left:6px">尚未导入</span></p></div>
   <div class="actions pr-actions">
-    <button class="btn primary" id="prFileBtn">📁 选择文件导入</button>
+    <button class="btn primary" id="prSyncBtn" disabled>⇩ 载入后台同步资料</button>
+    <button class="btn" id="prFileBtn">📁 选择文件导入</button>
     <input id="prFile" type="file" accept=".xlsx,.xls,.csv,.txt,.json" hidden>
     <div class="pr-fee-exempt-wrap">
       <button class="btn" id="prFeeExemptToggle">⚙ Fiat Fee 例外设置</button>
@@ -317,6 +318,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 </div>
 
 <div class="card table-card" style="margin-top:16px">
+  <div class="hint" id="prSyncInfo" style="padding:4px 0 8px">尚未从后台同步 Payout Record（在后台点书签「⇪ 同步到 Fiat Ops」）</div>
   <div id="prResult" class="hint" style="padding:8px 0">尚未导入 Payout Record</div>
 </div>
 </section>
@@ -380,22 +382,33 @@ const BACKEND_CURRENCIES=['AED','AMD','AOA','ARS','AUD','AZN','BDT','BOB','BRL',
 const SYNC_STALE_MINUTES=120;
 state.backend=state.backend&&typeof state.backend==='object'?state.backend:null;
 
-// 在後台頁面執行的書籤程式：用使用者已登入的身分查詢各幣種，再用 postMessage 交給 Fiat Ops。
+// 在後台頁面執行的書籤程式：用使用者已登入的身分讀取後台資料，再用 postMessage 交給 Fiat Ops。
+// 只讀取，不會修改後台任何設定。
 function bookmarkletSource(){
   const target=location.origin;
   return `(async()=>{
-const T=${JSON.stringify(target)},API=${JSON.stringify(BACKEND_STATS_API)},CUR=${JSON.stringify(BACKEND_CURRENCIES)};
+const T=${JSON.stringify(target)},CUR=${JSON.stringify(BACKEND_CURRENCIES)};
 if(location.origin!==${JSON.stringify(BACKEND_ORIGIN)}){alert('請在已登入的後台 ${BACKEND_ORIGIN.replace('https://','')} 頁面點這個書籤');return}
 const w=window.open(T+'/#sync','fiatops_sync');
 if(!w){alert('瀏覽器擋住了彈出視窗，請允許此網站開啟新視窗後再點一次');return}
 const box=document.createElement('div');box.style.cssText='position:fixed;right:20px;bottom:20px;z-index:2147483647;background:#0f1d33;color:#fff;padding:14px 18px;border-radius:12px;font:14px/1.5 -apple-system,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.3)';document.body.appendChild(box);
-const D=864e5,n=new Date(),end=Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate())+D-1,start=end+1-7*D;
-const out={},errors=[];let done=0;const q=[...CUR];
-const show=()=>box.textContent='Fiat Ops 同步中… '+done+' / '+CUR.length;show();
-async function one(c){try{const r=await fetch(API,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({currency:c+'FIAT',startDate:start,endDate:end})});const j=await r.json();if(j.code!==0||!j.data)throw new Error(j.msg||('HTTP '+r.status));out[c]=j.data}catch(e){errors.push(c+': '+e.message)}done++;show()}
-await Promise.all([0,1,2,3].map(async()=>{while(q.length)await one(q.shift())}));
-const payload={syncedAt:Date.now(),start,end,currencies:out,errors};
-let acked=false;const onAck=e=>{if(e.origin===T&&e.data&&e.data.type==='fiatops-ack'){acked=true;window.removeEventListener('message',onAck);box.textContent='✓ 已同步 '+e.data.count+' 個幣種到 Fiat Ops'+(errors.length?'（'+errors.length+' 個失敗）':'');setTimeout(()=>box.remove(),6000)}};
+const post=async(u,b)=>{const r=await fetch(u,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json();if(j.code!==0)throw new Error(j.msg||('HTTP '+r.status));return j.data};
+const D=864e5,n=new Date(),today0=Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate());
+const pmEnd=today0+D-1,pmStart=today0-6*D,stEnd=today0-1,stStart=today0-7*D,prStart=Date.now()-7*D;
+const errors=[];let step='';const show=t=>box.textContent='Fiat Ops 同步中… '+t;
+const safe=async(name,fn)=>{try{return await fn()}catch(e){errors.push(name+': '+e.message);return null}};
+const out={};let done=0;const q=[...CUR];
+await Promise.all([0,1,2,3].map(async()=>{while(q.length){const c=q.shift();const d=await safe(c,()=>post('/api/vhc/fiat/channel/monitor/payout/statistic/',{currency:c+'FIAT',startDate:pmStart,endDate:pmEnd}));if(d)out[c]=d;done++;show('商戶餘額 '+done+' / '+CUR.length)}}));
+show('代付／代收通道');
+const ch=async t=>{const all=[];for(let p=1;p<=10;p++){const d=await post('/api/vhc/fiat/list/',{page:p,pageSize:2000,transactionType:t,provider:'',displayName:'',channelLike:'',enabled:null,currency:'',tgStatus:null,maintained:null,kycRequirement:null,category:'',supportMethod:''});const L=d.list||[];all.push(...L);if(L.length<2000)break}return all.map(x=>({p:x.provider,c:x.channel,cur:x.supportCurrency,e:x.enabled,m:x.maintained,n:x.note||''}))};
+const payout=await safe('代付通道',()=>ch(2)),payin=await safe('代收通道',()=>ch(1));
+show('Withdrawal／Deposit Stats');
+const st=async pt=>(await post('/api/vhc/fiat/depositStats/list/',{currency:null,provider:null,startTime:stStart,endTime:stEnd,successPercentStart:0,successPercentEnd:0,scoreStart:0,scoreEnd:0,sort:'desc',sortField:'provider',groupBy:'3',paymentType:pt})||[]).map(x=>({cur:x.currencyName,amt:x.totalAmount}));
+const wst=await safe('Withdrawal Stats',()=>st('WITHDRAW')),dst=await safe('Deposit Stats',()=>st('DEPOSIT'));
+show('Payout Record');
+const pr=await safe('Payout Record',async()=>{const all=[];for(let p=1;p<=20;p++){const d=await post('/api/vhc/payment/payout/list/',{pageNo:p,pageSize:500,settlementId:'',provider:null,currency:null,thirdPartySettlementId:'',creatorId:null,status:null,createTimeFrom:null,createTimeTo:null});const L=d.list||[];all.push(...L.filter(x=>x.createTime>=prStart));if(L.length<500||L.some(x=>x.createTime<prStart))break}return all});
+const payload={syncedAt:Date.now(),start:pmStart,end:pmEnd,currencies:out,channels:{payout,payin},stats:{start:stStart,end:stEnd,withdraw:wst,deposit:dst},payoutRecords:pr?{start:prStart,list:pr}:null,errors};
+let acked=false;const onAck=e=>{if(e.origin===T&&e.data&&e.data.type==='fiatops-ack'){acked=true;window.removeEventListener('message',onAck);box.textContent='✓ 已同步到 Fiat Ops'+(errors.length?'（'+errors.length+' 項失敗）':'');setTimeout(()=>box.remove(),6000)}};
 window.addEventListener('message',onAck);
 for(let i=0;i<60&&!acked;i++){try{w.postMessage({type:'fiatops-sync',payload},T)}catch(e){}await new Promise(r=>setTimeout(r,500))}
 if(!acked){box.textContent='⚠ Fiat Ops 視窗沒有回應，請確認它已開啟後再點一次書籤';setTimeout(()=>box.remove(),10000)}
@@ -413,28 +426,83 @@ window.addEventListener('message',e=>{
   try{e.source.postMessage({type:'fiatops-ack',count},e.origin)}catch(err){}
 });
 
+// 與 Excel 匯入相同的判斷：Switch 關 → 關閉；Switch 開 + Maintenance → 餘額不足；否則開啟
+function channelFromBackend(x){
+  const enabled=Number(x.e)===1,maintained=Number(x.m)===1;
+  return {provider:String(x.p||'').trim(),channel:String(x.c||'').trim(),currency:normCurrency(x.cur),
+    status:!enabled?'关闭':maintained?'余额不足':'开启',noteText:String(x.n||'').trim(),
+    rawStatus:enabled?'enabled':'disabled',rawMaintenance:maintained?'true':'false'};
+}
+function statsFromBackend(list,start,end){
+  const totals={};
+  (list||[]).forEach(r=>{const c=normCurrency(r.cur);const a=Number(r.amt);if(c&&Number.isFinite(a))totals[c]=(totals[c]||0)+a});
+  return {days:Math.max(1,Math.round((end+1-start)/86400000)),totals,source:'sync',range:{start,end},at:now()};
+}
+function dayText(ms){return new Date(ms).toISOString().slice(5,10).replace('-','/')}
+function statsSourceText(type){
+  const s=state[type];if(!s||!Object.keys(s.totals||{}).length)return '尚無資料';
+  if(s.source==='sync'&&s.range)return `後台同步 · ${dayText(s.range.start)}–${dayText(s.range.end)} · ${s.days} 天`;
+  if(s.source==='upload')return `手動上傳 · ${s.days} 天${s.at?' · '+s.at:''}`;
+  return `${s.days} 天`;
+}
+
 function applyBackendSync(payload){
   const cur=payload.currencies||{};
   if(state.backend&&state.backend.syncedAt===payload.syncedAt)return Object.keys(cur).length; // 重複送達
-  const balances=[],withdrawTotals={},risk={},topup={},capacity={};
-  let days=7;
+  const balances=[],risk={},topup={},capacity={};
   Object.entries(cur).forEach(([c,data])=>{
     (data.merchantBalance||[]).forEach(m=>balances.push({provider:String(m.provider||'').trim(),account:String(m.account||'').trim(),currency:c,fiat:Number(m.currentBalance)||0,usd:Number(m.currentBalanceUsd)||0}));
     const cap=data.capacity||{};
-    if(Array.isArray(cap.dailyList)&&cap.dailyList.length)days=cap.dailyList.length;
-    if(Number(cap.totalPayoutAmount))withdrawTotals[c]=Number(cap.totalPayoutAmount);
     capacity[c]={avg:Number(cap.avgDailyPayoutAmount)||0,today:Number(cap.todayPayoutAmount)||0,total:Number(cap.totalPayoutAmount)||0};
     if(data.fundRisk)risk[c]=data.fundRisk;
     if(data.topupRecommendation)topup[c]=data.topupRecommendation;
   });
-  state.balances=balances;
-  state.withdraw={days,totals:withdrawTotals,source:'backend'};
+  const done=[];
+  if(Object.keys(cur).length){state.balances=balances;setUpdated('balances');done.push(`${Object.keys(cur).length} 個幣種餘額`)}
+  // 通道：後台為準，每次同步覆蓋
+  ['payout','payin'].forEach(type=>{
+    const list=payload.channels?.[type];
+    if(Array.isArray(list)){state[type]=list.map(channelFromBackend).filter(x=>x.currency);state.channelSyncedAt=state.channelSyncedAt||{};state.channelSyncedAt[type]=payload.syncedAt;setUpdated(type);done.push(`${type==='payout'?'代付':'代收'} ${state[type].length} 條`)}
+  });
+  // Withdrawal / Deposit Stats：同步資料先存起來；手動上傳的優先，除非使用者改回同步
+  const st=payload.stats||{};
+  state.statsSynced=state.statsSynced||{};
+  ['withdraw','deposit'].forEach(type=>{
+    if(!Array.isArray(st[type]))return;
+    state.statsSynced[type]=statsFromBackend(st[type],st.start,st.end);
+    if(state[type]?.source!=='upload'){state[type]=state.statsSynced[type];setUpdated(type)}
+    done.push(type==='withdraw'?'Withdrawal Stats':'Deposit Stats');
+  });
   state.backend={syncedAt:payload.syncedAt,start:payload.start,end:payload.end,risk,topup,capacity,errors:payload.errors||[],currencyCount:Object.keys(cur).length};
-  setUpdated('balances');setUpdated('withdraw');
-  renderAll();
+  save();
+  // Payout Record：不自動覆蓋目前的工作，交給 Payout Record 頁的「載入」按鈕
+  if(payload.payoutRecords&&Array.isArray(payload.payoutRecords.list)){
+    window.prSynced={at:payload.syncedAt,start:payload.payoutRecords.start,list:payload.payoutRecords.list};
+    try{localStorage.setItem('fiat_ops_pr_synced',JSON.stringify(window.prSynced))}catch(err){}
+    done.push(`Payout Record ${payload.payoutRecords.list.length} 筆（待載入）`);
+    window.renderPRSyncBar?.();
+  }
+  renderAll();renderSourceNotes();
   showPage('home');
-  toast(`已從後台同步 ${Object.keys(cur).length} 個幣種、${balances.length} 個商戶帳戶`+(state.backend.errors.length?`（${state.backend.errors.length} 個失敗）`:''));
+  toast('已從後台同步：'+done.join('、')+(state.backend.errors.length?`（${state.backend.errors.length} 項失敗）`:''));
   return Object.keys(cur).length;
+}
+function useSyncedStats(type){
+  if(!state.statsSynced?.[type]){toast('還沒有後台同步的資料');return}
+  state[type]=state.statsSynced[type];setUpdated(type);renderAll();renderSourceNotes();toast('已改用後台同步資料');
+}
+function renderSourceNotes(){
+  ['withdraw','deposit'].forEach(type=>{
+    const el=document.getElementById(type+'Source');if(!el)return;
+    const s=state[type];
+    const canSwitch=s?.source==='upload'&&state.statsSynced?.[type];
+    el.innerHTML=`目前使用：<b>${statsSourceText(type)}</b>`+(canSwitch?` <button class="btn" style="margin-left:8px" onclick="useSyncedStats('${type}')">改用後台同步（${dayText(state.statsSynced[type].range.start)}–${dayText(state.statsSynced[type].range.end)}）</button>`:'');
+  });
+  ['payout','payin'].forEach(type=>{
+    const el=document.getElementById(type+'Source');if(!el)return;
+    const at=state.channelSyncedAt?.[type];
+    el.innerHTML=state[type]?.length?`目前 ${state[type].length} 條通道｜${at?'後台同步 · '+new Date(at).toLocaleString('zh-TW',{hour12:false}):'手動上傳 · '+(state.updated[type]||'')}`:'尚無資料';
+  });
 }
 
 function syncAgeMinutes(){return state.backend?.syncedAt?Math.round((Date.now()-state.backend.syncedAt)/60000):null}
@@ -531,7 +599,7 @@ async function loadStats(type){
    if(detected>1) days=detected;
  }
 
- state[type]={days,totals};
+ state[type]={days,totals,source:'upload',at:now()};
  setUpdated(type);
 
  const preview=Object.entries(totals).slice(0,8)
@@ -543,7 +611,7 @@ async function loadStats(type){
     <div class="hint">計算方式：Total Amount ÷ ${days}</div>
     <div style="margin-top:10px;text-align:left">${preview||'未識別到 Total Amount'}</div>`;
 
- renderAll();
+ renderAll();renderSourceNotes();
  toast('解析完成');
 }
 
@@ -629,6 +697,7 @@ async function loadChannels(type){
  });
 
  state[type]=result;
+ if(state.channelSyncedAt)delete state.channelSyncedAt[type];
  setUpdated(type);
 
  const openCount=result.filter(x=>x.status==='开启').length;
@@ -639,7 +708,7 @@ async function loadChannels(type){
    `<p><b>已解析 ${result.length} 条通道：</b> 🟢${openCount}　🟠${lowCount}　⚪${closedCount}</p>
     <div class="hint">读取栏位：Switch=${detectedStatusKey||'未找到'}；Maintenance=${detectedMaintenanceKey||'未找到'}</div>`;
 
- renderAll();
+ renderAll();renderSourceNotes();
  toast('解析完成');
 }
 
@@ -768,14 +837,14 @@ function clearUploadData(type){
  const result=document.getElementById(type+'Result');
  if(result)result.innerHTML='';
 
- if(type==='withdraw') state.withdraw={days:0,totals:{}};
- else if(type==='deposit') state.deposit={days:0,totals:{}};
+ if(type==='withdraw') state.withdraw=state.statsSynced?.withdraw||{days:0,totals:{}};
+ else if(type==='deposit') state.deposit=state.statsSynced?.deposit||{days:0,totals:{}};
  else state[type]=[];
 
  delete state.updated[type];
  save();
- renderAll();
- toast('已清空');
+ renderAll();renderSourceNotes();
+ toast(state.statsSynced?.[type]?'已清空上傳，改用後台同步資料':'已清空');
 }
 
 function trimNumber(v,maxDigits=2){
@@ -1086,7 +1155,7 @@ function renderAll(){
      <td class="currency">▸ ${x.currency}</td>
      <td class="money"><div>總餘額 ${SYMBOLS[x.currency]||''} ${fmt(x.fiat)}</div><div style="color:var(--green);margin-top:4px">可動用 ${SYMBOLS[x.currency]||''} ${fmt(usable.amount)}</div>${usable.locked>0?`<div class="hint" style="color:var(--orange);margin-top:3px">已鎖定 ${SYMBOLS[x.currency]||''} ${fmt(usable.locked)}（${usable.lockedMerchants} 個商戶／${usable.lockedChannels} 個關閉通道）</div>`:''}</td>
      <td class="usd">${fmt(x.usd)} U</td>
-     <td>${SYMBOLS[x.currency]||''} ${fmt(x.withdraw)}</td>
+     <td>${withdrawCell(x)}</td>
      <td>${gapCell(x.currency)}</td>
      <td>${SYMBOLS[x.currency]||''} ${fmt(x.deposit)}</td>
      <td><span class="badge ${po?'b-green':'b-gray'}">${po}/${x.payout.length}</span></td>
@@ -1129,6 +1198,11 @@ function renderAll(){
  renderCurrencyProgress();
 }
 
+function withdrawCell(x){
+ const sym=SYMBOLS[x.currency]||'';
+ const pm=state.backend?.capacity?.[x.currency];
+ return `<b>${sym} ${fmt(x.withdraw)}</b><div class="hint">${statsSourceText('withdraw')}</div>${pm?`<div class="hint">參考 Payout Monitor ${sym}${fmt(pm.avg,0)}</div>`:''}`;
+}
 function gapCell(currency){
  const r=state.backend?.risk?.[currency];
  if(!r||!Number.isFinite(Number(r.fundsGapToday)))return '<span class="hint">—</span>';
@@ -1550,6 +1624,7 @@ async function copyText(id,btn){
 function resetAll(){if(!confirm('确定清空所有已保存资料？'))return;localStorage.removeItem(STORE_KEY);location.reload()}
 setupBookmarklet();
 renderAll();
+renderSourceNotes();
 renderCurrencyProgress();
 if(location.hash==='#sync'){showPage('robot');toast('等待後台同步資料…')}
 </script>
@@ -2033,7 +2108,17 @@ async function runPR(file){
     $('prFileName').textContent=file.name;
     $('prFileName').className='badge b-orange';
     const rows=await readPRFile(file);
-    if(!rows.length)throw new Error('文件没有可解析的数据行。');
+    runPRRows(rows,file.name);
+  }catch(e){
+    $('prFileName').className='badge b-red';
+    $('prFileName').textContent='解析失败';
+    $('prResult').innerHTML=`<div class="recommend red" style="padding:16px">解析失败：${esc(e.message)}</div>`;
+    $('prCopyAll').disabled=true;
+  }
+}
+function runPRRows(rows,label){
+  try{
+    if(!rows.length)throw new Error('没有可解析的数据行。');
     const headers=[...new Set(rows.flatMap(r=>Object.keys(r)))];
     const cols={};Object.keys(fields).forEach(k=>cols[k]=findField(headers,fields[k]));
     const parsed=rows.map(r=>analyzePR(r,cols)).filter(x=>Object.values(x.row).some(v=>String(v??'').trim()!==''));
@@ -2042,7 +2127,7 @@ async function runPR(file){
     const internalCount=data.filter(x=>x.internal).length;
     PR.data=data;PR.filter='all';renderPR();
     $('prFileName').className='badge b-green';
-    $('prFileName').textContent=`${file.name} · ${data.length} 笔`;
+    $('prFileName').textContent=`${label} · ${data.length} 笔`;
     toast(`Payout Record 已解析 ${data.length} 笔${internalCount?`（${internalCount} 笔归类为内转，仅纪录不回报）`:''}`);
   }catch(e){
     $('prFileName').className='badge b-red';
@@ -2051,6 +2136,52 @@ async function runPR(file){
     $('prCopyAll').disabled=true;
   }
 }
+
+// 后台 Payout Record 资料 → 转成与「Export」相同的栏位，交给同一套验证流程
+function backendPRToRow(x){
+  const t=x.createTime?new Date(Number(x.createTime)):null;
+  const pad=n=>String(n).padStart(2,'0');
+  return {
+    'Third Party Settlement ID':x.thirdPartySettlementId??'',
+    'Settlement ID':x.id??'',
+    'Create Time':t?`${pad(t.getMonth()+1)}/${pad(t.getDate())}/${t.getFullYear()} ${pad(t.getHours())}:${pad(t.getMinutes())}`:'',
+    'Provider':x.provider??'',
+    'Account':x.account??'',
+    'Currency':x.currency??'',
+    'Amount(Fiat)':x.fiatAmount??'',
+    'Amount(USDT)':x.usdtAmount??'',
+    'Fee(Fiat)':x.fiatFee??'',
+    'Fee(USDT)':x.usdtFee??'',
+    'Merchant Rate':x.merchantRate??'',
+    'Discount Rate':x.discountRate??'',
+    'Amount Saved(USDT)':x.savedAmount??'',
+    'Creator':x.creatorName??'',
+    'Editor':x.updateUserName??'',
+    'Network':x.network??'',
+    'Address':x.address??'',
+    'HashID':x.hashId??'',
+    'Note':x.note??'',
+    'Status':Number(x.delFlag)===0?'Valid':'Invalid'
+  };
+}
+function prSyncedData(){
+  if(window.prSynced)return window.prSynced;
+  try{window.prSynced=JSON.parse(localStorage.getItem('fiat_ops_pr_synced')||'null')}catch(e){window.prSynced=null}
+  return window.prSynced;
+}
+window.renderPRSyncBar=function(){
+  const d=prSyncedData(),btn=$('prSyncBtn'),info=$('prSyncInfo');
+  if(!d||!Array.isArray(d.list)){btn.disabled=true;return}
+  const valid=d.list.filter(x=>Number(x.delFlag)===0).length;
+  btn.disabled=false;
+  info.textContent=`后台同步：${new Date(d.at).toLocaleString('zh-TW',{hour12:false})}｜最近 7 天 ${d.list.length} 笔（Valid ${valid}、Invalid ${d.list.length-valid}）｜载入时只处理 Valid`;
+};
+$('prSyncBtn').addEventListener('click',()=>{
+  const d=prSyncedData();if(!d)return;
+  const rows=d.list.filter(x=>Number(x.delFlag)===0).map(backendPRToRow);
+  runPRRows(rows,'后台同步 '+new Date(d.at).toLocaleString('zh-TW',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}));
+});
+window.renderPRSyncBar();
 
 $('prFile').addEventListener('change',e=>{
   const f=e.target.files?.[0];if(f)runPR(f);
