@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fiat Operations Command Center</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 :root{--bg:#f4f7fb;--panel:#fff;--text:#142033;--muted:#687386;--line:#e4e9f1;--nav:#0f1d33;--blue:#2563eb;--green:#0f9f6e;--orange:#e98719;--red:#dc3f4f;--purple:#7c3aed;--shadow:0 12px 35px rgba(15,29,51,.08);--radius:18px}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text)}
@@ -52,12 +51,8 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .currency-row:hover{background:#f7faff}
 @media(max-width:900px){.detail-columns{grid-template-columns:1fr}}
 
-.ocr-preview{max-width:100%;max-height:320px;border:1px solid var(--line);border-radius:12px;margin-top:12px;display:none}
 .progress{height:10px;background:#edf1f7;border-radius:999px;overflow:hidden;margin-top:10px;display:none}
 .progress>div{height:100%;background:var(--blue);width:0}
-.pending-editor{width:100%;border-collapse:collapse;margin-top:12px}
-.pending-editor th,.pending-editor td{border-bottom:1px solid var(--line);padding:8px;font-size:12px}
-.pending-editor input{padding:7px;border:1px solid var(--line);border-radius:7px;width:100%}
 .currency-analysis-grid{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:10px;margin-bottom:14px}
 .analysis-metric{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px}.analysis-metric small{display:block;color:var(--muted);margin-bottom:5px}.analysis-metric b{font-size:15px}
 .concentration{margin-top:8px}.concentration-head{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted);margin-bottom:5px}.concentration-track{height:6px;border-radius:999px;background:#e8edf5;overflow:hidden}.concentration-bar{height:100%;background:linear-gradient(90deg,#2563eb,#16b889);border-radius:999px}
@@ -123,6 +118,15 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .btn.copy-ok,.pr-id-btn.copy-ok,.icon-btn.copy-ok{animation:copyPop .32s ease}
 .copy-tick{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 @keyframes copyPop{0%{transform:scale(1)}45%{transform:scale(1.07)}100%{transform:scale(1)}}
+.sync-card{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.sync-status b{font-size:18px}
+.sync-status.stale b{color:var(--orange)}
+.sync-status.empty b{color:var(--muted)}
+.bookmarklet{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;background:var(--blue);color:#fff;font-weight:700;text-decoration:none;cursor:grab;box-shadow:0 6px 16px rgba(37,99,235,.25)}
+.sync-steps{margin:8px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.8}
+.gap-neg{color:var(--red);font-weight:700}
+.gap-pos{color:var(--green)}
+details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 </style>
 </head>
 <body>
@@ -130,22 +134,20 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <aside class="sidebar">
 <div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center</p></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
-<button class="nav-btn" data-page="robot">▣　商戶餘額（Robot）</button>
+<button class="nav-btn" data-page="robot">▣　商戶餘額（後台）</button>
 <div class="group-title">上傳資料</div>
 <button class="nav-btn" data-page="withdraw">⇧　Withdrawal Stats</button>
 <button class="nav-btn" data-page="deposit">⇧　Deposit Stats</button>
 <button class="nav-btn" data-page="payout">⇧　代付通道</button>
 <button class="nav-btn" data-page="payin">⇧　代收通道</button>
-<button class="nav-btn" data-page="pending">⌁　Pending 數據</button>
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="payout-record">▣　Payout Record</button>
-<button class="nav-btn" data-page="report">▤　報表中心</button>
 </aside>
 
 <main class="main">
 <section class="page active" id="page-home">
-<div class="topbar"><div><h2>首頁總覽</h2><p id="lastUpdated">尚未匯入資料</p></div><div class="actions"><button class="btn" onclick="renderAll()">↻ 重新整理</button><button class="btn primary" onclick="generateReport()">產生主管回報</button><button class="btn danger" onclick="resetAll()">清空全部資料</button></div></div>
+<div class="topbar"><div><h2>首頁總覽</h2><p id="lastUpdated">尚未匯入資料</p></div><div class="actions"><button class="btn" onclick="renderAll()">↻ 重新整理</button><button class="btn danger" onclick="resetAll()">清空全部資料</button></div></div>
 
 <div class="card workflow-card compact">
   <div class="workflow-head">
@@ -162,7 +164,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
       <button class="btn orange" onclick="toggleChecklist(true)">插队</button>
       <button class="btn" onclick="toggleChecklist()">今日清单</button>
     </div>
-    <div class="workflow-note" id="workflowNote">开始时会复制 Telegram Robot 指令、清空输入框，并切换至 Robot 页面。</div>
+    <div class="workflow-note" id="workflowNote">开始时会展开该币种明细；看完点「开始下一币种」会自动标记完成。</div>
   </div>
   <div class="checklist-wrap" id="checklistWrap" hidden>
     <div class="checklist-tools"><b>今日清单</b><div class="actions"><input id="currencySearch" type="text" placeholder="搜索币种，例如 NGN" oninput="renderCurrencyChecklist()"><button class="btn" onclick="resetCurrencyProgress()">重置进度</button></div></div>
@@ -175,74 +177,47 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <div>
 <div class="card table-card">
 <div class="section-title">
-  <div><h3>幣種總覽</h3><div class="hint">預設只顯示目前 Robot 商戶餘額中的幣種</div></div>
+  <div><h3>幣種總覽</h3><div class="hint">資料來源：後台 Payout Monitor（商戶餘額、Withdrawal 日均、資金缺口）</div></div>
   <label class="badge b-green" style="cursor:pointer">
     <input id="balanceOnly" type="checkbox" checked onchange="renderAll()" style="width:auto;margin:0 6px 0 0">
     只顯示有商戶餘額
   </label>
 </div>
-<table class="currency-table"><thead><tr><th>幣種</th><th>總餘額／可動用</th><th>USD（參考）</th><th>Withdrawal 日均</th><th>Deposit 日均</th><th>代付</th><th>代收</th><th>建議</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="8">尚未匯入資料</td></tr></tbody></table>
+<table class="currency-table"><thead><tr><th>幣種</th><th>總餘額／可動用</th><th>USD（參考）</th><th>Withdrawal 日均</th><th>今日缺口／餘裕</th><th>Deposit 日均</th><th>代付</th><th>代收</th><th>建議</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="9">尚未匯入資料</td></tr></tbody></table>
 </div>
 <div class="card" style="margin-top:16px"><div class="section-title"><div><h3>綜合資金分析</h3><div class="hint">依可動用餘額、日均與通道狀態自動判斷</div></div></div><div class="analysis-grid" id="analysisGrid"><div class="hint">尚未有分析結果</div></div></div>
 </div>
 </div></section>
 
 <section class="page" id="page-robot">
-<div class="topbar"><div><h2>商戶餘額（Robot）</h2><p>支援 Robot 逐行輸出，系統只採用 Available balance</p></div></div>
-<div class="card"><div class="field"><label>貼上 Robot 原始內容</label><textarea id="robotInput" rows="16" placeholder="Provider&#10;Account&#10;Currency&#10;Total&#10;Available&#10;..."></textarea></div><div class="actions"><button class="btn primary" onclick="parseRobot()">解析並保存</button><button class="btn" onclick="clearRobot()">清空輸入</button></div><div id="robotResult"></div></div>
+<div class="topbar"><div><h2>商戶餘額（後台）</h2><p>來源：comtools › Payout Monitor › Dashboard › Merchant Balance。此頁只讀，有誤請回後台處理後重新同步。</p></div></div>
+<div class="card sync-card">
+  <div class="sync-status empty" id="syncStatus"><small class="hint">上次同步</small><br><b>尚未同步</b></div>
+  <div>
+    <a class="bookmarklet" id="bookmarkletLink" href="#" onclick="event.preventDefault();toast('請把這個按鈕拖到書籤列，再到後台頁面點擊')">⇪ 同步到 Fiat Ops</a>
+  </div>
+  <div style="flex-basis:100%">
+    <ol class="sync-steps">
+      <li>第一次使用：把上面藍色按鈕<b>拖到瀏覽器書籤列</b>。</li>
+      <li>在已登入的後台（happywork2026.com）任一頁面，點書籤「⇪ 同步到 Fiat Ops」。</li>
+      <li>書籤會依序查詢全部幣種（約 1 分鐘），自動開啟本頁並寫入商戶餘額、Withdrawal 日均與資金缺口。</li>
+    </ol>
+  </div>
+</div>
+<div class="card" style="margin-top:16px"><div class="section-title"><div><h3>商戶餘額明細</h3><div class="hint" id="balanceMeta"></div></div></div><div id="robotResult"></div></div>
+<div class="card" style="margin-top:16px">
+<details class="fallback"><summary>備用：手動貼上單一幣種的 Merchant Balance 表格</summary>
+<div class="field" style="margin-top:12px"><label>在後台 Payout Monitor 選好幣種後，從「Provider　Account　Current Balance」表頭開始整張複製貼上（只會更新該幣種）</label><textarea id="robotInput" rows="10" placeholder="Provider&#9;Account&#9;Current Balance (INR / USD)&#10;BibiPay&#9;BibiPay_INRFIAT&#9;5,943,195.43 / 63,290.61"></textarea></div><div class="actions"><button class="btn primary" onclick="parseRobot()">解析並保存</button><button class="btn" onclick="clearRobot()">清空輸入</button></div>
+</details>
+</div>
 </section>
 
-<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><button class="btn" onclick="clearUploadData('withdraw')">清空</button></div><div id="withdrawResult"></div></div></section>
+
+<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>後台同步時會自動更新日均；此處上傳為備用，上傳後會覆蓋同步結果</p></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><button class="btn" onclick="clearUploadData('withdraw')">清空</button></div><div id="withdrawResult"></div></div></section>
 <section class="page" id="page-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>支援 XLSX、XLS、CSV；自動辨識日期與幣種金額</p></div></div><div class="card upload-box"><input type="file" id="depositFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="depositDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('deposit')">解析並保存</button><button class="btn" onclick="clearUploadData('deposit')">清空</button></div><div id="depositResult"></div></div></section>
 
 <section class="page" id="page-payout"><div class="topbar"><div><h2>代付通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payoutFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payout')">解析並保存</button><button class="btn" onclick="clearUploadData('payout')">清空</button></div><div id="payoutResult"></div></div></section>
 <section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>支援 PaymentManageList 匯出格式</p></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><button class="btn" onclick="clearUploadData('payin')">清空</button></div><div id="payinResult"></div></div></section>
-
-<section class="page" id="page-pending">
-<div class="topbar"><div><h2>Pending 數據</h2><p>貼上後台超時表格，結合商戶回覆生成夜班回報</p></div></div>
-<div class="grid two">
-  <div class="card">
-    <div class="field">
-      <label>1. 貼上後台 Pending 表格（直接在後台整張表拖曳選取、Ctrl+C，再貼這裡）</label>
-      <textarea id="pendingInput" rows="12" placeholder="Provider	Channel	Currency	Sum Amount	Count	Avg. Pend Hour	Max Hour	Min Hour"></textarea>
-      <div class="actions" style="margin-top:8px"><button class="btn" onclick="loadPendingExample()">載入格式範例</button></div>
-    </div>
-
-    <div class="field" style="margin-top:16px">
-      <label>2. 貼上商戶對延遲出款的回覆／處理進度</label>
-      <textarea id="merchantReplies" rows="8" placeholder="例如：&#10;TopPayNew：消化速度正常，已持續優先處理。&#10;FunPay24：出款正常，無24小時以上訂單。&#10;Etpay：上午10點半至凌晨3點處理較快。"></textarea>
-    </div>
-
-    <div class="grid two">
-      <div class="field"><label>回報日期</label><input id="reportDate" type="text" placeholder="例如 7/28"></div>
-      <div class="field"><label>班別</label><select id="reportShift"><option>早班</option><option selected>晚班</option></select></div>
-    </div>
-
-    <div class="actions">
-      <button class="btn primary" onclick="parsePending()">3. 生成超時回報</button>
-      <button class="btn" onclick="clearPending()">清空</button>
-    </div>
-    <div id="pendingResult"></div>
-
-    <details style="margin-top:16px">
-      <summary style="cursor:pointer;color:var(--muted);font-size:13px">改用截圖辨識（備用；表格若有浮水印，辨識容易出錯，建議優先用上方貼上）</summary>
-      <div class="field" style="margin-top:10px">
-        <label>上傳 Pending 截圖</label>
-        <input type="file" id="pendingImage" accept="image/*" onchange="previewPendingImage()">
-        <img id="pendingPreview" class="ocr-preview">
-        <div class="progress" id="ocrProgress"><div id="ocrBar"></div></div>
-        <div class="hint" id="ocrStatus"></div>
-      </div>
-      <div class="actions"><button class="btn" onclick="recognizePendingImage()">辨識截圖（結果會填入上方文字框）</button></div>
-    </details>
-  </div>
-
-  <div class="card">
-    <div class="section-title"><h3>提款超時回報話術</h3><button class="btn" onclick="copyText('pendingOutput',this)">複製全部</button></div>
-    <div class="output" id="pendingOutput">生成結果顯示於此</div>
-  </div>
-</div>
-</section>
 
 <section class="page" id="page-settlement">
 <div class="topbar"><div><h2>結算話術</h2><p>TRC 與 ERC 均支援批量貼上</p></div></div>
@@ -346,7 +321,6 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 </div>
 </section>
 
-<section class="page" id="page-report"><div class="topbar"><div><h2>報表中心</h2><p>依目前資料產生主管回報</p></div></div><div class="card"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="generateReport()">重新生成</button><button class="btn" onclick="copyText('reportOutput',this)">複製</button></div><div class="output" id="reportOutput">尚未生成</div></div></section>
 </main>
 </div>
 <div class="toast" id="toast"></div>
@@ -363,7 +337,7 @@ state.deposit=state.deposit&&typeof state.deposit==='object'&&!Array.isArray(sta
 state.deposit.totals=state.deposit.totals&&typeof state.deposit.totals==='object'?state.deposit.totals:{};
 state.payout=Array.isArray(state.payout)?state.payout:[];
 state.payin=Array.isArray(state.payin)?state.payin:[];
-state.pending=Array.isArray(state.pending)?state.pending:[];
+delete state.pending;
 state.updated=state.updated&&typeof state.updated==='object'&&!Array.isArray(state.updated)?state.updated:{};
 state.currencyProgress=state.currencyProgress&&typeof state.currencyProgress==='object'&&!Array.isArray(state.currencyProgress)?state.currencyProgress:{checked:[],current:'',mode:'',resume:''};
 state.currencyProgress.checked=Array.isArray(state.currencyProgress.checked)?state.currencyProgress.checked:[];
@@ -399,134 +373,121 @@ function normCurrency(v){const s=String(v||'').toUpperCase().trim();const m=s.ma
 function isCurrency(v){return !!normCurrency(v)&&!['TOTAL','SUM','COUNT','HOUR','DATE','TIME'].includes(normCurrency(v))}
 function setUpdated(k){state.updated[k]=now();save()}
 
+// ===== 後台同步（唯一資料來源：happywork2026.com › Payout Monitor）=====
+const BACKEND_ORIGIN='https://happywork2026.com';
+const BACKEND_STATS_API='/api/vhc/fiat/channel/monitor/payout/statistic/';
+const BACKEND_CURRENCIES=['AED','AMD','AOA','ARS','AUD','AZN','BDT','BOB','BRL','CAD','CHF','CLP','COP','CRC','CZK','DKK','EGP','EUR','GBP','GEL','GHS','GNF','GTQ','IDR','INR','JMD','JPY','KES','KGS','KHR','KRW','KZT','LKR','MDL','MMK','MXN','MYR','NGN','NOK','NPR','NZD','PEN','PHP','PKR','PLN','RUB','RWF','SEK','THB','TJS','TND','TRY','TWD','TZS','UAH','UGX','USD','UZS','VND','XAF','XOF','ZAR','ZMW'];
+const SYNC_STALE_MINUTES=120;
+state.backend=state.backend&&typeof state.backend==='object'?state.backend:null;
+
+// 在後台頁面執行的書籤程式：用使用者已登入的身分查詢各幣種，再用 postMessage 交給 Fiat Ops。
+function bookmarkletSource(){
+  const target=location.origin;
+  return `(async()=>{
+const T=${JSON.stringify(target)},API=${JSON.stringify(BACKEND_STATS_API)},CUR=${JSON.stringify(BACKEND_CURRENCIES)};
+if(location.origin!==${JSON.stringify(BACKEND_ORIGIN)}){alert('請在已登入的後台 ${BACKEND_ORIGIN.replace('https://','')} 頁面點這個書籤');return}
+const w=window.open(T+'/#sync','fiatops_sync');
+if(!w){alert('瀏覽器擋住了彈出視窗，請允許此網站開啟新視窗後再點一次');return}
+const box=document.createElement('div');box.style.cssText='position:fixed;right:20px;bottom:20px;z-index:2147483647;background:#0f1d33;color:#fff;padding:14px 18px;border-radius:12px;font:14px/1.5 -apple-system,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.3)';document.body.appendChild(box);
+const D=864e5,n=new Date(),end=Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate())+D-1,start=end+1-7*D;
+const out={},errors=[];let done=0;const q=[...CUR];
+const show=()=>box.textContent='Fiat Ops 同步中… '+done+' / '+CUR.length;show();
+async function one(c){try{const r=await fetch(API,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({currency:c+'FIAT',startDate:start,endDate:end})});const j=await r.json();if(j.code!==0||!j.data)throw new Error(j.msg||('HTTP '+r.status));out[c]=j.data}catch(e){errors.push(c+': '+e.message)}done++;show()}
+await Promise.all([0,1,2,3].map(async()=>{while(q.length)await one(q.shift())}));
+const payload={syncedAt:Date.now(),start,end,currencies:out,errors};
+let acked=false;const onAck=e=>{if(e.origin===T&&e.data&&e.data.type==='fiatops-ack'){acked=true;window.removeEventListener('message',onAck);box.textContent='✓ 已同步 '+e.data.count+' 個幣種到 Fiat Ops'+(errors.length?'（'+errors.length+' 個失敗）':'');setTimeout(()=>box.remove(),6000)}};
+window.addEventListener('message',onAck);
+for(let i=0;i<60&&!acked;i++){try{w.postMessage({type:'fiatops-sync',payload},T)}catch(e){}await new Promise(r=>setTimeout(r,500))}
+if(!acked){box.textContent='⚠ Fiat Ops 視窗沒有回應，請確認它已開啟後再點一次書籤';setTimeout(()=>box.remove(),10000)}
+})()`;
+}
+function setupBookmarklet(){
+  const a=document.getElementById('bookmarkletLink');
+  if(a)a.href='javascript:'+encodeURIComponent(bookmarkletSource());
+}
+
+window.addEventListener('message',e=>{
+  if(e.origin!==BACKEND_ORIGIN)return;
+  const d=e.data;if(!d||d.type!=='fiatops-sync'||!d.payload)return;
+  const count=applyBackendSync(d.payload);
+  try{e.source.postMessage({type:'fiatops-ack',count},e.origin)}catch(err){}
+});
+
+function applyBackendSync(payload){
+  const cur=payload.currencies||{};
+  if(state.backend&&state.backend.syncedAt===payload.syncedAt)return Object.keys(cur).length; // 重複送達
+  const balances=[],withdrawTotals={},risk={},topup={},capacity={};
+  let days=7;
+  Object.entries(cur).forEach(([c,data])=>{
+    (data.merchantBalance||[]).forEach(m=>balances.push({provider:String(m.provider||'').trim(),account:String(m.account||'').trim(),currency:c,fiat:Number(m.currentBalance)||0,usd:Number(m.currentBalanceUsd)||0}));
+    const cap=data.capacity||{};
+    if(Array.isArray(cap.dailyList)&&cap.dailyList.length)days=cap.dailyList.length;
+    if(Number(cap.totalPayoutAmount))withdrawTotals[c]=Number(cap.totalPayoutAmount);
+    capacity[c]={avg:Number(cap.avgDailyPayoutAmount)||0,today:Number(cap.todayPayoutAmount)||0,total:Number(cap.totalPayoutAmount)||0};
+    if(data.fundRisk)risk[c]=data.fundRisk;
+    if(data.topupRecommendation)topup[c]=data.topupRecommendation;
+  });
+  state.balances=balances;
+  state.withdraw={days,totals:withdrawTotals,source:'backend'};
+  state.backend={syncedAt:payload.syncedAt,start:payload.start,end:payload.end,risk,topup,capacity,errors:payload.errors||[],currencyCount:Object.keys(cur).length};
+  setUpdated('balances');setUpdated('withdraw');
+  renderAll();
+  showPage('home');
+  toast(`已從後台同步 ${Object.keys(cur).length} 個幣種、${balances.length} 個商戶帳戶`+(state.backend.errors.length?`（${state.backend.errors.length} 個失敗）`:''));
+  return Object.keys(cur).length;
+}
+
+function syncAgeMinutes(){return state.backend?.syncedAt?Math.round((Date.now()-state.backend.syncedAt)/60000):null}
+function syncLabel(){
+  if(!state.backend?.syncedAt)return '尚未從後台同步';
+  const t=new Date(state.backend.syncedAt).toLocaleString('zh-TW',{hour12:false});
+  const age=syncAgeMinutes();
+  return `後台同步：${t}（${age<1?'剛剛':age+' 分鐘前'}）`+(age>SYNC_STALE_MINUTES?' ⚠ 資料已過時，請重新同步':'');
+}
+function renderSyncStatus(){
+  const box=document.getElementById('syncStatus');if(!box)return;
+  if(!state.backend?.syncedAt){box.className='sync-status empty';box.innerHTML='<small class="hint">上次同步</small><br><b>尚未同步</b>';return}
+  const age=syncAgeMinutes();
+  const range=state.backend.start?`${new Date(state.backend.start).toISOString().slice(0,10)} ~ ${new Date(state.backend.end).toISOString().slice(0,10)}（UTC）`:'';
+  const errs=state.backend.errors?.length?`<div class="hint" style="color:var(--red)">失敗：${state.backend.errors.join('；')}</div>`:'';
+  box.className='sync-status'+(age>SYNC_STALE_MINUTES?' stale':'');
+  box.innerHTML=`<small class="hint">上次同步</small><br><b>${new Date(state.backend.syncedAt).toLocaleString('zh-TW',{hour12:false})}</b><div class="hint">${state.backend.currencyCount||0} 個幣種｜區間 ${range}${age>SYNC_STALE_MINUTES?'｜已超過 '+SYNC_STALE_MINUTES+' 分鐘，請重新同步':''}</div>${errs}`;
+}
+
+// 備用：手動貼上單一幣種的 Merchant Balance 表格（只替換該幣種）
 function parseRobot(){
  const raw=document.getElementById('robotInput').value.trim();
  if(!raw){toast('請先貼上資料');return}
-
- const rows=[];
- const seen=new Set();
-
- function pushRow(provider,account,currency,fiat,usd){
-   currency=normCurrency(currency);
-   fiat=num(fiat); usd=num(usd);
-   if(!currency || !Number.isFinite(fiat)) return;
-   const key=[provider,account,currency,fiat,usd].join('|');
-   if(seen.has(key)) return;
-   seen.add(key);
-   rows.push({
-     provider:(provider||account||currency).trim(),
-     account:(account||provider||'').trim(),
-     currency,
-     fiat,
-     usd
-   });
- }
-
- // 新版表格格式：Provider | Account | Current Balance (INR / USD)
- // 依 Account 保留每一筆，允許同一 Provider 有多個帳戶及負數／零餘額。
- const newLines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
- const headerIndex=newLines.findIndex(line=>/provider/i.test(line)&&/account/i.test(line)&&/current\s*balance/i.test(line));
- if(headerIndex>=0){
-   const header=newLines[headerIndex];
-   const currencies=header.match(/current\s*balance\s*\(\s*([A-Z]{3,5})\s*\/\s*([A-Z]{3,5})\s*\)/i);
-   if(currencies){
-     const fiatCurrency=currencies[1].toUpperCase();
-     for(let i=headerIndex+1;i<newLines.length;i++){
-       const line=newLines[i];
-       let cols=line.split(/\t+/).map(v=>v.trim()).filter(Boolean);
-       if(cols.length<3){
-         const match=line.match(/^([^\s]+)\s+(.+?)\s+(-?[\d,]+(?:\.\d+)?\s*\/\s*-?[\d,]+(?:\.\d+)?)$/);
-         if(match) cols=[match[1],match[2],match[3]];
-       }
-       if(cols.length<3) continue;
-       const amounts=cols[2].match(/^\s*(-?[\d,]+(?:\.\d+)?)\s*\/\s*(-?[\d,]+(?:\.\d+)?)\s*$/);
-       if(!amounts) continue;
-       pushRow(cols[0],cols[1],fiatCurrency,amounts[1],amounts[2]);
-     }
-   }
-   if(rows.length){
-     state.balances=rows;
-     setUpdated('balances');
-     renderRobotResult();
-     renderAll();
-     showPage('home');
-     completeActiveCurrency(rows.map(r=>r.currency));
-     toast(`已解析 ${rows.length} 筆商戶餘額`);
-     return;
-   }
- }
-
- // 1) 舊版正常逐行格式
  const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
- for(let j=0;j<lines.length;j++){
-   const provider=lines[j];
-   const account=lines[j+1]||'';
-   const currency=normCurrency(lines[j+2]);
-   if(!currency) continue;
-
-   const candidates=lines.slice(j+3,j+9).filter(x=>/\d/.test(x));
-   if(candidates.length){
-     const availableLine=candidates[1]||candidates[0];
-     const usdMatch=availableLine.match(/\(([-\d,.]+)\s*USD\)/i);
-     pushRow(provider,account,currency,availableLine.split('(')[0],usdMatch?usdMatch[1]:0);
-   }
+ const headerIndex=lines.findIndex(line=>/provider/i.test(line)&&/account/i.test(line)&&/current\s*balance/i.test(line));
+ const head=headerIndex>=0?lines[headerIndex].match(/current\s*balance\s*\(\s*([A-Z]{3,5})\s*\/\s*([A-Z]{3,5})\s*\)/i):null;
+ if(!head){document.getElementById('robotResult').innerHTML='<p class="recommend red">找不到「Provider　Account　Current Balance (XXX / USD)」表頭，請從表頭開始整張複製。</p>';return}
+ const currency=head[1].toUpperCase();
+ const rows=[];
+ for(let i=headerIndex+1;i<lines.length;i++){
+   let cols=lines[i].split(/\t+/).map(v=>v.trim()).filter(Boolean);
+   if(cols.length<3){const m=lines[i].match(/^([^\s]+)\s+(.+?)\s+(-?[\d,]+(?:\.\d+)?\s*\/\s*-?[\d,]+(?:\.\d+)?)$/);if(m)cols=[m[1],m[2],m[3]]}
+   if(cols.length<3)continue;
+   const a=cols[2].match(/^\s*(-?[\d,]+(?:\.\d+)?)\s*\/\s*(-?[\d,]+(?:\.\d+)?)\s*$/);
+   if(!a)continue;
+   rows.push({provider:cols[0],account:cols[1],currency,fiat:num(a[1]),usd:num(a[2])});
  }
-
- // 2) Tab 表格格式
- lines.forEach(line=>{
-   const p=line.split(/\t+/);
-   if(p.length<5) return;
-   const c=normCurrency(p[2]);
-   if(!c) return;
-   const usd=(String(p[4]).match(/\(([-\d,.]+)\s*USD\)/i)||[])[1]||0;
-   pushRow(p[0],p[1],c,String(p[4]).split('(')[0],usd);
- });
-
- // 3) Robot 複製後全部黏成一行的格式
- // 每筆通常以 PT...S 開始，接著 Provider+Account，再接 _PHPFIATPHPFIAT...
- const compact=raw
-   .replace(/^\/b\s*[—-]\s*Channel Balance\s*/i,'')
-   .replace(/provideraccountcurrencytotalavailablependingfrozenupdated/i,'');
-
- const rgx=/(?:^|PT(?:\d+H)?(?:\d+M)?[\d.]+S)([A-Za-z0-9_-]+?)_([A-Z]{3,5})FIAT\2FIAT(-?[\d,.]+)\s*\((-?[\d,.]+)\s*USD\)(-?[\d,.]+)\s*\((-?[\d,.]+)\s*USD\)/g;
- let m;
- while((m=rgx.exec(compact))!==null){
-   const chunk=m[1];
-   let provider=chunk;
-   const repeated=chunk.match(/^(.+?)\1/);
-   if(repeated && repeated[1]) provider=repeated[1];
-   else if(chunk.includes('_')) provider=chunk.split('_')[0];
-   pushRow(provider,chunk,m[2],m[5],m[6]);
- }
-
- // 4) 最後備援：只抓幣種與 Available，確保首頁至少能統計
- if(!rows.length){
-   const fallback=/_([A-Z]{3,5})FIAT\1FIAT(-?[\d,.]+)\s*\((-?[\d,.]+)\s*USD\)(-?[\d,.]+)\s*\((-?[\d,.]+)\s*USD\)/g;
-   let f,n=1;
-   while((f=fallback.exec(compact))!==null){
-     pushRow(`Merchant ${n}`,`Merchant ${n}`,f[1],f[4],f[5]); n++;
-   }
- }
-
- if(!rows.length){
-   document.getElementById('robotResult').innerHTML='<p class="recommend red">仍未解析到資料。請直接複製完整 Robot 結果，不需自行整理。</p>';
-   return;
- }
-
- state.balances=rows;
+ if(!rows.length){document.getElementById('robotResult').innerHTML='<p class="recommend red">沒有解析到任何商戶列。</p>';return}
+ state.balances=state.balances.filter(b=>b.currency!==currency).concat(rows);
  setUpdated('balances');
- renderRobotResult();
  renderAll();
- showPage('home');
- completeActiveCurrency(rows.map(r=>r.currency));
- toast(`已解析 ${rows.length} 筆商戶餘額`);
+ toast(`已更新 ${currency} ${rows.length} 筆商戶餘額（手動貼上）`);
 }
 function renderRobotResult(){
- const rows=state.balances;
- if(!rows.length){document.getElementById('robotResult').innerHTML='';return}
- document.getElementById('robotResult').innerHTML='<table class="result-table"><thead><tr><th>商戶</th><th>幣種</th><th>Available</th><th>USD</th></tr></thead><tbody>'+rows.map(r=>`<tr><td>${r.provider||r.account}</td><td>${r.currency}</td><td>${fmt(r.fiat)}</td><td>${fmt(r.usd)}</td></tr>`).join('')+'</tbody></table>';
+ renderSyncStatus();
+ const meta=document.getElementById('balanceMeta');
+ const rows=[...state.balances].sort((a,b)=>a.currency.localeCompare(b.currency)||b.fiat-a.fiat);
+ if(meta)meta.textContent=rows.length?`${new Set(rows.map(r=>r.currency)).size} 個幣種｜${rows.length} 個商戶帳戶｜${syncLabel()}`:'';
+ const el=document.getElementById('robotResult');if(!el)return;
+ if(!rows.length){el.innerHTML='<div class="hint">尚無資料，請用書籤從後台同步。</div>';return}
+ el.innerHTML='<table class="result-table"><thead><tr><th>幣種</th><th>商戶</th><th>帳戶</th><th>Current Balance</th><th>USD</th></tr></thead><tbody>'+rows.map(r=>`<tr><td>${r.currency}</td><td>${r.provider}</td><td>${displayAccountName(r.provider,r.account)}</td><td>${fmt(r.fiat)}</td><td>${fmt(r.usd)}</td></tr>`).join('')+'</tbody></table>';
 }
-function clearRobot(){document.getElementById('robotInput').value='';document.getElementById('robotResult').innerHTML=''}
+function clearRobot(){document.getElementById('robotInput').value=''}
 
 async function readSheet(file){
  const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];return XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
@@ -682,213 +643,6 @@ async function loadChannels(type){
  toast('解析完成');
 }
 
-// 把整段贴上的内容打散成词元——不管来源是 tab 分隔、多个空格分隔、还是每个格子各自一行，
-// 都靠「币别代码」这个最不会认错的锚点，往前抓 Provider／Channel、往后收集连续数字。
-// 有些後台的 Count 是可點擊連結，複製時可能整格漏掉，所以数字够 5 个就正常對應；
-// 只抓到 4 个数字时，用「有沒有小数点」判斷哪个是 Count（Count 通常是整数，其餘四項都帶小数）。
-function parsePendingRows(raw){
- const rawTokens=raw.split(/\s+/).map(x=>x.trim()).filter(Boolean);
- const noiseWords=new Set(['provider','channel','currency','sum','amount','count','avg','avg.','pend','hour','max','min','action','view','detail','search']);
- const tokens=rawTokens.filter(t=>{
-  const bare=t.replace(/[：:]/g,'');
-  if(!bare)return false;
-  if(noiseWords.has(bare.toLowerCase()))return false;
-  if(/^\d+H$/i.test(bare))return false;
-  if(!/[\p{L}\p{N}]/u.test(bare))return false;
-  return true;
- });
-
- const currencyRe=/^[A-Z]{3,6}(?:FIAT)?$/;
- const numRe=/^-?[\d,]+(?:\.\d+)?$/;
- const rows=[];
- let missingCount=0;
- for(let i=0;i<tokens.length;i++){
-  if(!currencyRe.test(tokens[i]))continue;
-  const currency=normCurrency(tokens[i]);
-  if(!currency)continue;
-  if(i<2)continue;
-  const provider=tokens[i-2],channel=tokens[i-1];
-
-  const nums=[];
-  let j=i+1;
-  while(j<tokens.length&&numRe.test(tokens[j])&&nums.length<6){nums.push(tokens[j]);j++;}
-  if(nums.length<4)continue;
-
-  let amount,count,avg,max,min,consumed;
-  if(nums.length>=5){
-   [amount,count,avg,max,min]=nums;
-   consumed=5;
-  }else{
-   const intIdx=nums.findIndex(v=>!v.includes('.'));
-   if(intIdx>=0){
-    const rest=nums.slice();
-    count=rest.splice(intIdx,1)[0];
-    [amount,avg,max,min]=rest;
-   }else{
-    [amount,avg,max,min]=nums;
-    count='0';
-    missingCount++;
-   }
-   consumed=4;
-  }
-  rows.push({provider,channel,currency,amount:num(amount),count:num(count),avg:num(avg),max:num(max),min:num(min)});
-  i+=consumed;
- }
- parsePendingRows.missingCount=missingCount;
- return rows;
-}
-
-function previewPendingImage(){
- const file=document.getElementById('pendingImage').files[0];
- if(!file)return;
- const img=document.getElementById('pendingPreview');
- img.src=URL.createObjectURL(file);
- img.style.display='block';
-}
-
-async function recognizePendingImage(){
- const file=document.getElementById('pendingImage').files[0];
- if(!file){toast('請先上傳截圖');return}
- if(typeof Tesseract==='undefined'){toast('OCR 元件載入失敗，請重新整理後再試');return}
-
- const progress=document.getElementById('ocrProgress');
- const bar=document.getElementById('ocrBar');
- const status=document.getElementById('ocrStatus');
- progress.style.display='block';
-
- try{
-   const result=await Tesseract.recognize(file,'eng',{
-     logger:m=>{
-       if(m.status==='recognizing text'){
-         const p=Math.round((m.progress||0)*100);
-         bar.style.width=p+'%';
-         status.textContent=`正在辨識 ${p}%`;
-       }else status.textContent=m.status||'';
-     }
-   });
-   const parsed=parsePendingOCRText(result.data.text);
-   document.getElementById('pendingInput').value=parsed;
-   status.textContent=parsed?'辨識完成，請快速確認數字後生成回報。':'未辨識到表格，請換一張較清晰、完整的截圖。';
- }catch(e){
-   status.textContent='辨識失敗：'+e.message;
- }
-}
-
-function parsePendingOCRText(text){
- const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
- const out=['Provider\tChannel\tCurrency\tSum Amount\tCount\tAvg. Pend Hour\tMax Hour\tMin Hour'];
-
- lines.forEach(line=>{
-   // 從右側抓 5 個數字：Amount Count Avg Max Min
-   const nums=line.match(/-?\d[\d,]*(?:\.\d+)?/g);
-   if(!nums || nums.length<5)return;
-
-   const min=nums[nums.length-1];
-   const max=nums[nums.length-2];
-   const avg=nums[nums.length-3];
-   const count=nums[nums.length-4];
-   const amount=nums[nums.length-5];
-
-   const prefix=line.slice(0,line.lastIndexOf(amount)).trim();
-   const currencyMatch=prefix.match(/\b([A-Z]{3,5})(?:FIAT)?\b(?!.*\b[A-Z]{3,5}\b)/);
-   if(!currencyMatch)return;
-   const currency=currencyMatch[1].replace('FIAT','');
-   const left=prefix.slice(0,currencyMatch.index).trim().split(/\s{2,}|\t+/).filter(Boolean);
-   let provider=left[0]||'';
-   let channel=left.slice(1).join(' ')||provider;
-
-   // OCR 常把 Provider/Channel 只用單空格分開，依重複商戶名拆
-   if(left.length===1){
-     const words=prefix.slice(0,currencyMatch.index).trim().split(/\s+/);
-     provider=words[0]||'';
-     channel=words.slice(1).join(' ')||provider;
-   }
-
-   out.push([provider,channel,currency,amount,count,avg,max,min].join('\t'));
- });
- return out.length>1?out.join('\n'):'';
-}
-
-function loadPendingExample(){
- document.getElementById('pendingInput').value=
-`Provider	Channel	Currency	Sum Amount	Count	Avg. Pend Hour	Max Hour	Min Hour
-TopPayNew	TopPayNew_INR_UPI	INRFIAT	1318540.00	175	8.57	29.39	6.00
-TopPayNew	TopPayNew_INR_WITHDRAW	INRFIAT	1637934.00	126	8.63	22.38	6.06
-SolPay	SolPayINR	INRFIAT	88738.00	16	7.56	10.37	6.08`;
-}
-
-function parsePending(){
- const raw=document.getElementById('pendingInput').value.trim();
- if(!raw){toast('请先辨识截图或贴上修正后的资料');return}
-
- const rows=parsePendingRows(raw);
- if(!rows.length){toast('未识别到有效资料，请确认贴上的内容包含 Provider/Channel/币别/数字栏位');return}
- const missingCount=parsePendingRows.missingCount||0;
-
- state.pending=rows;
- setUpdated('pending');
-
- const groups={};
- rows.forEach(r=>{
-   const key=`${r.provider}|${r.currency}`;
-   if(!groups[key])groups[key]={provider:r.provider,currency:r.currency,count:0,amount:0,weighted:0,max:0,channels:[]};
-   const g=groups[key];
-   g.count+=r.count;
-   g.amount+=r.amount;
-   g.weighted+=r.avg*r.count;
-   g.max=Math.max(g.max,r.max);
-   g.channels.push(r.channel);
- });
-
- const replyText=document.getElementById('merchantReplies').value.trim();
- const replyLines=replyText.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
- function replyFor(provider){
-   const found=replyLines.find(x=>x.toLowerCase().startsWith(provider.toLowerCase()));
-   if(found)return found.replace(new RegExp('^'+provider+'\\s*[:：-]?\\s*','i'),'');
-   return '已通知商户优先处理并持续跟进。';
- }
-
- const date=document.getElementById('reportDate').value.trim()||new Date().toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'});
- const shift=document.getElementById('reportShift').value;
- const byCurrency={};
- Object.values(groups).forEach(g=>{
-   (byCurrency[g.currency]??=[]).push(g);
- });
-
- const sections=[`${date} ${shift}`];
- Object.entries(byCurrency).forEach(([currency,gs])=>{
-   const total=gs.reduce((s,g)=>s+g.count,0);
-   sections.push(`${currency}卡款超过6小时`);
-   gs.sort((a,b)=>b.count-a.count).forEach(g=>{
-     const channelInfo=g.channels.length>1?`，主要为${g.channels.map(c=>c.replace(/^.*?_/, '')).join('及')}`:'';
-     sections.push(`${g.provider} ${currency} ${g.count}笔：${channelInfo}${channelInfo?'，':''}${replyFor(g.provider)}`);
-   });
-   const minor=gs.filter(g=>g.count<10);
-   if(minor.length>1){
-     sections.push(`其余通道均未超过10笔，已通知商户优先处理并持续跟进。`);
-   }
- });
-
- document.getElementById('pendingOutput').textContent=sections.join('\n');
- let resultHtml=`<p>已读取 ${rows.length} 个渠道，合并为 ${Object.keys(groups).length} 个商户币种回报。</p>`;
- if(missingCount>0){
-  resultHtml+=`<p style="color:#c0392b">⚠️ 有 ${missingCount} 个渠道侦测不到 Count（笔数），已暂以 0 计入，实际笔数请对照后台确认——可能是贴上时 Count 那一栏没被选取到（若该栏是可点击链接，复制时容易漏掉）。</p>`;
- }
- document.getElementById('pendingResult').innerHTML=resultHtml;
- renderAll();
- toast('提款超时回报已生成');
-}
-
-function clearPending(){
- document.getElementById('pendingImage').value='';
- document.getElementById('pendingPreview').style.display='none';
- document.getElementById('pendingInput').value='';
- document.getElementById('merchantReplies').value='';
- document.getElementById('pendingOutput').textContent='生成结果显示于此';
- document.getElementById('pendingResult').innerHTML='';
- document.getElementById('ocrStatus').textContent='';
- document.getElementById('ocrBar').style.width='0';
-}
 function summary(){
  const map={};
  state.balances.forEach(r=>{map[r.currency]??={currency:r.currency,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[]};map[r.currency].fiat+=r.fiat;map[r.currency].usd+=r.usd});
@@ -1137,13 +891,9 @@ const CURRENCY_CHECKLIST=[
   'AUD','BOB','JPY','MDL','NZD','RWF','TWD','XAF','ZMW'
 ];
 
-function robotCommand(currency){return `/b ${currency} *`}
-
-async function copyRobotCommand(currency,quiet=false,btn){
-  try{await navigator.clipboard.writeText(robotCommand(currency));if(!quiet){toast(`已复制 ${currency} Robot 指令`);flashCopied(btn,'');}}
-  catch(e){
-    const area=document.createElement('textarea');area.value=robotCommand(currency);area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();document.execCommand('copy');area.remove();if(!quiet){toast(`已复制 ${currency} Robot 指令`);flashCopied(btn,'');}
-  }
+function currencyChecklist(){
+  const extra=[...new Set(state.balances.filter(b=>Number(b.fiat)!==0).map(b=>b.currency))].filter(c=>!CURRENCY_CHECKLIST.includes(c)).sort();
+  return CURRENCY_CHECKLIST.concat(extra);
 }
 
 function markCurrencyChecked(currency){
@@ -1156,7 +906,8 @@ function markCurrencyChecked(currency){
 
 function nextUncheckedCurrency(){
   const checked=new Set(state.currencyProgress.checked||[]);
-  return CURRENCY_CHECKLIST.find(c=>!checked.has(c))||'全部完成';
+  const p=state.currencyProgress;if(p.mode&&p.current)checked.add(p.current);
+  return currencyChecklist().find(c=>!checked.has(c))||'全部完成';
 }
 
 function renderCurrencyProgress(){
@@ -1168,47 +919,52 @@ function renderCurrencyProgress(){
   const currentEl=document.getElementById('currentCurrency');
   const nextEl=document.getElementById('nextCurrency');
   const progressEl=document.getElementById('currencyProgress');
-  const pct=Math.round(checked.length/CURRENCY_CHECKLIST.length*100);
+  const list=currencyChecklist();const doneCount=checked.filter(c=>list.includes(c)).length;const pct=Math.round(doneCount/list.length*100);
 
   if(currentEl)currentEl.textContent=current;
   if(nextEl)nextEl.textContent=isInterrupt?(state.currencyProgress.resume||next):next;
-  if(progressEl)progressEl.textContent=`${checked.length} / ${CURRENCY_CHECKLIST.length}`;
+  if(progressEl)progressEl.textContent=`${doneCount} / ${list.length}`;
   const percentEl=document.getElementById('progressPercent');if(percentEl)percentEl.textContent=pct+'%';
   const bar=document.getElementById('progressBar');if(bar)bar.style.width=pct+'%';
   const label=document.getElementById('currentLabel');if(label)label.textContent=isInterrupt?'正在插队查询':'当前状态';
   const currentBox=currentEl?.closest('.workflow-stat');if(currentBox)currentBox.classList.toggle('interrupt',isInterrupt);
-  const note=document.getElementById('workflowNote');if(note)note.textContent=isInterrupt?`完成 ${current} 后将恢复原队列，从 ${state.currencyProgress.resume||next} 继续。`:'开始时会复制 Telegram Robot 指令、清空输入框，并切换至 Robot 页面。';
-  const startBtn=document.getElementById('startNextBtn');if(startBtn)startBtn.textContent=next==='全部完成'?'今日检查已完成':`开始下一币种 · ${next}`;
+  const note=document.getElementById('workflowNote');if(note)note.textContent=isInterrupt?`完成 ${current} 后将恢复原队列，从 ${state.currencyProgress.resume||next} 继续。`:'开始时会展开该币种明细；看完点「开始下一币种」会自动标记完成。';
+  const startBtn=document.getElementById('startNextBtn');if(startBtn)startBtn.textContent=state.currencyProgress.mode?`完成 ${state.currencyProgress.current} · 下一个 ${next==='全部完成'?'（无）':next}`:(next==='全部完成'?'今日检查已完成':`开始下一币种 · ${next}`);
   renderCurrencyChecklist();
 }
 
-async function activateCurrency(currency,mode='queue'){
+function activateCurrency(currency,mode='queue'){
   if(!currency||currency==='全部完成')return;
   const resume=nextUncheckedCurrency();
   state.currencyProgress.current=currency;
   state.currencyProgress.mode=mode;
   state.currencyProgress.resume=mode==='interrupt'?resume:'';
   save();
-  const input=document.getElementById('robotInput');if(input)input.value='';
-  const result=document.getElementById('robotResult');if(result)result.innerHTML='';
-  await copyRobotCommand(currency,true);
   renderCurrencyProgress();
-  showPage('robot');
-  if(input){input.focus();input.scrollIntoView({behavior:'smooth',block:'center'})}
-  toast(`${mode==='interrupt'?'插队查询':'开始检查'} ${currency}，Robot 指令已复制`);
+  showPage('home');
+  focusCurrency(currency);
+  if(!state.balances.some(b=>b.currency===currency))toast(`${currency} 目前沒有後台商戶餘額資料`);
+  else toast(`${mode==='interrupt'?'插队查看':'开始检查'} ${currency}`);
+}
+
+function focusCurrency(currency){
+  const balanceOnly=document.getElementById('balanceOnly');
+  if(balanceOnly&&!state.balances.some(b=>b.currency===currency)&&balanceOnly.checked){balanceOnly.checked=false;renderAll()}
+  document.querySelectorAll('.currency-detail.show').forEach(el=>el.classList.remove('show'));
+  const el=document.getElementById('detail-'+currency);
+  if(el){el.classList.add('show');el.closest('tr')?.previousElementSibling?.scrollIntoView({behavior:'smooth',block:'center'})}
 }
 
 function startNextCurrency(){
-  const next=nextUncheckedCurrency();
-  if(next==='全部完成'){
-    toast('所有币种都已检查完成');
-    return;
-  }
-  activateCurrency(next,'queue');
+  if(state.currencyProgress.mode)completeActiveCurrency();
+  const upcoming=nextUncheckedCurrency();
+  if(upcoming==='全部完成'){toast('所有币种都已检查完成');return}
+  activateCurrency(upcoming,'queue');
 }
 
 function interruptCurrency(currency){
-  if(currency===state.currencyProgress.current&&state.currencyProgress.mode==='interrupt'){toast(`${currency} 已在插队查询中`);return}
+  if(currency===state.currencyProgress.current&&state.currencyProgress.mode==='interrupt'){focusCurrency(currency);return}
+  if(state.currencyProgress.mode)completeActiveCurrency();
   activateCurrency(currency,'interrupt');
 }
 
@@ -1235,9 +991,9 @@ function renderCurrencyChecklist(){
   const box=document.getElementById('currencyChecklist');if(!box)return;
   const q=(document.getElementById('currencySearch')?.value||'').trim().toUpperCase();
   const checked=new Set(state.currencyProgress.checked||[]),active=String(state.currencyProgress.current||'').replace(' ✓','');
-  box.innerHTML=CURRENCY_CHECKLIST.filter(c=>!q||c.includes(q)).map(c=>{
+  box.innerHTML=currencyChecklist().filter(c=>!q||c.includes(q)).map(c=>{
     const done=checked.has(c),isActive=c===active&&!!state.currencyProgress.mode,isInterrupt=isActive&&state.currencyProgress.mode==='interrupt';
-    return `<div class="check-item ${done?'done':''} ${isActive?'active':''} ${isInterrupt?'interrupting':''}"><span>${done?'✓':isActive?'▶':'○'}</span><span class="check-code">${c}</span><button class="insert-btn" onclick="interruptCurrency('${c}')">插队</button><button class="icon-btn" title="复制 ${c} 指令" onclick="copyRobotCommand('${c}',false,this)">📋</button></div>`;
+    return `<div class="check-item ${done?'done':''} ${isActive?'active':''} ${isInterrupt?'interrupting':''}"><span>${done?'✓':isActive?'▶':'○'}</span><span class="check-code">${c}</span><button class="insert-btn" onclick="interruptCurrency('${c}')">插队</button></div>`;
   }).join('')||'<div class="hint">找不到币种</div>';
 }
 
@@ -1251,7 +1007,7 @@ function resetCurrencyProgress(){
 
 function renderAll(){
  let rows=summary();
- const balanceCurrencies=new Set(state.balances.map(x=>x.currency));
+ const balanceCurrencies=new Set(state.balances.filter(x=>Number(x.fiat)!==0).map(x=>x.currency));
  const onlyBalance=document.getElementById('balanceOnly')?.checked ?? true;
 
  rows.sort((a,b)=>{
@@ -1316,7 +1072,7 @@ function renderAll(){
    const unmatchedPayout=x.payout.filter((_,index)=>!usedPayout.has(index));
    const unmatchedPayin=x.payin.filter((_,index)=>!usedPayin.has(index));
    const unmatchedHtml=(unmatchedPayout.length||unmatchedPayin.length)
-     ? `<div class="workflow-note unmatched-row">另有 ${unmatchedPayout.length} 条代付、${unmatchedPayin.length} 条代收通道未能与 Robot 商户名称精确匹配，因此不混入任何商户。</div>`:'';
+     ? `<div class="workflow-note unmatched-row">另有 ${unmatchedPayout.length} 条代付、${unmatchedPayin.length} 条代收通道未能与后台商户名称精确匹配，因此不混入任何商户。</div>`:'';
 
    const detailHtml=merchants.length
      ? alignedRows+unmatchedHtml
@@ -1331,12 +1087,13 @@ function renderAll(){
      <td class="money"><div>總餘額 ${SYMBOLS[x.currency]||''} ${fmt(x.fiat)}</div><div style="color:var(--green);margin-top:4px">可動用 ${SYMBOLS[x.currency]||''} ${fmt(usable.amount)}</div>${usable.locked>0?`<div class="hint" style="color:var(--orange);margin-top:3px">已鎖定 ${SYMBOLS[x.currency]||''} ${fmt(usable.locked)}（${usable.lockedMerchants} 個商戶／${usable.lockedChannels} 個關閉通道）</div>`:''}</td>
      <td class="usd">${fmt(x.usd)} U</td>
      <td>${SYMBOLS[x.currency]||''} ${fmt(x.withdraw)}</td>
+     <td>${gapCell(x.currency)}</td>
      <td>${SYMBOLS[x.currency]||''} ${fmt(x.deposit)}</td>
      <td><span class="badge ${po?'b-green':'b-gray'}">${po}/${x.payout.length}</span></td>
      <td><span class="badge ${pi?'b-green':'b-gray'}">${pi}/${x.payin.length}</span></td>
      <td class="recommend ${cls}">${r.text}</td>
    </tr>
-   <tr class="detail-row"><td colspan="8">
+   <tr class="detail-row"><td colspan="9">
      <div class="currency-detail" id="detail-${x.currency}">
        <div class="detail-scroll">
          <div class="merchant-channel-table">
@@ -1350,10 +1107,10 @@ function renderAll(){
        </div>
      </div>
    </td></tr>`;
- }).join(''):'<tr><td colspan="8">目前沒有商戶餘額資料</td></tr>';
+ }).join(''):'<tr><td colspan="9">目前沒有商戶餘額資料</td></tr>';
 
  document.getElementById('analysisGrid').innerHTML=analysis.length?
-   analysis.map(({x,r})=>`<div class="analysis-box ${r.type==='risk'?'risk':r.type==='settle'?'settle':'watch'}"><small>${x.currency}</small><b>${r.text}</b><span>${r.reason}</span></div>`).join(''):
+   analysis.map(({x,r})=>`<div class="analysis-box ${r.type==='risk'?'risk':r.type==='settle'?'settle':'watch'}"><small>${x.currency}</small><b>${r.text}</b><span>${r.reason}${backendRiskNote(x.currency)}</span></div>`).join(''):
    '<div class="hint">尚未有分析結果</div>';
 
  const alertList=document.getElementById('alertList');
@@ -1367,11 +1124,25 @@ function renderAll(){
    .map(k=>`<div class="status-row"><span>${labels[k]}</span><span>${state.updated[k]||'未更新'}</span></div>`).join('');
 
  const latest=Object.keys(labels).map(k=>state.updated[k]).filter(Boolean).sort().pop();
- document.getElementById('lastUpdated').textContent=latest?'最後更新：'+latest:'尚未匯入資料';
+ document.getElementById('lastUpdated').textContent=syncLabel()+(latest?'｜本機最後更新：'+latest:'');
  renderRobotResult();
  renderCurrencyProgress();
 }
 
+function gapCell(currency){
+ const r=state.backend?.risk?.[currency];
+ if(!r||!Number.isFinite(Number(r.fundsGapToday)))return '<span class="hint">—</span>';
+ const g=Number(r.fundsGapToday),sym=SYMBOLS[currency]||'';
+ return g<0?`<span class="gap-neg">缺 ${sym}${fmt(-g,0)}</span><div class="hint">${fmt(-Number(r.fundsGapTodayUsd)||0,0)} U</div>`
+           :`<span class="gap-pos">+${sym}${fmt(g,0)}</span><div class="hint">${fmt(Number(r.fundsGapTodayUsd)||0,0)} U</div>`;
+}
+function backendRiskNote(currency){
+ const r=state.backend?.risk?.[currency];if(!r)return '';
+ const sym=SYMBOLS[currency]||'';
+ const actions=(state.backend?.topup?.[currency]?.methodList||[]).map(m=>`${m.method}：${m.recommendedAction||'—'}`).join('，');
+ const g=Number(r.fundsGapToday)||0;
+ return `<br>後台：今日預計出款 ${sym}${fmt(r.expectedFundsForToday,0)}，${g<0?'今日缺口 '+sym+fmt(-g,0):'今日餘裕 '+sym+fmt(g,0)}${actions?'；建議 '+actions:''}`;
+}
 function toggleCurrencyDetail(currency){
  const el=document.getElementById('detail-'+currency);
  if(el) el.classList.toggle('show');
@@ -1776,14 +1547,11 @@ async function copyText(id,btn){
   toast('复制失败，请手动选取文字复制');
  }
 }
-function generateReport(){
- const rows=summary();const lines=['【Fiat Operations 综合回报】'];
- rows.forEach(x=>{const r=recommendation(x),usable=usableBalanceForCurrency(x.currency,x.payout);lines.push(`${x.currency}：总余额 ${SYMBOLS[x.currency]||''}${fmt(x.fiat)}，可动用 ${SYMBOLS[x.currency]||''}${fmt(usable.amount)}，Withdrawal 日均 ${SYMBOLS[x.currency]||''}${fmt(x.withdraw)}，Deposit 日均 ${SYMBOLS[x.currency]||''}${fmt(x.deposit)}；${r.text}。${r.reason}`)});
- document.getElementById('reportOutput').textContent=rows.length?lines.join('\n'):'目前尚未汇入资料';showPage('report');
-}
 function resetAll(){if(!confirm('确定清空所有已保存资料？'))return;localStorage.removeItem(STORE_KEY);location.reload()}
+setupBookmarklet();
 renderAll();
 renderCurrencyProgress();
+if(location.hash==='#sync'){showPage('robot');toast('等待後台同步資料…')}
 </script>
 
 <script>
