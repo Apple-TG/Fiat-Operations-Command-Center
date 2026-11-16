@@ -188,7 +188,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
     只顯示有商戶餘額
   </label>
 </div>
-<table class="currency-table"><thead><tr><th>幣種</th><th>總餘額／可動用</th><th>USD（參考）</th><th>Withdrawal 日均</th><th>今日缺口／餘裕</th><th>Deposit 日均</th><th>代付</th><th>代收</th><th>建議</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="9">尚未匯入資料</td></tr></tbody></table>
+<table class="currency-table"><thead><tr><th>幣種</th><th>可動用餘額</th><th>Withdrawal 日均</th><th>1h 水位</th><th>24h 水位</th><th>代付</th><th>代收</th><th>建議</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="8">尚未匯入資料</td></tr></tbody></table>
 </div>
 <div class="card" style="margin-top:16px"><div class="section-title"><div><h3>綜合資金分析</h3><div class="hint">依可動用餘額、日均與通道狀態自動判斷</div></div></div><div class="analysis-grid" id="analysisGrid"><div class="hint">尚未有分析結果</div></div></div>
 </div>
@@ -520,7 +520,7 @@ function applyBackendSync(payload){
   Object.entries(cur).forEach(([c,data])=>{
     (data.merchantBalance||[]).forEach(m=>balances.push({provider:String(m.provider||'').trim(),account:String(m.account||'').trim(),currency:c,fiat:Number(m.currentBalance)||0,usd:Number(m.currentBalanceUsd)||0}));
     const cap=data.capacity||{};
-    capacity[c]={avg:Number(cap.avgDailyPayoutAmount)||0,today:Number(cap.todayPayoutAmount)||0,total:Number(cap.totalPayoutAmount)||0};
+    capacity[c]={avg:Number(cap.avgDailyPayoutAmount)||0,today:Number(cap.todayPayoutAmount)||0,total:Number(cap.totalPayoutAmount)||0,daily:(cap.dailyList||[]).map(d=>({d:d.date,a:Number(d.payoutAmount)||0}))};
     if(data.fundRisk)risk[c]=data.fundRisk;
     if(data.topupRecommendation)topup[c]=data.topupRecommendation;
   });
@@ -794,14 +794,24 @@ function summary(){
  return Object.values(map).sort((a,b)=>a.currency.localeCompare(b.currency));
 }
 function recommendation(x){
+ const sym=SYMBOLS[x.currency]||'';
  const wd=x.withdraw||0;const open=x.payout.filter(y=>y.status==='开启').length;const usable=usableBalanceForCurrency(x.currency,x.payout);
- const lockedText=usable.locked>0?`；另有 ${SYMBOLS[x.currency]||''}${fmt(usable.locked,0)} 卡在 ${usable.lockedMerchants} 个商户（${usable.lockedChannels} 个已关闭通道）。`:'';
- if(wd>0&&usable.amount<wd){return {type:'risk',text:`建议补 ${SYMBOLS[x.currency]||''}${fmt(wd-usable.amount,0)}`,reason:`可动用余额低于 1 天 Withdrawal 日均；开启代付 ${open} 家${lockedText}`}}
- if(wd>0&&usable.amount>wd*2){return {type:'settle',text:`可结算 ${SYMBOLS[x.currency]||''}${fmt(usable.amount-wd,0)}`,reason:`以可动用余额判断，保留约 1 天 Withdrawal 后仍有多余余额${lockedText}`}}
- if(open===0&&x.payout.length){return {type:'risk',text:'代付无可用通道',reason:`目前无开启通道${lockedText}`}}
- return {type:'ok',text:'观察',reason:`余额与通道暂时稳定；开启代付 ${open} 家。`}
+ const lockedText=usable.locked>0?`；另有 ${sym}${fmt(usable.locked,0)} 卡在 ${usable.lockedMerchants} 个商户（${usable.lockedChannels} 个已关闭通道），不计入可动用。`:'';
+ if(open===0&&x.payout.length)return {type:'risk',text:'代付无可用通道',reason:`目前无开启通道${lockedText}`};
+ const r=riskOf(x.currency);
+ // 有后台 Payout Monitor 资料：以「安全余额」判断（1h：过去 1 小时 ×1.2×1.5；24h：过去 24 小时 ×1.2×1.3）
+ if(r&&Number.isFinite(Number(r.fundsGapToday))){
+   const g1=Number(r.fundsGap)-usable.locked,g24=Number(r.fundsGapToday)-usable.locked;
+   if(g1<0)return {type:'risk',text:`立即补 ${sym}${fmt(-g1,0)}`,reason:`可动用余额撑不过 1 小时（安全余额 ${sym}${fmt(r.safeBalance,0)}）${lockedText}`};
+   if(g24<0)return {type:'risk',text:`今天需补 ${sym}${fmt(-g24,0)}`,reason:`1 小时内足够，但撑不过 24 小时（24h 安全余额 ${sym}${fmt(r.safeBalanceToday,0)}）${lockedText}`};
+   if(wd>0&&g24<wd*0.2)return {type:'watch',text:'观察',reason:`扣掉 24h 安全余额后只剩 ${sym}${fmt(g24,0)}，不到日均 2 成${lockedText}`};
+   return {type:'settle',text:`可结算 ${sym}${fmt(g24,0)}`,reason:`可动用余额扣掉 24h 安全余额后的多余部分${lockedText}`};
+ }
+ // 没有后台资料：沿用 Withdrawal Stats 日均判断
+ if(wd>0&&usable.amount<wd)return {type:'risk',text:`建议补 ${sym}${fmt(wd-usable.amount,0)}`,reason:`可动用余额低于 1 天 Withdrawal 日均；开启代付 ${open} 家${lockedText}`};
+ if(wd>0&&usable.amount>wd*2)return {type:'settle',text:`可结算 ${sym}${fmt(usable.amount-wd,0)}`,reason:`保留约 1 天 Withdrawal 后仍有多余余额${lockedText}`};
+ return {type:'ok',text:'观察',reason:`余额与通道暂时稳定；开启代付 ${open} 家。`};
 }
-
 function normalizeName(v){
   return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 }
@@ -1203,6 +1213,7 @@ function renderAll(){
          <div class="merchant-amount">
            <b>${SYMBOLS[x.currency]||''} ${fmt(m.fiat)}</b>
            <div class="hint">${fmt(m.usd)} U</div>
+           ${providerAdvice(x.currency,m.provider)}
            <div class="flow-quick"><button class="btn" data-flow-dir="out" data-flow-m="${String(m.provider||m.account||'').replace(/[&<>"]/g,'')}" data-flow-c="${x.currency}">出U</button><button class="btn" data-flow-dir="in" data-flow-m="${String(m.provider||m.account||'').replace(/[&<>"]/g,'')}" data-flow-c="${x.currency}">充U</button></div>
          </div>
        </div>
@@ -1226,16 +1237,15 @@ function renderAll(){
 
    return `<tr class="currency-row" onclick="toggleCurrencyDetail('${x.currency}')">
      <td class="currency">▸ ${x.currency}</td>
-     <td class="money"><div>總餘額 ${SYMBOLS[x.currency]||''} ${fmt(x.fiat)}</div><div style="color:var(--green);margin-top:4px">可動用 ${SYMBOLS[x.currency]||''} ${fmt(usable.amount)}</div>${usable.locked>0?`<div class="hint" style="color:var(--orange);margin-top:3px">已鎖定 ${SYMBOLS[x.currency]||''} ${fmt(usable.locked)}（${usable.lockedMerchants} 個商戶／${usable.lockedChannels} 個關閉通道）</div>`:''}</td>
-     <td class="usd">${fmt(x.usd)} U</td>
+     <td class="money">${availCell(x,usable)}</td>
      <td>${withdrawCell(x)}</td>
-     <td>${gapCell(x.currency)}</td>
-     <td>${SYMBOLS[x.currency]||''} ${fmt(x.deposit)}</td>
+     <td>${level1hCell(x.currency,usable)}</td>
+     <td>${level24hCell(x.currency,usable)}</td>
      <td><span class="badge ${po?'b-green':'b-gray'}">${po}/${x.payout.length}</span></td>
-     <td><span class="badge ${pi?'b-green':'b-gray'}">${pi}/${x.payin.length}</span></td>
+     <td><span class="badge ${pi?'b-green':'b-gray'}">${pi}/${x.payin.length}</span>${x.deposit?`<div class="hint">日均 ${SYMBOLS[x.currency]||''}${fmt(x.deposit,0)}</div>`:''}</td>
      <td class="recommend ${cls}">${r.text}</td>
    </tr>
-   <tr class="detail-row"><td colspan="9">
+   <tr class="detail-row"><td colspan="8">
      <div class="currency-detail" id="detail-${x.currency}">
        <div class="detail-scroll">
          <div class="merchant-channel-table">
@@ -1249,7 +1259,7 @@ function renderAll(){
        </div>
      </div>
    </td></tr>`;
- }).join(''):'<tr><td colspan="9">目前沒有商戶餘額資料</td></tr>';
+ }).join(''):'<tr><td colspan="8">目前沒有商戶餘額資料</td></tr>';
 
  document.getElementById('analysisGrid').innerHTML=analysis.length?
    analysis.map(({x,r})=>`<div class="analysis-box ${r.type==='risk'?'risk':r.type==='settle'?'settle':'watch'}"><small>${x.currency}</small><b>${r.text}</b><span>${r.reason}${backendRiskNote(x.currency)}</span></div>`).join(''):
@@ -1271,26 +1281,52 @@ function renderAll(){
  renderCurrencyProgress();
 }
 
+function utcDayStart(t){const d=new Date(t);return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())}
+// Withdrawal 日均：以 Withdrawal Stats（7 个完整日）为准；另显示今日进度与 7 日走势（后台 Payout Monitor）
 function withdrawCell(x){
  const sym=SYMBOLS[x.currency]||'';
- const pm=state.backend?.capacity?.[x.currency];
- return `<b>${sym} ${fmt(x.withdraw)}</b><div class="hint">${statsSourceText('withdraw')}</div>${pm?`<div class="hint">參考 Payout Monitor ${sym}${fmt(pm.avg,0)}</div>`:''}`;
+ const pm=state.backend?.capacity?.[x.currency],at=state.backend?.syncedAt;
+ const daily=(pm?.daily||[]);
+ const todayStr=at?new Date(utcDayStart(at)).toISOString().slice(0,10):'';
+ const full=daily.filter(d=>d.d!==todayStr);
+ const pmAvg=full.length?full.reduce((s,d)=>s+d.a,0)/full.length:0;   // 只算完整日，避免把今天未满的一天平均进去
+ const avg=x.withdraw||pmAvg;
+ let pace='';
+ if(pm&&avg>0&&at&&utcDayStart(at)===utcDayStart(Date.now())){
+   const frac=Math.max(.02,(at-utcDayStart(at))/864e5),pct=pm.today/avg*100,exp=frac*100,ratio=pct/exp;
+   const cls=ratio>1.25?'gap-neg':ratio<.75?'gap-pos':'';
+   pace=`<div class="hint">今日已出 <span class="${cls}">${pct.toFixed(0)}%</span>（照时间应到 ${exp.toFixed(0)}%）</div>`;
+ }
+ const max=Math.max(1,...daily.map(d=>d.a));
+ const bars=daily.length?`<div class="wd-bars" title="${daily.map(d=>d.d.slice(5)+' '+sym+fmt(d.a,0)).join('\n')}">${daily.map(d=>`<i style="height:${Math.max(2,d.a/max*22)}px" class="${d.d===todayStr?'today':''}"></i>`).join('')}</div>`:'';
+ return `<b>${sym} ${fmt(avg,0)}</b>${x.withdraw?'':'<span class="hint">（后台完整日）</span>'}${pace}${bars}`;
+}function riskOf(c){return state.backend?.risk?.[c]||null}
+function availCell(x,usable){
+ const sym=SYMBOLS[x.currency]||'';
+ return `<b>${sym} ${fmt(usable.amount,0)}</b><div class="hint">${fmt(x.usd,0)} U（全部）</div>${usable.locked>0?`<div class="hint" style="color:var(--orange)">关闭通道卡 ${sym}${fmt(usable.locked,0)}</div>`:''}`;
 }
-function gapCell(currency){
- const r=state.backend?.risk?.[currency];
- if(!r||!Number.isFinite(Number(r.fundsGapToday)))return '<span class="hint">—</span>';
- const g=Number(r.fundsGapToday),sym=SYMBOLS[currency]||'';
- return g<0?`<span class="gap-neg">缺 ${sym}${fmt(-g,0)}</span><div class="hint">${fmt(-Number(r.fundsGapTodayUsd)||0,0)} U</div>`
-           :`<span class="gap-pos">+${sym}${fmt(g,0)}</span><div class="hint">${fmt(Number(r.fundsGapTodayUsd)||0,0)} U</div>`;
+function gapLine(g,sym){return !Number.isFinite(g)?'—':g<0?`<span class="gap-neg">缺 ${sym}${fmt(-g,0)}</span>`:`<span class="gap-pos">余 ${sym}${fmt(g,0)}</span>`}
+function level1hCell(c,usable){
+ const r=riskOf(c);if(!r)return '<span class="hint">—</span>';const sym=SYMBOLS[c]||'';
+ const lv=Number(r.riskLevel)||0;
+ return `${gapLine(Number(r.fundsGap)-(usable?.locked||0),sym)}<div class="hint">预计 ${sym}${fmt(r.expectedFundsFor1h,0)}／安全 ${sym}${fmt(r.safeBalance,0)}</div><span class="badge ${lv?'b-red':'b-green'}" style="margin-top:3px">Level ${lv}</span>`;
 }
-function backendRiskNote(currency){
- const r=state.backend?.risk?.[currency];if(!r)return '';
+function level24hCell(c,usable){
+ const r=riskOf(c);if(!r)return '<span class="hint">—</span>';const sym=SYMBOLS[c]||'';
+ const adj=Number(r.fundsGapToday)-(usable?.locked||0);
+ return `${gapLine(adj,sym)}<div class="hint">预计 ${sym}${fmt(r.expectedFundsForToday,0)}／安全 ${sym}${fmt(r.safeBalanceToday,0)}</div>${usable?.locked>0?'<div class="hint">已扣关闭通道余额</div>':''}`;
+}
+// 后台对单一商户的建议（Payout Monitor › Top-up Recommendation）
+function providerAdvice(c,provider){
+ const list=(state.backend?.topup?.[c]?.methodList||[]).flatMap(m=>m.providers||[]);
+ const p=list.find(x=>x.providerName===provider&&x.recommendedAction);if(!p)return '';
+ const sym=SYMBOLS[c]||'',g=Number(p.fundsGap)||0;
+ return p.recommendedAction==='Top-up'?`<div class="badge b-red" style="margin-top:4px">后台：需补 ${sym}${fmt(-g,0)}</div>`:`<div class="badge b-green" style="margin-top:4px">后台：可结 ${sym}${fmt(g,0)}</div>`;
+}function backendRiskNote(currency){
+ const r=riskOf(currency);if(!r)return '';
  const sym=SYMBOLS[currency]||'';
- const actions=(state.backend?.topup?.[currency]?.methodList||[]).map(m=>`${m.method}：${m.recommendedAction||'—'}`).join('，');
- const g=Number(r.fundsGapToday)||0;
- return `<br>後台：今日預計出款 ${sym}${fmt(r.expectedFundsForToday,0)}，${g<0?'今日缺口 '+sym+fmt(-g,0):'今日餘裕 '+sym+fmt(g,0)}${actions?'；建議 '+actions:''}`;
-}
-function toggleCurrencyDetail(currency){
+ return `<br>1h：预计 ${sym}${fmt(r.expectedFundsFor1h,0)}，安全 ${sym}${fmt(r.safeBalance,0)}｜24h：预计 ${sym}${fmt(r.expectedFundsForToday,0)}，安全 ${sym}${fmt(r.safeBalanceToday,0)}`;
+}function toggleCurrencyDetail(currency){
  const el=document.getElementById('detail-'+currency);
  if(el) el.classList.toggle('show');
 }
@@ -2516,6 +2552,7 @@ $('prCopyAll').addEventListener('click',async()=>{
 .sync-bar .sb.stale{color:#b86208;border-color:#f6cf98;background:#fff8ec}
 .sync-bar .sb.none{color:var(--muted)}
 .fee-ref{font-size:11px;color:var(--blue);cursor:pointer;border:0;background:none;padding:0;display:block}
+.wd-bars{display:flex;align-items:flex-end;gap:2px;height:24px;margin-top:4px}.wd-bars i{display:block;width:6px;background:#c9d6ea;border-radius:2px}.wd-bars i.today{background:var(--blue)}
 .dev-badge{position:fixed;left:12px;bottom:12px;z-index:200;background:#e98719;color:#fff;font-weight:800;font-size:12px;padding:5px 10px;border-radius:8px}
 @media (max-width:900px){.tpl-out-grid,.tpl-settings{grid-template-columns:1fr}}
 </style>
