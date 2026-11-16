@@ -234,14 +234,6 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
       <div class="tpl-sync-status" id="sheetStatus">尚未同步</div>
       <input id="sheetPaste" type="text" placeholder="⌘V 贴上同步资料" style="width:200px">
     </div>
-    <div class="tpl-filter">
-      <label>日期 <input id="sheetDate" type="text" placeholder="11/16" style="width:110px"></label>
-      <label>方向 <select id="sheetDir" style="width:auto"><option value="all">全部</option><option value="out">结算</option><option value="in">充值</option></select></label>
-      <button class="btn" id="sheetToday">今天</button>
-      <label>商户 <input id="sheetSearch" type="text" placeholder="搜寻商户" style="width:150px"></label>
-      <label><input id="sheetUndone" type="checkbox" style="width:auto"> 只看未收尾</label>
-      <span class="hint" id="sheetCount"></span><span class="hint" id="sheetBackendAt"></span>
-    </div>
     <details class="fallback" style="margin-top:10px"><summary>设定</summary>
       <div class="tpl-settings">
         <div class="field"><label>TRC出金 gid</label><input id="setGidOut" type="text"></div>
@@ -252,20 +244,37 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
     </details>
   </div>
 
+  <!-- A. 预备操作管理 -->
   <div class="card" style="margin-top:16px">
-    <div class="section-title"><h3>待生成清单</h3>
+    <div class="section-title"><h3>A　预备操作</h3>
       <div class="actions"><button class="btn" id="sheetSelAll">全选可生成</button><button class="btn" id="sheetSelNone">取消全选</button><button class="btn primary" id="sheetGenSel">生成选取</button></div></div>
-    <div class="pr-table-wrap"><table class="tpl-table"><thead><tr><th><input type="checkbox" id="sheetSelHead" title="全选／全部取消"></th><th>行</th><th>方向</th><th>网络</th><th>商户</th><th>币种</th><th>金额</th><th>日期</th><th>专员</th><th>商户／优惠汇率</th><th>地址</th><th>模板</th><th>Fee %</th><th>选项</th><th>状态</th><th>进度</th><th></th></tr></thead><tbody id="sheetList"></tbody></table></div>
+    <div class="flow-stats" id="flowStats"></div>
+    <div class="tpl-filter">
+      <label>日期 <input id="sheetDate" type="text" placeholder="11/16" style="width:100px"></label>
+      <button class="btn" id="sheetToday">今天</button>
+      <label>方向 <select id="sheetDir" style="width:auto"><option value="all">全部</option><option value="out">结算</option><option value="in">充值</option></select></label>
+      <label>商户 <input id="sheetSearch" type="text" placeholder="搜寻商户" style="width:140px"></label>
+      <label><input id="sheetUndone" type="checkbox" style="width:auto"> 只看未收尾</label>
+      <span class="hint" id="sheetCount"></span><span class="hint" id="sheetBackendAt"></span>
+    </div>
+    <div class="pr-table-wrap" style="margin-top:10px"><table class="tpl-table"><thead><tr><th><input type="checkbox" id="sheetSelHead" title="全选／全部取消"></th><th>行</th><th>方向</th><th>商户</th><th>币种</th><th>金额</th><th>日期</th><th>专员</th><th>商户汇率</th><th>优惠汇率</th><th>资料</th><th>状态</th><th>进度</th></tr></thead><tbody id="sheetList"></tbody></table></div>
   </div>
 
+  <!-- B. 操作资料确认（选取一笔后展开） -->
+  <div class="card" id="flowDetail" style="margin-top:16px" hidden></div>
+
+  <!-- C. 算式与话术 -->
   <div class="card" style="margin-top:16px">
-    <div class="section-title"><div><h3>生成结果</h3><div class="hint" id="sheetOutMeta"></div></div>
+    <div class="section-title"><div><h3>C　算式与话术</h3><div class="hint" id="sheetOutMeta"></div></div>
       <div class="actions"><button class="btn" id="copyAllMerchant">复制全部商户话术</button><button class="btn" id="copyAllFinance">复制全部充值申请</button><button class="btn danger" id="clearOutputs">清除结果</button></div></div>
     <div id="sheetOutputs" class="tpl-outputs"></div>
   </div>
 
-  <div class="card" style="margin-top:16px">
-    <div class="section-title"><h3>出金 Hash 待补</h3></div><div id="ercReminders"></div>
+  <!-- D. 异常与待处理 -->
+  <div class="grid two" style="margin-top:16px">
+    <div class="card"><div class="section-title"><h3>D　异常与待处理</h3></div><div id="flowIssues"></div>
+      <div class="section-title" style="margin-top:14px"><h3 style="font-size:14px">出金 Hash 待补</h3></div><div id="ercReminders"></div></div>
+    <div class="card"><div class="section-title"><h3>操作纪录</h3><div class="actions"><select id="logFilter" style="width:auto;padding:6px 8px"><option value="all">全部</option><option value="error">只看错误／警告</option></select><button class="btn" id="exportFlow">汇出</button><button class="btn" id="importFlowBtn">汇入</button><input type="file" id="importFlow" accept=".json" hidden></div></div><div id="tplLogs" class="tpl-logs"></div></div>
   </div>
 </section>
 
@@ -2549,6 +2558,20 @@ $('prCopyAll').addEventListener('click',async()=>{
 .sync-bar .sb.none{color:var(--muted)}
 .fee-ref{font-size:11px;color:var(--blue);cursor:pointer;border:0;background:none;padding:0;display:block}
 .wd-bars{display:flex;align-items:flex-end;gap:2px;height:24px;margin-top:4px}.wd-bars i{display:block;width:6px;background:#c9d6ea;border-radius:2px}.wd-bars i.today{background:var(--blue)}
+.flow-stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.flow-stats .fs{border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 12px;cursor:pointer;font-size:12px;color:#536177;display:flex;align-items:baseline;gap:6px}
+.flow-stats .fs b{font-size:18px;color:var(--text)}.flow-stats .fs.on{border-color:var(--blue);background:#eef4ff}
+.flow-stats .bad b,.flow-stats .changed b{color:var(--red)}.flow-stats .gen b{color:var(--orange)}.flow-stats .done b{color:var(--green)}.flow-stats .hash b{color:#b86208}
+.st{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#edf0f4;color:#586274}
+.st-bad,.st-changed{background:#ffe9ec;color:#b72234}.st-gen{background:#fff1df;color:#b86208}.st-copied{background:#eaf1ff;color:var(--blue)}.st-done{background:#e6f8ef;color:#087b56}
+.tpl-table tr[data-i]{cursor:pointer}.tpl-table tr.focus td{background:#eef4ff}
+.flow-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.flow-detail-grid small{display:block;color:var(--muted);font-size:11px}
+.flow-addr{font-family:ui-monospace,Menlo,monospace;font-size:13px;word-break:break-all;display:flex;gap:8px;align-items:center}
+.flow-stale{background:#fff5f6;border:1px solid #ffd4d9;border-radius:10px;padding:10px;margin-bottom:10px;font-size:13px;color:#b72234}
+.flow-ver{margin-top:8px;font-size:12px}.flow-issue{font-size:12px;padding:6px 0;border-top:1px solid #edf0f4}.flow-issue:first-child{border-top:0}
+.flow-issue.error{color:var(--red)}.flow-issue.warn{color:#b86208}
+.tpl-out-item.stale{border-color:#ffd4d9;background:#fff8f8}.tpl-out-item h4 span{font-size:11px;color:var(--muted);font-weight:600}
+@media (max-width:900px){.flow-detail-grid{grid-template-columns:1fr 1fr}}
 .dev-badge{position:fixed;left:12px;bottom:12px;z-index:200;background:#e98719;color:#fff;font-weight:800;font-size:12px;padding:5px 10px;border-radius:8px}
 @media (max-width:900px){.tpl-out-grid,.tpl-settings{grid-template-columns:1fr}}
 </style>
@@ -2646,7 +2669,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const tm=t=>new Date(t).toLocaleString('zh-TW',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
 const todayMD=()=>{const d=new Date();return (d.getMonth()+1)+'/'+d.getDate()};
 
-function log(){} // 操作日志已取消（2026-11-16）
+function log(msg,level){T.logs.unshift({t:Date.now(),msg,level:level||'info'});T.logs=T.logs.slice(0,500);saveT();try{renderLogs()}catch(e){}} // 操作纪录（2026-11-17 恢复）
 
 // ---------- 解析 ----------
 function parseCSV(text){
@@ -2753,30 +2776,51 @@ function check(r,st){
  if(r.currency&&!/^[A-Z]{3}$/.test(r.currency))warn.push('币种格式异常');
  const nw=network(r);if(nw.warn)warn.push(nw.warn);
  const addr=st.address;
- if(!addr)miss.push(r.kind==='in'?'商户地址':(nw.net==='ERC'?'ERC 收U地址':'收U地址'));
- else if(nw.net==='ERC'?!RE_ERC.test(addr):!RE_TRC.test(addr))warn.push('地址格式与 '+nw.net+' 不符');
+ if(!addr)miss.push(st.op==='topup'?'商户地址':(nw.net==='ERC'?'ERC 收U地址':'收U地址'));
+ else if(!(RE_ERC.test(addr)||RE_TRC.test(addr)))warn.push('地址格式不对');
+ else if(st.op==='topup'&&(nw.net==='ERC')!==RE_ERC.test(addr))warn.push('地址格式与 '+nw.net+' 不符');
  // 手续费非必填：空白 = 无手续费
  if(String(st.fee).trim()!==''&&!(Number(st.fee)>=0))miss.push('Fee% 不是有效数字');
  return {miss,warn,net:nw.net,basis:nw.basis};
 }
 
-// ---------- 清单 ----------
-const RS={};let VISIBLE=[];
+// ---------- 纪录 ID（稳定）：有商户单号用单号，否则用「分页＋行号＋商户」----------
+const BAD_ORDER=/^(|无单号|无|等待.*|待.*|-|—)$/;
+function assignSids(rows){
+ const cnt={};rows.forEach(r=>{const o=String(r.orderNo||'').trim();if(!BAD_ORDER.test(o))cnt[o]=(cnt[o]||0)+1});
+ rows.forEach(r=>{const o=String(r.orderNo||'').trim();r.sid=(!BAD_ORDER.test(o)&&cnt[o]===1)?`${r.kind}|#${o}`:`${r.kind}|r${r.row}|${String(r.merchant).toLowerCase()}`});
+}
+const sidOf=r=>r.demo?'demo':(r.sid||`${r.kind}|r${r.row}|${String(r.merchant).toLowerCase()}`);
+T.recs=T.recs||{};T.genErrors=Array.isArray(T.genErrors)?T.genErrors:[];
+const recOf=sid=>T.recs[sid]||(T.recs[sid]={gens:[],copiedAt:0,stale:null});
+
+// ---------- 操作类型／模板 ----------
+const OPS={settle:'结算',topup:'充值'};
+const TPLS={settle:'Settle 生成话术',topup:'Top-Up 生成话术',charge:'充值申请话术',both:'Top-Up＋充值申请'};
+const feeGroup=tpl=>tpl==='settle'?'settle':'topup';
+function addressByOp(r,op){
+ if(op==='topup')return r.address||'';
+ const net=network(r).net;
+ if(net==='ERC')return T.settings.ercSettleAddr||'';
+ return T.sheet?.tabs?.out?.headerAddr||'';
+}
 const DEMO={demo:true,kind:'out',row:'—',orderNo:'',merchant:'Merchant A',currency:'PHP',currencyRaw:'PHP',amountText:'1000',hash:'',dateRaw:'',date:todayMD(),owner:'示范',mrateText:'58',prateText:'58.5',note:'',address:''};
+const RS={};let VISIBLE=[],SCOPE=[],FOCUS=null,STATUS_FILTER='';
 function rowState(r){
- const id=recId(r);
+ const id=sidOf(r);
  if(!RS[id]){
-  const tpl=r.demo?'topup':(r.kind==='in'?'topup':'settle');
-  const mem=r.demo?{pct:1.5}:getFee(tpl,r.merchant,r.currency);
-  const net=network(r).net;
-  RS[id]={tpl,fee:mem?String(mem.pct):'',relay:false,newAddr:!!r.newAddress,sel:false,address:r.demo?'TPSzwHR6UmSr3f4p7hYfxQ2C6yLyX73wWG':addressFor(r,net,tpl)};
+  const op=r.demo?'settle':(r.kind==='in'?'topup':'settle');
+  const tpl=r.demo?'topup':(op==='settle'?'settle':'both');
+  const mem=r.demo?{pct:1.5}:getFee(feeGroup(tpl),r.merchant,r.currency);
+  RS[id]={op,tpl,fee:mem?String(mem.pct):'',relay:false,newAddr:!!r.newAddress,sel:false};
  }
- return RS[id];
+ const st=RS[id];
+ st.address=r.demo?'TPSzwHR6UmSr3f4p7hYfxQ2C6yLyX73wWG':addressByOp(r,st.op);
+ return st;
 }
-function allRows(){
- if(!T.sheet)return [];
- return [...(T.sheet.tabs.out?.rows||[]),...(T.sheet.tabs.in?.rows||[])];
-}
+function allRows(){if(!T.sheet)return [];return [...(T.sheet.tabs.out?.rows||[]),...(T.sheet.tabs.in?.rows||[])]}
+function findBySid(sid){return sid==='demo'?DEMO:allRows().find(r=>sidOf(r)===sid)||null}
+
 // ---------- 进度：话术 → Hash → 后台（Payout Record／Auto Charge，来自后台同步）----------
 const normH=h=>{const m=String(h||'').match(/(?:0x)?([0-9a-fA-F]{64})/);return m?m[1].toLowerCase():''};
 function backendIndex(){
@@ -2786,7 +2830,7 @@ function backendIndex(){
  return idx;
 }
 function progress(r,BI){
- const gen=!!T.generated[recId(r)],hk=normH(r.hash);
+ const rec=T.recs[sidOf(r)],gen=!!(rec&&rec.gens.length),hk=normH(r.hash);
  let back='none',backTxt='等 Hash';
  if(hk){
   if(r.kind==='out'){
@@ -2805,7 +2849,36 @@ function progress(r,BI){
  }
  return {gen,hash:!!hk,back,backTxt,done:back==='done'};
 }
-function filteredRows(){
+
+// ---------- 状态 ----------
+const STATUS={todo:'待生成',bad:'资料不完整',gen:'已生成待确认',copied:'已复制',done:'已完成',changed:'资料已变更'};
+function statusOf(r,BI){
+ const st=rowState(r),c=check(r,st),rec=T.recs[sidOf(r)];
+ if(c.miss.length)return 'bad';
+ if(rec&&rec.stale)return 'changed';
+ if(!r.demo&&progress(r,BI).done)return 'done';
+ if(rec&&rec.gens.length){const last=rec.gens[rec.gens.length-1];return rec.copiedAt>=last.at?'copied':'gen'}
+ return 'todo';
+}
+
+// ---------- 资料变更侦测：同步后比对「上次生成时的资料」与「表格现在的资料」----------
+const SNAP_FIELDS=[['amountText','金额'],['prateText','优惠汇率'],['address','Address'],['note','Note'],['currency','币种'],['mrateText','商户汇率']];
+function snapOf(r,op){return {amountText:r.amountText,prateText:r.prateText,address:addressByOp(r,op),note:r.note,currency:r.currency,mrateText:r.mrateText}}
+function detectChanges(){
+ const rows=allRows();const bySid=new Map(rows.map(r=>[sidOf(r),r]));
+ Object.entries(T.recs).forEach(([sid,rec])=>{
+  if(!rec.gens.length)return;const last=rec.gens[rec.gens.length-1];const r=bySid.get(sid);
+  if(!r)return; // 不在这次读到的范围内：不判断
+  const now=snapOf(r,last.op),changes=SNAP_FIELDS.filter(([k])=>String(now[k]??'')!==String(last.snap[k]??'')).map(([k,l])=>({f:l,old:last.snap[k],now:now[k]}));
+  if(changes.length){
+   const sig=JSON.stringify(changes);
+   if(!rec.stale||rec.stale.sig!==sig){rec.stale={at:Date.now(),changes,sig};log(`资料已变更：${r.merchant} ${r.currency}（第 ${r.row} 行）${changes.map(c=>c.f+' '+c.old+' → '+c.now).join('；')}，旧话术已标为过期`,'warn')}
+  }else if(rec.stale){rec.stale=null;log(`资料已恢复与生成版本一致：${r.merchant}（第 ${r.row} 行）`)}
+ });
+}
+
+// ---------- 清单 ----------
+function scopeRows(){
  const d=$('sheetDate').value.trim(),dir=$('sheetDir').value,kw=$('sheetSearch').value.trim().toLowerCase();
  if(!T.sheet)return [DEMO];
  const res=[];
@@ -2814,7 +2887,6 @@ function filteredRows(){
   let rows=T.sheet.tabs[k]?.rows||[];
   rows=d?rows.filter(r=>r.date===normDate(d)):rows.slice(-RECENT_ROWS);
   if(kw)rows=rows.filter(r=>r.merchant.toLowerCase().includes(kw));
-  if($('sheetUndone').checked){const BI=backendIndex();rows=rows.filter(r=>!progress(r,BI).done)}
   res.push(...rows);
  });
  return res;
@@ -2826,101 +2898,166 @@ function renderStatus(){
  el.innerHTML=`<b>上次同步 ${tm(s.syncedAt)}</b><br>${parts.join(' · ')}${s.tabs.out?.ok?`<br><span class="hint">收U地址：${esc(s.tabs.out.headerAddr||'未读到')}</span>`:''}`;
 }
 function renderList(){
- VISIBLE=filteredRows();
  const BI=backendIndex();
- $('sheetCount').textContent=T.sheet?`显示 ${VISIBLE.length} 行 · 未收尾 ${VISIBLE.filter(r=>!r.demo&&!progress(r,BI).done).length}`:'';
+ SCOPE=scopeRows();
+ const counts={todo:0,bad:0,gen:0,copied:0,done:0,changed:0};
+ const withStatus=SCOPE.map(r=>{const s=statusOf(r,BI);counts[s]++;return [r,s]});
+ const hashPending=Object.values(T.erc).filter(v=>v.status==='pending'||v.status==='notified').length;
+ $('flowStats').innerHTML=Object.entries(STATUS).map(([k,l])=>`<button class="fs ${k} ${STATUS_FILTER===k?'on':''}" data-sf="${k}"><b>${counts[k]}</b>${l}</button>`).join('')+`<button class="fs hash" data-sf="hash"><b>${hashPending}</b>Hash 待补</button>`;
+ VISIBLE=withStatus.filter(([r,s])=>(!STATUS_FILTER||STATUS_FILTER===s)&&(!$('sheetUndone').checked||!progress(r,BI).done)).map(([r])=>r);
+ $('sheetCount').textContent=T.sheet?`显示 ${VISIBLE.length} 行`:'';
  {const tt=[BI.prAt&&'Payout Record',BI.acAt&&'Auto Charge'].filter(Boolean);$('sheetBackendAt').textContent=BI.prAt||BI.acAt?`后台同步 ${tm(Math.max(BI.prAt,BI.acAt))}（${tt.join('、')}）`:'后台未同步'}
- if(!VISIBLE.length){$('sheetList').innerHTML=`<tr><td colspan="17" class="hint">没有资料</td></tr>`;return}
+ if(!VISIBLE.length){$('sheetList').innerHTML=`<tr><td colspan="13" class="hint">没有资料</td></tr>`;syncHead();renderDetail();renderIssues();return}
  $('sheetList').innerHTML=VISIBLE.map((r,i)=>{
-  const st0=rowState(r);
-  // 同一商户刚记住费率时，同画面其他空白的行也带入
-  if(st0.fee===''&&!r.demo){const m0=getFee(st0.tpl,r.merchant,r.currency);if(m0)st0.fee=String(m0.pct)}
-  const st=rowState(r),c=check(r,st),id=recId(r),gen=T.generated[id];
-  const status=c.miss.length?`<div class="tpl-miss">缺：${esc(c.miss.join('、'))}</div>`:'<div class="tpl-ok">完整</div>';
+  const st=rowState(r);
+  if(st.fee===''&&!r.demo){const m0=getFee(feeGroup(st.tpl),r.merchant,r.currency);if(m0)st.fee=String(m0.pct)}
+  const c=check(r,st),s=statusOf(r,BI),p=progress(r,BI);
+  const data=c.miss.length?`<div class="tpl-miss">缺：${esc(c.miss.join('、'))}</div>`:'<div class="tpl-ok">完整</div>';
   const warn=c.warn.length?`<div class="tpl-warn">⚠ ${esc(c.warn.join('；'))}</div>`:'';
-  const lower=r.currencyRaw&&r.currencyRaw!==r.currency?`<div class="pr-muted">原写 ${esc(r.currencyRaw)}</div>`:'';
-  const mem=r.demo?null:getFee(st.tpl,r.merchant,r.currency);
-  const ref=!r.demo&&!mem&&st.fee===''?feeRef(r):null;
-  const memTxt=r.demo?'示范':mem?`记忆 ${mem.pct}%${mem.src==='规则表'?'（规则表）':''}`:ref?`<button class="fee-ref" data-act="feeref" data-v="${ref.pct}">参考 ${ref.pct}%（${esc(ref.date)}）</button>`:'无记忆';
-  const opts=st.tpl==='topup'?`<label><input type="checkbox" data-k="relay" ${st.relay?'checked':''}> 中转</label><br><label><input type="checkbox" data-k="newAddr" ${st.newAddr?'checked':''}> 新地址${r.newAddress?'<span class="pr-muted">（首次出现）</span>':''}</label>`:'';
-  return `<tr data-i="${i}" class="${r.demo?'demo':''} ${gen?'done':''}">
+  return `<tr data-i="${i}" class="${r.demo?'demo':''} ${FOCUS===sidOf(r)?'focus':''}">
    <td><input type="checkbox" data-k="sel" ${st.sel?'checked':''} ${c.miss.length?'disabled':''}></td>
    <td>${esc(r.row)}</td>
    <td>${r.demo?'<span class="badge b-orange">示范</span> ':''}${r.kind==='out'?'<span class="badge b-gray">结算</span>':'<span class="badge b-green">充值</span>'}</td>
-   <td><b>${c.net}</b><div class="pr-muted">依${c.basis}</div></td>
    <td><b>${esc(r.merchant)}</b></td>
-   <td>${esc(r.currency)}${lower}</td>
+   <td>${esc(r.currency)}${r.currencyRaw&&r.currencyRaw!==r.currency?`<div class="pr-muted">原写 ${esc(r.currencyRaw)}</div>`:''}</td>
    <td class="money">${esc(r.amountText)}</td>
    <td>${esc(r.dateRaw||r.date)}</td>
    <td>${esc(r.owner)}</td>
-   <td>${esc(r.mrateText)} / <b>${esc(r.prateText)}</b></td>
-   <td class="tpl-addr">${st.address?`<span class="tpl-addr-full">${esc(st.address)}</span> <button class="icon-btn" data-act="copyaddr" title="复制地址">⧉</button>`:''}</td>
-   <td><select data-k="tpl"><option value="settle" ${st.tpl==='settle'?'selected':''}>Settle</option><option value="topup" ${st.tpl==='topup'?'selected':''}>Top-Up</option></select></td>
-   <td><input class="fee" type="text" inputmode="decimal" data-k="fee" value="${esc(st.fee)}" placeholder="无"><div class="pr-muted">${memTxt}</div></td>
-   <td>${opts}</td>
-   <td>${status}${warn}${gen?`<div class="pr-copied-tag">已生成 ${tm(gen)}</div>`:''}</td>
-   <td>${(()=>{const p=progress(r,BI);return `<div class="flow-prog"><span class="${p.gen?'ok':''}">话术</span><span class="${p.hash?'ok':''}">Hash</span><span class="${p.back}">${esc(p.backTxt)}</span></div>`})()}</td>
-   <td><button class="btn" data-act="gen" ${c.miss.length?'disabled':''}>生成</button></td></tr>`;
+   <td>${esc(r.mrateText)}</td>
+   <td><b>${esc(r.prateText)}</b></td>
+   <td>${data}${warn}</td>
+   <td><span class="st st-${s}">${STATUS[s]}</span></td>
+   <td><div class="flow-prog"><span class="${p.gen?'ok':''}">话术</span><span class="${p.hash?'ok':''}">Hash</span><span class="${p.back}">${esc(p.backTxt)}</span></div></td></tr>`;
  }).join('');
- syncHead();
+ syncHead();renderDetail();renderIssues();
 }
+$('flowStats').addEventListener('click',e=>{const b=e.target.closest('[data-sf]');if(!b)return;
+ if(b.dataset.sf==='hash'){$('ercReminders').scrollIntoView({behavior:'smooth',block:'center'});return}
+ STATUS_FILTER=STATUS_FILTER===b.dataset.sf?'':b.dataset.sf;renderList()});
 $('sheetList').addEventListener('change',e=>{
  const tr=e.target.closest('tr[data-i]');if(!tr)return;
- const r=VISIBLE[+tr.dataset.i],st=rowState(r),k=e.target.dataset.k;if(!k)return;
- if(k==='sel'||k==='relay'||k==='newAddr')st[k]=e.target.checked;
- else if(k==='tpl'){st.tpl=e.target.value;if(!r.demo){const m=getFee(st.tpl,r.merchant,r.currency);st.fee=m?String(m.pct):''}}
- else if(k==='fee')st.fee=e.target.value.trim();
- if(k!=='sel')renderList();else syncHead();
+ const r=VISIBLE[+tr.dataset.i],st=rowState(r);
+ if(e.target.dataset.k==='sel'){st.sel=e.target.checked;syncHead()}
 });
-$('sheetList').addEventListener('click',async e=>{
- const fr=e.target.closest('[data-act=feeref]');
- if(fr){const r=VISIBLE[+fr.closest('tr').dataset.i];rowState(r).fee=fr.dataset.v;renderList();return}
- const ca=e.target.closest('[data-act=copyaddr]');
- if(ca){const r=VISIBLE[+ca.closest('tr').dataset.i];try{await navigator.clipboard.writeText(rowState(r).address);flashCopied(ca,'')}catch(err){toast('复制失败')}return}
- const b=e.target.closest('[data-act=gen]');if(!b)return;
- const r=VISIBLE[+b.closest('tr').dataset.i];
- const out=genRow(r);if(out.error){toast(out.error);return}
- showOutputs([out]);renderList();
+$('sheetList').addEventListener('click',e=>{
+ if(e.target.closest('input,button,select,a'))return;
+ const tr=e.target.closest('tr[data-i]');if(!tr)return;
+ const r=VISIBLE[+tr.dataset.i];FOCUS=FOCUS===sidOf(r)?null:sidOf(r);renderList();
+ if(FOCUS)$('flowDetail').scrollIntoView({behavior:'smooth',block:'nearest'});
 });
 
-// ---------- 生成 ----------
-function genRow(r){
- const st=rowState(r),c=check(r,st);
- if(c.miss.length)return {error:`${r.merchant}：缺 ${c.miss.join('、')}`};
- if(c.warn.length&&!r.demo&&!confirm(`${r.merchant} ${r.currency} ${r.amountText}\n有以下警告：\n· ${c.warn.join('\n· ')}\n\n仍要生成吗？`))return {error:'已取消'};
- const feeBlank=String(st.fee).trim()==='';
- const fee=feeBlank?0:Number(st.fee);
+// ---------- B. 操作资料确认 ----------
+function renderDetail(){
+ const box=$('flowDetail');const r=FOCUS?findBySid(FOCUS):null;
+ if(!r){box.hidden=true;box.innerHTML='';return}
+ box.hidden=false;
+ const st=rowState(r),c=check(r,st),rec=T.recs[sidOf(r)],nw=network(r);
+ const mem=r.demo?null:getFee(feeGroup(st.tpl),r.merchant,r.currency);
+ const ref=!r.demo&&!mem&&st.fee===''?feeRef(r):null;
+ const memTxt=r.demo?'示范':mem?`记忆 ${mem.pct}%${mem.src==='规则表'?'（规则表）':''}`:ref?`<button class="fee-ref" data-act="feeref" data-v="${ref.pct}">参考 ${ref.pct}%（${esc(ref.date)}）</button>`:'无记忆（空白 = 无手续费）';
+ const showTopOpts=st.tpl!=='settle';
+ const stale=rec&&rec.stale?`<div class="flow-stale"><b>⚠ 资料已变更，旧话术已过期</b>${rec.stale.changes.map(x=>`<div>${esc(x.f)}：<s>${esc(x.old||'（空）')}</s> → <b>${esc(x.now||'（空）')}</b></div>`).join('')}<div class="pr-muted">请确认后重新生成</div></div>`:'';
+ const vers=rec&&rec.gens.length?`<details class="fallback" style="margin-top:8px"><summary>生成纪录（${rec.gens.length} 版）</summary>${rec.gens.slice().reverse().map((g,i)=>`<div class="flow-ver"><b>v${rec.gens.length-i}</b> ${tm(g.at)} · ${OPS[g.op]} · ${TPLS[g.tpl]} · 手续费 ${g.fee}%${i===0&&rec.stale?' <span class="badge b-red">过期</span>':i>0?' <span class="badge b-gray">旧版</span>':''}<div class="output" style="min-height:0;font-size:12px">${esc([g.merchantText,g.financeText].filter(Boolean).join('\n\n'))}</div></div>`).join('')}</details>`:'';
+ box.innerHTML=`<div class="section-title"><h3>B　操作资料确认 · ${esc(r.merchant)} ${esc(r.currency)}</h3><button class="drawer-close" data-act="close">×</button></div>
+ ${stale}
+ <div class="flow-detail-grid">
+  <div><small>来源</small><b>${r.kind==='out'?'TRC出金':'TRC入金'} 第 ${esc(r.row)} 行</b></div>
+  <div><small>日期／专员</small><b>${esc(r.dateRaw||r.date)}／${esc(r.owner||'—')}</b></div>
+  <div><small>金额</small><b>${esc(r.amountText)}</b></div>
+  <div><small>商户汇率／优惠汇率</small><b>${esc(r.mrateText)}／${esc(r.prateText)}</b></div>
+  <div><small>链别</small><b>${nw.net}</b><span class="pr-muted">（依${nw.basis}）</span></div>
+  <div><small>Note</small><b>${esc(r.note||'—')}</b></div>
+ </div>
+ <div class="flow-detail-grid" style="margin-top:10px">
+  <div class="field"><label>操作类型</label><select data-k="op"><option value="settle" ${st.op==='settle'?'selected':''}>结算</option><option value="topup" ${st.op==='topup'?'selected':''}>充值</option></select></div>
+  <div class="field"><label>话术模板</label><select data-k="tpl">${Object.entries(TPLS).map(([k,l])=>`<option value="${k}" ${st.tpl===k?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div class="field"><label>手续费 %</label><input type="text" inputmode="decimal" data-k="fee" value="${esc(st.fee)}" placeholder="无"><div class="pr-muted">${memTxt}</div></div>
+ </div>
+ <div class="field"><label>Address（${st.op==='settle'?'收U地址':'商户地址'}）</label><div class="flow-addr">${st.address?esc(st.address):'<span class="tpl-miss">缺</span>'} ${st.address?'<button class="btn" data-act="copyaddr">复制</button>':''}</div></div>
+ ${showTopOpts?`<div class="actions"><label><input type="checkbox" data-k="relay" ${st.relay?'checked':''} style="width:auto"> 透过中转账户支付</label><label><input type="checkbox" data-k="newAddr" ${st.newAddr?'checked':''} style="width:auto"> 新地址（提醒白名单）${r.newAddress?'<span class="pr-muted">首次出现</span>':''}</label></div>`:''}
+ ${c.miss.length?`<div class="tpl-miss" style="margin-top:8px">缺：${esc(c.miss.join('、'))}，不能生成</div>`:''}${c.warn.length?`<div class="tpl-warn" style="margin-top:6px">⚠ ${esc(c.warn.join('；'))}</div>`:''}
+ <div class="actions" style="margin-top:12px"><button class="btn primary" data-act="gen" ${c.miss.length?'disabled':''}>${rec&&rec.gens.length?'重新生成':'生成算式与话术'}</button></div>
+ ${vers}`;
+}
+$('flowDetail').addEventListener('change',e=>{
+ const r=findBySid(FOCUS);if(!r)return;const st=rowState(r),k=e.target.dataset.k;if(!k)return;
+ if(k==='relay'||k==='newAddr')st[k]=e.target.checked;
+ else if(k==='op'){st.op=e.target.value;st.tpl=st.op==='settle'?'settle':'both';if(!r.demo){const m=getFee(feeGroup(st.tpl),r.merchant,r.currency);st.fee=m?String(m.pct):''}}
+ else if(k==='tpl'){const g0=feeGroup(st.tpl);st.tpl=e.target.value;if(!r.demo&&feeGroup(st.tpl)!==g0){const m=getFee(feeGroup(st.tpl),r.merchant,r.currency);st.fee=m?String(m.pct):''}}
+ else if(k==='fee')st.fee=e.target.value.trim();
+ renderList();
+});
+$('flowDetail').addEventListener('click',async e=>{
+ const r=findBySid(FOCUS);if(!r)return;const st=rowState(r);
+ if(e.target.closest('[data-act=close]')){FOCUS=null;renderList();return}
+ const fr=e.target.closest('[data-act=feeref]');if(fr){st.fee=fr.dataset.v;renderList();return}
+ const ca=e.target.closest('[data-act=copyaddr]');if(ca){try{await navigator.clipboard.writeText(st.address);flashCopied(ca)}catch(err){toast('复制失败')}return}
+ if(e.target.closest('[data-act=gen]')){const o=genRow(r);if(o.error){if(o.error!=='已取消')toast(o.error);return}showOutputs([o]);renderList()}
+});
+
+// ---------- 生成（每笔独立；保留每一版）----------
+function formulaOf(text){
+ const lines=String(text||'').split('\n');const i=lines.findIndex(l=>/^Address：/.test(l));
+ return lines.slice(1,i>0?i:lines.length).filter(l=>l.trim()).join('\n');
+}
+function genRow(r,opt={}){
+ const sid=sidOf(r),st=rowState(r),c=check(r,st);
+ const fail=msg=>{if(!r.demo){T.genErrors.unshift({at:Date.now(),sid,label:`${r.merchant} ${r.currency} ${r.amountText}（第 ${r.row} 行）`,msg});T.genErrors=T.genErrors.slice(0,50);log(`生成失败：${r.merchant}（第 ${r.row} 行）${msg}`,'error');saveT()}return {error:`${r.merchant}（第 ${r.row} 行）：${msg}`,sid}};
+ if(c.miss.length)return fail('缺 '+c.miss.join('、'));
+ if(c.warn.length&&!r.demo&&!opt.skipWarn&&!confirm(`${r.merchant} ${r.currency} ${r.amountText}\n有以下警告：\n· ${c.warn.join('\n· ')}\n\n仍要生成吗？`))return {error:'已取消'};
+ const rec=r.demo?{gens:[]}:recOf(sid),last=rec.gens[rec.gens.length-1];
+ if(!r.demo&&last&&rec.copiedAt>=last.at&&!rec.stale&&!opt.skipDup&&!confirm(`${r.merchant} ${r.currency} ${r.amountText} 已在 ${tm(rec.copiedAt)} 复制过。\n确定要重新生成吗？`))return {error:'已取消'};
+ const feeBlank=String(st.fee).trim()==='',fee=feeBlank?0:Number(st.fee);
  if(!r.demo&&!feeBlank){
-  const k=feeKey(st.tpl,r.merchant,r.currency),mem=getFee(st.tpl,r.merchant,r.currency),label=`${r.merchant} ${r.currency} ${st.tpl==='settle'?'Settle':'Top-Up'}`;
+  const g=feeGroup(st.tpl),k=feeKey(g,r.merchant,r.currency),mem=getFee(g,r.merchant,r.currency),label=`${r.merchant} ${r.currency} ${g==='settle'?'Settle':'Top-Up／充值申请'}`;
   if(!mem){T.fees[k]={pct:fee,at:Date.now()};log(`记住费率：${label} ${fee}%`)}
   else if(Number(mem.pct)!==fee){
    if(confirm(`${label} 的费率记忆是 ${mem.pct}%，这次填 ${fee}%。\n\n要把记忆改成 ${fee}% 吗？\n（选「取消」：这次仍用 ${fee}% 生成，记忆不变）`)){T.fees[k]={pct:fee,at:Date.now()};log(`费率记忆更新：${label} ${mem.pct}% → ${fee}%`,'warn')}
-   else log(`本次用 ${fee}% 生成，记忆保持 ${mem.pct}%：${label}`,'warn');
+   else log(`本次用 ${fee}% 生成，记忆保持 ${mem.pct}%：${label}`);
   }
  }
- let res;
- if(st.tpl==='settle'){const s=buildSettleText({amount:r.amountText,rateRaw:r.prateText,feePct:fee,address:st.address});if(s.error)return s;res={merchantText:s.text,financeText:''}}
- else{const t=buildTopupTexts({merchant:r.merchant,currency:r.currency,usdt:r.amountText,rateRaw:r.prateText,feePct:fee,address:st.address,isRelay:st.relay,isNewAddress:st.newAddr});if(t.error)return t;res={merchantText:t.topup,financeText:t.charge}}
- if(!r.demo){T.generated[recId(r)]=Date.now();saveT();log(`生成 ${st.tpl==='settle'?'Settle':'Top-Up＋充值申请'}：${r.merchant} ${r.currency} ${r.amountText}（第 ${r.row} 行）`)}
- const meta=`类型：${r.kind==='out'?'结算':'充值'}　模板：${st.tpl==='settle'?'Settle':'Top-Up＋充值申请'}　商户：${r.merchant}　币种：${r.currency}　金额：${r.amountText}　优惠汇率：${r.prateText}　手续费：${fee}%　链别：${c.net}（依${c.basis}）\nAddress：${st.address}`;
- return Object.assign(res,{meta,title:`${r.demo?'【示范】':''}${r.kind==='out'?'结算':'充值'} · ${r.merchant} ${r.currency} ${r.amountText}${r.row!=='—'?' · 第 '+r.row+' 行':''}`});
+ let merchantText='',financeText='';
+ if(st.tpl==='settle'){const s=buildSettleText({amount:r.amountText,rateRaw:r.prateText,feePct:fee,address:st.address});if(s.error)return fail(s.error);merchantText=s.text}
+ else{const t=buildTopupTexts({merchant:r.merchant,currency:r.currency,usdt:r.amountText,rateRaw:r.prateText,feePct:fee,address:st.address,isRelay:st.relay,isNewAddress:st.newAddr});if(t.error)return fail(t.error);
+  if(st.tpl==='topup'||st.tpl==='both')merchantText=t.topup;
+  if(st.tpl==='charge'||st.tpl==='both')financeText=t.charge;}
+ const snap=snapOf(r,st.op);
+ const same=last&&!rec.stale&&last.op===st.op&&last.tpl===st.tpl&&last.fee===fee&&last.merchantText===merchantText&&last.financeText===financeText;
+ const g=same?last:{at:Date.now(),op:st.op,tpl:st.tpl,fee,snap,merchantText,financeText};
+ if(!r.demo&&!same){rec.gens.push(g);rec.stale=null;T.genErrors=T.genErrors.filter(x=>x.sid!==sid);saveT();log(`生成 v${rec.gens.length}：${OPS[st.op]}＋${TPLS[st.tpl]}：${r.merchant} ${r.currency} ${r.amountText}（第 ${r.row} 行）`)}
+ const ver=r.demo?0:rec.gens.indexOf(g)+1;
+ return {sid,ver,at:g.at,title:`${r.demo?'【示范】':''}${OPS[st.op]} · ${TPLS[st.tpl]} · ${r.merchant} ${r.currency} ${r.amountText}${r.row!=='—'?' · 第 '+r.row+' 行':''}`,
+  inputs:`金额 ${r.amountText}　优惠汇率 ${r.prateText}　手续费 ${fee}%　链别 ${c.net}（依${c.basis}）`,address:st.address,
+  formula:formulaOf(merchantText||financeText),merchantText,financeText};
 }
 let LAST=[];
+function markCopied(sid){if(!sid||sid==='demo')return;const rec=T.recs[sid];if(!rec||!rec.gens.length)return;rec.copiedAt=Date.now();saveT();log(`已复制：${(findBySid(sid)||{}).merchant||sid}`);renderList()}
 function showOutputs(list){
  LAST=list;
- $('sheetOutMeta').textContent=`${list.length} 笔 · ${tm(Date.now())}`;
- $('sheetOutputs').innerHTML=list.map((o,i)=>o.error?`<div class="tpl-out-item err"><h4>未生成</h4>${esc(o.error)}</div>`:`<div class="tpl-out-item"><h4>${esc(o.title)}</h4><div class="tpl-meta">${esc(o.meta||'').replace(/\n/g,'<br>')}</div><div class="tpl-out-grid">
-  <div><div class="section-title" style="margin-bottom:6px"><span class="hint">商户（TG）</span><button class="btn" onclick="copyText('tplOutM${i}',this)">复制</button></div><div class="output" id="tplOutM${i}">${esc(o.merchantText)}</div></div>
-  ${o.financeText?`<div><div class="section-title" style="margin-bottom:6px"><span class="hint">财务（充值申请）</span><button class="btn" onclick="copyText('tplOutF${i}',this)">复制</button></div><div class="output" id="tplOutF${i}">${esc(o.financeText)}</div></div>`:'<div></div>'}
- </div></div>`).join('');
+ const ok=list.filter(o=>!o.error).length,bad=list.length-ok;
+ $('sheetOutMeta').textContent=list.length?`成功 ${ok} 笔${bad?` · 未生成 ${bad} 笔`:''} · ${tm(Date.now())}`:'';
+ $('sheetOutputs').innerHTML=list.map((o,i)=>{
+  if(o.error)return `<div class="tpl-out-item err"><h4>未生成</h4>${esc(o.error)}</div>`;
+  const stale=o.sid&&T.recs[o.sid]?.stale;
+  return `<div class="tpl-out-item ${stale?'stale':''}"><h4>${esc(o.title)}<span>${o.ver?`v${o.ver} · ${tm(o.at)}`:''}${stale?' <span class="badge b-red">已过期，请重新生成</span>':''}</span></h4>
+  <div class="tpl-out-grid">
+   <div><div class="section-title" style="margin-bottom:6px"><span class="hint">算式</span><button class="btn" data-copy-out="F${i}">复制</button></div><div class="tpl-meta">${esc(o.inputs)}<br>Address：${esc(o.address)}</div><div class="output" id="tplOutF${i}" style="min-height:0">${esc(o.formula)}</div></div>
+   <div>${o.merchantText?`<div class="section-title" style="margin-bottom:6px"><span class="hint">商户话术</span><button class="btn" data-copy-out="M${i}">复制</button></div><div class="output" id="tplOutM${i}" style="min-height:0">${esc(o.merchantText)}</div>`:''}
+   ${o.financeText?`<div class="section-title" style="margin:8px 0 6px"><span class="hint">充值申请话术（财务）</span><button class="btn" data-copy-out="C${i}">复制</button></div><div class="output" id="tplOutC${i}" style="min-height:0">${esc(o.financeText)}</div>`:''}</div>
+  </div></div>`}).join('');
 }
-async function copyJoined(texts,btn,label){
+$('sheetOutputs').addEventListener('click',async e=>{
+ const b=e.target.closest('[data-copy-out]');if(!b)return;const k=b.dataset.copyOut,i=+k.slice(1),o=LAST[i];
+ const text=$('tplOut'+k).textContent;
+ try{await navigator.clipboard.writeText(text);flashCopied(b);if(k[0]!=='F')markCopied(o.sid)}catch(err){toast('复制失败')}
+});
+async function copyJoined(items,key,btn,label){
+ const texts=items.map(o=>o[key]).filter(Boolean);
  if(!texts.length){toast('没有可复制的'+label);return}
- const text=texts.join('\n\n');
- try{await navigator.clipboard.writeText(text);flashCopied(btn)}catch(e){toast('复制失败，请逐笔复制')}
+ try{await navigator.clipboard.writeText(texts.join('\n\n'));flashCopied(btn);items.filter(o=>o[key]).forEach(o=>markCopied(o.sid))}catch(e){toast('复制失败，请逐笔复制')}
 }
-$('copyAllMerchant').onclick=e=>copyJoined(LAST.filter(o=>!o.error).map(o=>o.merchantText).filter(Boolean),e.currentTarget,'商户话术');
-$('copyAllFinance').onclick=e=>copyJoined(LAST.filter(o=>!o.error).map(o=>o.financeText).filter(Boolean),e.currentTarget,'充值申请');
+$('copyAllMerchant').onclick=e=>copyJoined(LAST.filter(o=>!o.error),'merchantText',e.currentTarget,'商户话术');
+$('copyAllFinance').onclick=e=>copyJoined(LAST.filter(o=>!o.error),'financeText',e.currentTarget,'充值申请');
 const selAll=on=>{VISIBLE.forEach(r=>{const st=rowState(r);st.sel=on&&!check(r,st).miss.length});renderList()};
 $('sheetSelAll').onclick=()=>selAll(true);
 $('sheetSelNone').onclick=()=>selAll(false);
@@ -2932,18 +3069,76 @@ $('sheetGenSel').onclick=()=>{
  if(BUSY)return;
  const rows=VISIBLE.filter(r=>rowState(r).sel);
  if(!rows.length){toast('请先勾选要生成的行');return}
- const again=rows.filter(r=>T.generated[recId(r)]);
- if(again.length&&!confirm(`有 ${again.length} 笔之前已生成过：\n${again.map(r=>r.merchant+' '+r.currency+' '+r.amountText).join('\n')}\n\n要再生成一次吗？（取消 = 只生成没生成过的）`))rows.splice(0,rows.length,...rows.filter(r=>!T.generated[recId(r)]));
+ const copied=rows.filter(r=>{const rec=T.recs[sidOf(r)];return rec&&rec.gens.length&&rec.copiedAt>=rec.gens[rec.gens.length-1].at&&!rec.stale});
+ let skip=new Set();
+ if(copied.length&&!confirm(`有 ${copied.length} 笔已复制过：\n${copied.map(r=>r.merchant+' '+r.currency+' '+r.amountText).join('\n')}\n\n要重新生成吗？（取消 = 跳过这几笔）`))skip=new Set(copied.map(sidOf));
  BUSY=true;$('sheetGenSel').disabled=true;
  const outs=[],errs=[];
- // 未完成的行也列出来，不默默略过
- VISIBLE.filter(r=>!rowState(r).sel&&check(r,rowState(r)).miss.length).forEach(r=>errs.push(`${r.merchant} ${r.currency} ${r.amountText}（第 ${r.row} 行）缺：${check(r,rowState(r)).miss.join('、')}`));
- rows.forEach(r=>{const o=genRow(r);if(o.error)errs.push(o.error);else{outs.push(o);rowState(r).sel=false}});
- showOutputs([...outs,...errs.map(e=>({error:e}))]);renderList();
+ // 没勾选但资料不完整的行也列出来，不默默略过
+ VISIBLE.filter(r=>!rowState(r).sel&&check(r,rowState(r)).miss.length).forEach(r=>errs.push({error:`${r.merchant} ${r.currency} ${r.amountText}（第 ${r.row} 行）缺：${check(r,rowState(r)).miss.join('、')}`}));
+ rows.forEach(r=>{if(skip.has(sidOf(r))){errs.push({error:`${r.merchant}（第 ${r.row} 行）：已复制过，已跳过`});return}
+  const o=genRow(r,{skipDup:true});if(o.error)errs.push(o);else{outs.push(o);rowState(r).sel=false}});
+ showOutputs([...outs,...errs]);renderList();
  BUSY=false;$('sheetGenSel').disabled=false;
- toast(`已生成 ${outs.length} 笔${errs.length?`，${errs.length} 笔未生成`:''}`);
- if(errs.length)log('批量生成未完成：'+errs.join('；'),'warn');
+ toast(`批量完成：成功 ${outs.length} 笔，未生成 ${errs.length} 笔`);
+ log(`批量生成：成功 ${outs.length} 笔，未生成 ${errs.length} 笔`,errs.length?'warn':'info');
 };
+
+// ---------- D. 异常与待处理 ----------
+function renderIssues(){
+ const items=[];
+ if(T.sheet)['out','in'].forEach(k=>{const t=T.sheet.tabs[k];if(t&&!t.ok)items.push({lv:'error',txt:`${k==='out'?'TRC出金':'TRC入金'} 同步失败：${t.error}`})});
+ const rows=T.sheet?SCOPE:[];
+ const dup=new Map();rows.forEach(r=>{const k=[r.kind,r.merchant.toLowerCase(),r.currency,cleanNumText(r.amountText),r.date].join('|');dup.set(k,(dup.get(k)||[]).concat(r))});
+ rows.forEach(r=>{
+  const st=rowState(r),c=check(r,st),rec=T.recs[sidOf(r)],at=`${r.merchant} ${r.currency} ${r.amountText}（第 ${r.row} 行）`;
+  const addrMiss=c.miss.filter(x=>/地址/.test(x)),rateMiss=c.miss.filter(x=>/汇率/.test(x)),other=c.miss.filter(x=>!/地址|汇率/.test(x));
+  if(addrMiss.length)items.push({lv:'error',sid:sidOf(r),txt:`地址缺少：${at}`});
+  if(rateMiss.length)items.push({lv:'error',sid:sidOf(r),txt:`汇率缺少（${rateMiss.join('、')}）：${at}`});
+  if(other.length)items.push({lv:'warn',sid:sidOf(r),txt:`必填缺少（${other.join('、')}）：${at}`});
+  if(rec&&rec.stale)items.push({lv:'error',sid:sidOf(r),txt:`资料已变更（${rec.stale.changes.map(x=>x.f).join('、')}），旧话术过期：${at}`});
+  if(rec&&rec.gens.length>1&&rec.copiedAt)items.push({lv:'warn',sid:sidOf(r),txt:`重复操作风险：已生成 ${rec.gens.length} 版并复制过：${at}`});
+ });
+ dup.forEach(list=>{if(list.length>1)items.push({lv:'warn',sid:sidOf(list[0]),txt:`重复操作风险：表格有 ${list.length} 笔相同（${list[0].merchant} ${list[0].currency} ${list[0].amountText}，${list[0].dateRaw}，第 ${list.map(x=>x.row).join('、')} 行）`})});
+ T.genErrors.slice(0,10).forEach(x=>items.push({lv:'error',sid:x.sid,txt:`生成失败：${x.label} ${x.msg}（${tm(x.at)}）`}));
+ $('flowIssues').innerHTML=items.length?items.map(x=>`<div class="flow-issue ${x.lv}">${esc(x.txt)}${x.sid?` <button class="fee-ref" data-goto="${esc(x.sid)}">查看</button>`:''}</div>`).join(''):'<div class="hint">无</div>';
+}
+$('flowIssues').addEventListener('click',e=>{
+ const b=e.target.closest('[data-goto]');if(!b)return;const r=findBySid(b.dataset.goto);if(!r){toast('这笔纪录不在目前同步的资料里');return}
+ $('sheetDate').value=r.date||'';$('sheetDir').value=r.kind;$('sheetSearch').value='';STATUS_FILTER='';FOCUS=sidOf(r);renderList();
+ document.querySelector('#sheetList tr.focus')?.scrollIntoView({behavior:'smooth',block:'center'});
+});
+
+// ---------- 操作纪录、汇出／汇入（换电脑时用档案带过去）----------
+function renderLogs(){
+ const f=$('logFilter').value,L=T.logs.filter(l=>f==='all'||l.level!=='info');
+ $('tplLogs').innerHTML=L.length?L.map(l=>`<div class="${l.level}">${tm(l.t)}　${esc(l.msg)}</div>`).join(''):'<div class="hint">尚无纪录</div>';
+}
+$('logFilter').onchange=renderLogs;
+$('exportFlow').onclick=()=>{
+ const data={type:'fiat-ops-flow',v:1,at:Date.now(),fees:T.fees,recs:T.recs,erc:T.erc,settings:T.settings,logs:T.logs,genErrors:T.genErrors};
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
+ const d=new Date();a.download=`fiat-ops-出入金-${d.getMonth()+1}${String(d.getDate()).padStart(2,'0')}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+ log('汇出出入金资料');
+};
+$('importFlowBtn').onclick=()=>$('importFlow').click();
+$('importFlow').onchange=async e=>{
+ const f=e.target.files?.[0];e.target.value='';if(!f)return;
+ let d;try{d=JSON.parse(await f.text())}catch(err){toast('档案格式不对');return}
+ if(d.type!=='fiat-ops-flow'){toast('不是出入金汇出档');return}
+ if(!confirm(`汇入 ${tm(d.at)} 的出入金资料？\n费率记忆、生成纪录、Hash 待补、操作纪录会和这台的资料合并（较新的为准）。`))return;
+ mergeFlow(d);
+};
+function mergeFlow(d){
+ Object.entries(d.fees||{}).forEach(([k,v])=>{if(!T.fees[k]||(v.at||0)>(T.fees[k].at||0))T.fees[k]=v});
+ Object.entries(d.recs||{}).forEach(([sid,v])=>{const cur=recOf(sid);const seen=new Set(cur.gens.map(g=>g.at));(v.gens||[]).forEach(g=>{if(!seen.has(g.at))cur.gens.push(g)});cur.gens.sort((a,b)=>a.at-b.at);cur.copiedAt=Math.max(cur.copiedAt||0,v.copiedAt||0);if(v.stale&&(!cur.stale||v.stale.at>cur.stale.at))cur.stale=v.stale});
+ const rank={pending:0,notified:1,ignored:2,done:3};
+ Object.entries(d.erc||{}).forEach(([k,v])=>{if(!T.erc[k]||rank[v.status]>rank[T.erc[k].status])T.erc[k]=v});
+ const seenL=new Set(T.logs.map(l=>l.t+l.msg));(d.logs||[]).forEach(l=>{if(!seenL.has(l.t+l.msg))T.logs.push(l)});T.logs.sort((a,b)=>b.t-a.t);T.logs=T.logs.slice(0,500);
+ if(!T.settings.ercSettleAddr&&d.settings?.ercSettleAddr)T.settings.ercSettleAddr=d.settings.ercSettleAddr;
+ log('汇入出入金资料（'+tm(d.at)+'）');saveT();loadSettings();Object.keys(RS).forEach(k=>delete RS[k]);renderAllTpl();toast('已汇入');
+}
+window.__flowTest={mergeFlow,state:()=>T,genRow,findBySid,sidOf,rowState};
 
 // ---------- ERC 出金 Hash 待补 ----------
 const ercKey=r=>['out',r.orderNo,r.merchant,r.currency,r.amountText,r.dateRaw].join('|');
@@ -2981,12 +3176,12 @@ function applySheet(p){
  ['out','in'].forEach(k=>{
   const t=p.tabs?.[k],name=k==='out'?'TRC出金':'TRC入金';
   if(!t||!t.ok){tabs[k]={ok:false,error:t?.error||'没有收到资料',rows:[]};log(`${name} 读取失败：${tabs[k].error}`,'error');return}
-  try{const r=parseTab(k,t.csv);tabs[k]={ok:true,gid:t.gid,headerAddr:r.headerAddr,rows:r.rows,ercOld:r.ercOld||[],total:r.total};n+=r.rows.length}
+  try{const r=parseTab(k,t.csv);assignSids(r.rows);tabs[k]={ok:true,gid:t.gid,headerAddr:r.headerAddr,rows:r.rows,ercOld:r.ercOld||[],total:r.total};n+=r.rows.length}
   catch(e){tabs[k]={ok:false,error:e.message,rows:[]};log(`${name} 解析失败：${e.message}`,'error')}
  });
  T.sheet={syncedAt:p.syncedAt,tabs};
  Object.keys(RS).forEach(k=>delete RS[k]);
- updateErc();saveT();
+ updateErc();detectChanges();saveT();
  log(`同步出入金表：出金 ${tabs.out.ok?tabs.out.rows.length+' 行':'失败'}，入金 ${tabs.in.ok?tabs.in.rows.length+' 行':'失败'}`,tabs.out.ok&&tabs.in.ok?'info':'error');
  showPage('flow');
  if(!$('sheetDate').value)$('sheetDate').value=todayMD();
@@ -3056,7 +3251,7 @@ window.addEventListener('storage',e=>{if(e.key==='fiat_ops_pr_synced'||e.key==='
 $('sheetDir').addEventListener('change',renderList);
 $('sheetToday').onclick=()=>{$('sheetDate').value=todayMD();renderList()};
 
-function renderAllTpl(){renderStatus();renderList();renderErc();renderSyncBar()}
+function renderAllTpl(){renderStatus();renderList();renderErc();renderSyncBar();renderLogs()}
 // ---------- 顶部同步状态（每页显示；超过 2 小时变橘色）----------
 function renderSyncBar(){
  const bar=$('syncBar');if(!bar)return;
@@ -3116,7 +3311,6 @@ window.openFlowDraft=function(dir,merchant,currency){
 };
 document.addEventListener('click',e=>{const b=e.target.closest('[data-flow-dir]');if(!b)return;e.stopPropagation();openFlowDraft(b.dataset.flowDir,b.dataset.flowM,b.dataset.flowC)});
 // 测试用：让开发版可以直接灌入 CSV 验证（不经过书签）
-window.__tplTest={parseCSV,parseTab,network,check,applySheet,state:()=>T,rowState,genRow,recId};
 setupSheetBookmarklet();loadSettings();
 // 每次打开页面都用已同步的资料重新检查一次 Hash 待补
 try{updateErc();saveT()}catch(e){}
