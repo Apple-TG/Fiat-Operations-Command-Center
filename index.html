@@ -238,7 +238,8 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
       <label>方向 <select id="sheetDir" style="width:auto"><option value="all">全部</option><option value="out">结算</option><option value="in">充值</option></select></label>
       <button class="btn" id="sheetToday">今天</button>
       <label>商户 <input id="sheetSearch" type="text" placeholder="搜寻商户" style="width:150px"></label>
-      <span class="hint" id="sheetCount"></span>
+      <label><input id="sheetUndone" type="checkbox" style="width:auto"> 只看未收尾</label>
+      <span class="hint" id="sheetCount"></span><span class="hint" id="sheetBackendAt"></span>
     </div>
     <details class="fallback" style="margin-top:10px"><summary>设定</summary>
       <div class="tpl-settings">
@@ -253,7 +254,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
   <div class="card" style="margin-top:16px">
     <div class="section-title"><h3>待生成清单</h3>
       <div class="actions"><button class="btn" id="sheetSelAll">全选可生成</button><button class="btn" id="sheetSelNone">取消全选</button><button class="btn primary" id="sheetGenSel">生成选取</button></div></div>
-    <div class="pr-table-wrap"><table class="tpl-table"><thead><tr><th><input type="checkbox" id="sheetSelHead" title="全选／全部取消"></th><th>行</th><th>方向</th><th>网络</th><th>商户</th><th>币种</th><th>金额</th><th>日期</th><th>专员</th><th>商户／优惠汇率</th><th>地址</th><th>模板</th><th>Fee %</th><th>选项</th><th>状态</th><th></th></tr></thead><tbody id="sheetList"></tbody></table></div>
+    <div class="pr-table-wrap"><table class="tpl-table"><thead><tr><th><input type="checkbox" id="sheetSelHead" title="全选／全部取消"></th><th>行</th><th>方向</th><th>网络</th><th>商户</th><th>币种</th><th>金额</th><th>日期</th><th>专员</th><th>商户／优惠汇率</th><th>地址</th><th>模板</th><th>Fee %</th><th>选项</th><th>状态</th><th>进度</th><th></th></tr></thead><tbody id="sheetList"></tbody></table></div>
   </div>
 
   <div class="card" style="margin-top:16px">
@@ -347,10 +348,16 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
       </div>
     </div>
     <button class="btn" id="prCopyAll" disabled>复制已选（0）</button>
+    <button class="btn purple" id="prFinanceBtn">📝 今日财务草稿</button>
     <button class="btn danger" id="prClear">清空</button>
   </div>
 </div>
 
+<div class="card" id="prFinanceCard" hidden style="margin-bottom:16px">
+  <div class="section-title"><div><h3>今日财务草稿</h3><div class="hint" id="prFinanceMeta"></div></div><div class="actions"><button class="btn primary" id="prFinanceCopy">复制草稿</button><button class="btn" id="prFinanceClose">关闭</button></div></div>
+  <div class="output" id="prFinanceText" style="min-height:0"></div>
+  <div id="prFinanceExcluded" style="margin-top:10px"></div>
+</div>
 <div class="pr-rule-note">
   🔗 <b>话术规则：</b>话术合并① 该笔必须「验证通过（Pass）」；② Note 未被手动标注为「合并打款」。只有 Pass 可勾选复制；同一 TXID 合并的记录会一起勾选。Check 请先回后台修正再重新同步。操作人＝Creator 或 Editor 任一符合。
 </div>
@@ -464,7 +471,9 @@ const st=async pt=>(await post('/api/vhc/fiat/depositStats/list/',{currency:null
 const wst=await safe('Withdrawal Stats',()=>st('WITHDRAW')),dst=await safe('Deposit Stats',()=>st('DEPOSIT'));
 show('Payout Record');
 const pr=await safe('Payout Record',async()=>{const all=[];for(let p=1;p<=10&&all.length<100;p++){const d=await post('/api/vhc/payment/payout/list/',{pageNo:p,pageSize:200,settlementId:'',provider:null,currency:null,thirdPartySettlementId:'',creatorId:null,status:null,createTimeFrom:null,createTimeTo:null});const L=d.list||[];all.push(...L.filter(x=>Number(x.delFlag)===0));if(L.length<200)break}return all.sort((a,b)=>b.createTime-a.createTime).slice(0,100)});
-const payload={syncedAt:Date.now(),start:pmStart,end:pmEnd,currencies:out,channels:{payout,payin},stats:{start:stStart,end:stEnd,withdraw:wst,deposit:dst},payoutRecords:pr?{list:pr}:null,errors};
+show('Auto Charge');
+const ac=await safe('Auto Charge',async()=>{const all=[];for(let p=1;p<=4;p++){const d=await post('/api/ticket/tkSubAutoRecharge/query/',{page:p,pageSize:500,startTime:Date.now()-30*D,endTime:Date.now(),provider:null,currency:null,creatorId:null,status:null,address:''});const L=(d&&d.list)||[];all.push(...L.map(x=>({h:x.hashId||'',s:x.status||'',p:x.provider||'',c:x.currency||'',a:x.amount,t:x.createTime,r:x.reporter||''})));if(L.length<500)break}return all});
+const payload={syncedAt:Date.now(),start:pmStart,end:pmEnd,currencies:out,channels:{payout,payin},stats:{start:stStart,end:stEnd,withdraw:wst,deposit:dst},payoutRecords:pr?{list:pr}:null,autoCharge:ac?{list:ac}:null,errors};
 let acked=false;const onAck=e=>{if(e.origin===T&&e.data&&e.data.type==='fiatops-ack'){acked=true;window.removeEventListener('message',onAck);box.textContent='✓ 已同步到 Fiat Ops'+(errors.length?'（'+errors.length+' 項失敗）':'');setTimeout(()=>box.remove(),6000)}};
 window.addEventListener('message',onAck);
 for(let i=0;i<60&&!acked;i++){try{w.postMessage({type:'fiatops-sync',payload},T)}catch(e){}await new Promise(r=>setTimeout(r,500))}
@@ -539,6 +548,11 @@ function applyBackendSync(payload){
     done.push(`Payout Record 最新 ${payload.payoutRecords.list.length} 筆 Valid（待載入）`);
     window.renderPRSyncBar?.();
   }
+  if(payload.autoCharge&&Array.isArray(payload.autoCharge.list)){
+    try{localStorage.setItem('fiat_ops_ac_synced',JSON.stringify({at:payload.syncedAt,list:payload.autoCharge.list}))}catch(err){}
+    done.push(`Auto Charge ${payload.autoCharge.list.length} 笔`);
+  }
+  window.renderFlowList?.();
   renderAll();renderSourceNotes();
   showPage('home');
   toast('已從後台同步：'+done.join('、')+(state.backend.errors.length?`（${state.backend.errors.length} 項失敗）`:''));
@@ -2362,6 +2376,36 @@ document.querySelectorAll('.pr-filter').forEach(btn=>{
     btn.classList.add('active');PR.filter=btn.dataset.filter;renderPR();
   });
 });
+// ===== 今日财务草稿（现金财务通知）：今天、操作人本人、验证通过、非内转；格式同上方话术，每则之间空一行，最后 @Elsa =====
+function buildFinanceDraft(){
+  const op=$('prOperator').value;
+  if(!op)return {error:'请先在上方选择操作人（你自己）'};
+  const t0=new Date();t0.setHours(0,0,0,0);const t1=t0.getTime()+864e5;
+  const today=PR.data.filter(x=>finite(x.createTime)&&x.createTime>=t0.getTime()&&x.createTime<t1&&(x.editor===op||x.creator===op));
+  const rows=today.filter(prSelectable).sort((a,b)=>a.createTime-b.createTime);
+  const excluded=today.filter(x=>!x.internal&&!prSelectable(x));
+  const groups=buildPRSpeechGroups(PR.data);const seen=new Set(),texts=[];
+  rows.forEach(x=>{const g=groups.get(x);if(g){if(seen.has(g.text))return;seen.add(g.text);texts.push(g.text)}else{const t=speechPR(x);if(t)texts.push(t)}});
+  if(!texts.length)return {error:'今天没有可回报的记录（验证通过、非内转、操作人为 '+op+'）',excluded};
+  texts[texts.length-1]+=' @Elsa';
+  const totalU=rows.reduce((s,x)=>s+(finite(x.au)?x.au:0),0);
+  return {text:texts.join('\n\n'),count:rows.length,msgs:texts.length,totalU,excluded,op};
+}
+$('prFinanceBtn').addEventListener('click',()=>{
+  if(!PR.data.length){if(prSyncedData()){$('prSyncBtn').click()}else{toast('请先用书签同步后台，或导入 Payout Record 文件');return}}
+  const r=buildFinanceDraft();
+  const card=$('prFinanceCard');
+  if(r.error&&!r.excluded){toast(r.error);return}
+  card.hidden=false;
+  $('prFinanceText').textContent=r.error?r.error:r.text;
+  $('prFinanceCopy').disabled=!!r.error;
+  $('prFinanceMeta').textContent=r.error?'':`${r.op} · 今天 ${r.count} 笔（${r.msgs} 则）· 合计 ${money(r.totalU)} U · 只复制，不会自动发送`;
+  const ex=r.excluded||[];
+  $('prFinanceExcluded').innerHTML=ex.length?`<div class="recommend orange" style="font-size:13px">未放进草稿（验证没通过，请先到后台修正）：</div>`+ex.map(x=>`<div class="pr-muted">· ${esc(x.provider||'—')} ${esc(x.currency||'')} ${esc(money(x.af))} → ${esc(money(x.au))} U　${esc(x.settlementId||'')}</div>`).join(''):'';
+  card.scrollIntoView({behavior:'smooth',block:'start'});
+});
+$('prFinanceCopy').addEventListener('click',async e=>{try{await navigator.clipboard.writeText($('prFinanceText').textContent);flashCopied(e.currentTarget)}catch(err){toast('复制失败，请手动选取')}});
+$('prFinanceClose').addEventListener('click',()=>{$('prFinanceCard').hidden=true});
 $('prCopyAll').addEventListener('click',async()=>{
   const groups=buildPRSpeechGroups(PR.data);
   const seen=new Set();
@@ -2454,6 +2498,10 @@ $('prCopyAll').addEventListener('click',async()=>{
 .upload-sec{margin-bottom:28px}.upload-sec .topbar h2{font-size:19px}
 .pr-rule-note{display:none!important}
 #page-home .workflow-card{display:none!important}
+.flow-prog{display:flex;flex-wrap:wrap;gap:3px;min-width:120px;white-space:normal}
+.flow-prog span{display:inline-block;padding:2px 6px;border-radius:6px;background:#edf0f4;color:#8a94a6;font-size:11px;font-weight:700}
+.flow-prog .ok,.flow-prog .done{background:#e6f8ef;color:#087b56}
+.flow-prog .todo,.flow-prog .miss{background:#fff1df;color:#b86208}
 .dev-badge{position:fixed;left:12px;bottom:12px;z-index:200;background:#e98719;color:#fff;font-weight:800;font-size:12px;padding:5px 10px;border-radius:8px}
 @media (max-width:900px){.tpl-out-grid,.tpl-settings{grid-template-columns:1fr}}
 </style>
@@ -2670,6 +2718,34 @@ function allRows(){
  if(!T.sheet)return [];
  return [...(T.sheet.tabs.out?.rows||[]),...(T.sheet.tabs.in?.rows||[])];
 }
+// ---------- 进度：话术 → Hash → 后台（Payout Record／Auto Charge，来自后台同步）----------
+const normH=h=>{const m=String(h||'').match(/(?:0x)?([0-9a-fA-F]{64})/);return m?m[1].toLowerCase():''};
+function backendIndex(){
+ const idx={pr:new Map(),ac:new Map(),prAt:0,acAt:0};
+ try{const d=JSON.parse(localStorage.getItem('fiat_ops_pr_synced')||'null');if(d&&Array.isArray(d.list)){idx.prAt=d.at;d.list.forEach(x=>{const k=normH(x.hashId);if(k)idx.pr.set(k,x)})}}catch(e){}
+ try{const d=JSON.parse(localStorage.getItem('fiat_ops_ac_synced')||'null');if(d&&Array.isArray(d.list)){idx.acAt=d.at;d.list.forEach(x=>{const k=normH(x.h);if(k)idx.ac.set(k,x)})}}catch(e){}
+ return idx;
+}
+function progress(r,BI){
+ const gen=!!T.generated[recId(r)],hk=normH(r.hash);
+ let back='none',backTxt='等 Hash';
+ if(hk){
+  if(r.kind==='out'){
+   if(!BI.prAt){back='none';backTxt='后台未同步'}
+   else{const x=BI.pr.get(hk);
+    if(!x){back='miss';backTxt='后台未找到'}
+    else if(Number(x.fiatAmount)>0&&String(x.provider||'').trim()){back='done';backTxt='Payout Record 已填'}
+    else{back='todo';backTxt='Payout Record 待补填'}}
+  }else{
+   if(!BI.acAt){back='none';backTxt='后台未同步'}
+   else{const x=BI.ac.get(hk);
+    if(!x){back='todo';backTxt='Auto Charge 未登记'}
+    else if(x.s==='CHARGED'){back='done';backTxt='Auto Charge 已登记'}
+    else{back='todo';backTxt='Auto Charge '+x.s}}
+  }
+ }
+ return {gen,hash:!!hk,back,backTxt,done:back==='done'};
+}
 function filteredRows(){
  const d=$('sheetDate').value.trim(),dir=$('sheetDir').value,kw=$('sheetSearch').value.trim().toLowerCase();
  if(!T.sheet)return [DEMO];
@@ -2679,6 +2755,7 @@ function filteredRows(){
   let rows=T.sheet.tabs[k]?.rows||[];
   rows=d?rows.filter(r=>r.date===normDate(d)):rows.slice(-RECENT_ROWS);
   if(kw)rows=rows.filter(r=>r.merchant.toLowerCase().includes(kw));
+  if($('sheetUndone').checked){const BI=backendIndex();rows=rows.filter(r=>!progress(r,BI).done)}
   res.push(...rows);
  });
  return res;
@@ -2691,8 +2768,10 @@ function renderStatus(){
 }
 function renderList(){
  VISIBLE=filteredRows();
- $('sheetCount').textContent=T.sheet?`显示 ${VISIBLE.length} 行`:'';
- if(!VISIBLE.length){$('sheetList').innerHTML=`<tr><td colspan="16" class="hint">没有资料</td></tr>`;return}
+ const BI=backendIndex();
+ $('sheetCount').textContent=T.sheet?`显示 ${VISIBLE.length} 行 · 未收尾 ${VISIBLE.filter(r=>!r.demo&&!progress(r,BI).done).length}`:'';
+ {const tt=[BI.prAt&&'Payout Record',BI.acAt&&'Auto Charge'].filter(Boolean);$('sheetBackendAt').textContent=BI.prAt||BI.acAt?`后台同步 ${tm(Math.max(BI.prAt,BI.acAt))}（${tt.join('、')}）`:'后台未同步'}
+ if(!VISIBLE.length){$('sheetList').innerHTML=`<tr><td colspan="17" class="hint">没有资料</td></tr>`;return}
  $('sheetList').innerHTML=VISIBLE.map((r,i)=>{
   const st0=rowState(r);
   // 同一商户刚记住费率时，同画面其他空白的行也带入
@@ -2720,6 +2799,7 @@ function renderList(){
    <td><input class="fee" type="text" inputmode="decimal" data-k="fee" value="${esc(st.fee)}" placeholder="无"><div class="pr-muted">${memTxt}</div></td>
    <td>${opts}</td>
    <td>${status}${warn}${gen?`<div class="pr-copied-tag">已生成 ${tm(gen)}</div>`:''}</td>
+   <td>${(()=>{const p=progress(r,BI);return `<div class="flow-prog"><span class="${p.gen?'ok':''}">话术</span><span class="${p.hash?'ok':''}">Hash</span><span class="${p.back}">${esc(p.backTxt)}</span></div>`})()}</td>
    <td><button class="btn" data-act="gen" ${c.miss.length?'disabled':''}>生成</button></td></tr>`;
  }).join('');
  syncHead();
@@ -2908,6 +2988,9 @@ $('sheetPaste').addEventListener('paste',e=>{
 });
 $('sheetDate').addEventListener('input',renderList);
 $('sheetSearch').addEventListener('input',renderList);
+$('sheetUndone').addEventListener('change',renderList);
+window.renderFlowList=()=>{try{renderList()}catch(e){}};
+window.addEventListener('storage',e=>{if(e.key==='fiat_ops_pr_synced'||e.key==='fiat_ops_ac_synced')renderList()});
 $('sheetDir').addEventListener('change',renderList);
 $('sheetToday').onclick=()=>{$('sheetDate').value=todayMD();renderList()};
 
