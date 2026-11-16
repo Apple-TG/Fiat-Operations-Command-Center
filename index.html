@@ -150,6 +150,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 </aside>
 
 <main class="main">
+<div class="sync-bar" id="syncBar"></div>
 <section class="page active" id="page-home">
 <div class="topbar"><div><h2>首頁總覽</h2><p id="lastUpdated">尚未匯入資料</p></div><div class="actions"><button class="btn" onclick="renderAll()">↻ 重新整理</button><button class="btn danger" onclick="resetAll()">清空全部資料</button></div></div>
 
@@ -552,7 +553,7 @@ function applyBackendSync(payload){
     try{localStorage.setItem('fiat_ops_ac_synced',JSON.stringify({at:payload.syncedAt,list:payload.autoCharge.list}))}catch(err){}
     done.push(`Auto Charge ${payload.autoCharge.list.length} 笔`);
   }
-  window.renderFlowList?.();
+  window.renderFlowList?.();window.renderSyncBar?.();
   renderAll();renderSourceNotes();
   showPage('home');
   toast('已從後台同步：'+done.join('、')+(state.backend.errors.length?`（${state.backend.errors.length} 項失敗）`:''));
@@ -1202,6 +1203,7 @@ function renderAll(){
          <div class="merchant-amount">
            <b>${SYMBOLS[x.currency]||''} ${fmt(m.fiat)}</b>
            <div class="hint">${fmt(m.usd)} U</div>
+           <div class="flow-quick"><button class="btn" data-flow-dir="out" data-flow-m="${String(m.provider||m.account||'').replace(/[&<>"]/g,'')}" data-flow-c="${x.currency}">出U</button><button class="btn" data-flow-dir="in" data-flow-m="${String(m.provider||m.account||'').replace(/[&<>"]/g,'')}" data-flow-c="${x.currency}">充U</button></div>
          </div>
        </div>
        <div>${channelSummaryButton(matchedPayout,x.currency,merchantIndex,'payout')}</div>
@@ -2502,6 +2504,18 @@ $('prCopyAll').addEventListener('click',async()=>{
 .flow-prog span{display:inline-block;padding:2px 6px;border-radius:6px;background:#edf0f4;color:#8a94a6;font-size:11px;font-weight:700}
 .flow-prog .ok,.flow-prog .done{background:#e6f8ef;color:#087b56}
 .flow-prog .todo,.flow-prog .miss{background:#fff1df;color:#b86208}
+.flow-quick{display:flex;gap:6px;margin-top:6px;justify-content:flex-end}.flow-quick .btn{padding:4px 10px;font-size:12px}
+.fd-back{position:fixed;inset:0;background:rgba(15,29,51,.35);z-index:150;display:flex;align-items:center;justify-content:center}
+.fd-box{background:#fff;border-radius:16px;padding:20px;width:min(560px,94vw);max-height:90vh;overflow:auto;box-shadow:0 20px 50px rgba(15,29,51,.25)}
+.fd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fd-seg{display:flex;justify-content:space-between;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all}
+.fd-seg b{font-family:-apple-system,sans-serif;white-space:nowrap}
+.fd-last{font-size:11px;color:var(--blue);cursor:pointer;border:0;background:none;padding:0;text-align:left}
+.sync-bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin:-8px 0 12px}
+.sync-bar .sb{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;color:#087b56;cursor:pointer}
+.sync-bar .sb.stale{color:#b86208;border-color:#f6cf98;background:#fff8ec}
+.sync-bar .sb.none{color:var(--muted)}
+.fee-ref{font-size:11px;color:var(--blue);cursor:pointer;border:0;background:none;padding:0;display:block}
 .dev-badge{position:fixed;left:12px;bottom:12px;z-index:200;background:#e98719;color:#fff;font-weight:800;font-size:12px;padding:5px 10px;border-radius:8px}
 @media (max-width:900px){.tpl-out-grid,.tpl-settings{grid-template-columns:1fr}}
 </style>
@@ -2622,8 +2636,8 @@ function normDate(v){
 // 栏位位置（A=0）。Google 表格的 gviz 读取会把「数字栏」的表头清空，所以用固定位置，
 // 再用读得到的文字表头（商户／币种／地址／Hash／专员／Note）核对顺序没变。
 const COLS={
- out:{orderNo:0,merchant:1,currency:2,amount:3,usdt:7,hash:8,date:9,owner:10,mrate:11,prate:12,note:15},
- in:{orderNo:0,merchant:1,currency:2,amount:3,address:7,hash:8,date:9,owner:10,mrate:11,prate:12,note:15}};
+ out:{orderNo:0,merchant:1,currency:2,amount:3,feeU:6,usdt:7,hash:8,date:9,owner:10,mrate:11,prate:12,note:15},
+ in:{orderNo:0,merchant:1,currency:2,amount:3,feeU:6,address:7,hash:8,date:9,owner:10,mrate:11,prate:12,note:15}};
 const HEAD_CHECK={
  out:{1:/^商户(名称)?$/,2:/币种/,8:/hash/i,10:/专员/,15:/^notes?$/i},
  in:{1:/^商户(名称)?$/,2:/币种/,7:/商户地址/,8:/hash/i,10:/专员/,15:/^notes?$/i}};
@@ -2655,7 +2669,7 @@ function parseTab(kind,csv){
    if(kind==='out'){const o=mk();if(network(o).net==='ERC'||!hasValidHash(o.hash))ercOld.push(o)}
    return;
   }
-  const rec={usdtText:g('usdt'),kind,row:i+1,orderNo:g('orderNo'),merchant,currencyRaw:cur,currency:cur.toUpperCase().replace(/\s+/g,''),amountText:g('amount'),hash:g('hash'),dateRaw:g('date'),date:normDate(g('date')),owner:g('owner'),mrateText:g('mrate'),prateText:g('prate'),note:g('note'),address:addr};
+  const rec={usdtText:g('usdt'),feeUText:g('feeU'),kind,row:i+1,orderNo:g('orderNo'),merchant,currencyRaw:cur,currency:cur.toUpperCase().replace(/\s+/g,''),amountText:g('amount'),hash:g('hash'),dateRaw:g('date'),date:normDate(g('date')),owner:g('owner'),mrateText:g('mrate'),prateText:g('prate'),note:g('note'),address:addr};
   if(addr){rec.newAddress=!seenAddr.has(ak);seenAddr.add(ak)}
   data.push(rec);
  });
@@ -2684,6 +2698,18 @@ function addressFor(r,net,tpl){
  if(r.kind==='in')return r.address;
  if(net==='ERC')return T.settings.ercSettleAddr||'';
  return T.sheet?.tabs?.out?.headerAddr||'';
+}
+// 没有费率记忆时，从表格同商户同币种的上一笔算出参考费率（只显示，按了才带入）
+function feeRef(r){
+ const rows=T.sheet?.tabs?.[r.kind]?.rows||[];const ml=r.merchant.toLowerCase();
+ for(let i=rows.length-1;i>=0;i--){const x=rows[i];
+  if(x.row>=r.row||x.currency!==r.currency||x.merchant.toLowerCase()!==ml)continue;
+  const amt=Number(cleanNumText(x.amountText)),pr=Number(cleanNumText(x.prateText)),fu=Number(cleanNumText(x.feeUText||''))||0;
+  if(!(amt>0&&pr>0))continue;
+  const base=r.kind==='out'?amt/pr:amt;
+  return {pct:round2(fu/base*100),date:x.dateRaw,row:x.row};
+ }
+ return null;
 }
 function check(r,st){
  const miss=[],warn=[];
@@ -2781,7 +2807,8 @@ function renderList(){
   const warn=c.warn.length?`<div class="tpl-warn">⚠ ${esc(c.warn.join('；'))}</div>`:'';
   const lower=r.currencyRaw&&r.currencyRaw!==r.currency?`<div class="pr-muted">原写 ${esc(r.currencyRaw)}</div>`:'';
   const mem=r.demo?null:getFee(st.tpl,r.merchant,r.currency);
-  const memTxt=r.demo?'示范':mem?`记忆 ${mem.pct}%${mem.src==='规则表'?'（规则表）':''}`:'无记忆';
+  const ref=!r.demo&&!mem&&st.fee===''?feeRef(r):null;
+  const memTxt=r.demo?'示范':mem?`记忆 ${mem.pct}%${mem.src==='规则表'?'（规则表）':''}`:ref?`<button class="fee-ref" data-act="feeref" data-v="${ref.pct}">参考 ${ref.pct}%（${esc(ref.date)}）</button>`:'无记忆';
   const opts=st.tpl==='topup'?`<label><input type="checkbox" data-k="relay" ${st.relay?'checked':''}> 中转</label><br><label><input type="checkbox" data-k="newAddr" ${st.newAddr?'checked':''}> 新地址${r.newAddress?'<span class="pr-muted">（首次出现）</span>':''}</label>`:'';
   return `<tr data-i="${i}" class="${r.demo?'demo':''} ${gen?'done':''}">
    <td><input type="checkbox" data-k="sel" ${st.sel?'checked':''} ${c.miss.length?'disabled':''}></td>
@@ -2813,6 +2840,8 @@ $('sheetList').addEventListener('change',e=>{
  if(k!=='sel')renderList();else syncHead();
 });
 $('sheetList').addEventListener('click',async e=>{
+ const fr=e.target.closest('[data-act=feeref]');
+ if(fr){const r=VISIBLE[+fr.closest('tr').dataset.i];rowState(r).fee=fr.dataset.v;renderList();return}
  const ca=e.target.closest('[data-act=copyaddr]');
  if(ca){const r=VISIBLE[+ca.closest('tr').dataset.i];try{await navigator.clipboard.writeText(rowState(r).address);flashCopied(ca,'')}catch(err){toast('复制失败')}return}
  const b=e.target.closest('[data-act=gen]');if(!b)return;
@@ -2994,7 +3023,65 @@ window.addEventListener('storage',e=>{if(e.key==='fiat_ops_pr_synced'||e.key==='
 $('sheetDir').addEventListener('change',renderList);
 $('sheetToday').onclick=()=>{$('sheetDate').value=todayMD();renderList()};
 
-function renderAllTpl(){renderStatus();renderList();renderErc()}
+function renderAllTpl(){renderStatus();renderList();renderErc();renderSyncBar()}
+// ---------- 顶部同步状态（每页显示；超过 2 小时变橘色）----------
+function renderSyncBar(){
+ const bar=$('syncBar');if(!bar)return;
+ const item=(key,label,at,hint)=>{const age=at?(Date.now()-at)/6e4:Infinity;const cls=!at?'none':age>120?'stale':'';
+  return `<button class="sb ${cls}" data-sb="${key}" title="${esc(hint)}">${label} ${at?tm(at):'未同步'}${at&&age>120?' · 已过 '+Math.floor(age/60)+' 小时':''}</button>`};
+ bar.innerHTML=item('backend','后台',typeof state!=='undefined'&&state.backend?.syncedAt,'在已登录的后台页面点书签「⇪ 同步到 Fiat Ops」')+item('sheet','出入金表',T.sheet?.syncedAt,'在出入金表页面点书签「⇪ 同步出入金表」');
+}
+window.renderSyncBar=renderSyncBar;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-sb]');if(!b)return;toast(b.title)});
+setInterval(renderSyncBar,60000);
+
+// ---------- 首页「出U／充U」→ 产生要贴进出入金表的资料（只含手填栏，跳过可能是公式的栏）----------
+function lastSheetRow(kind,m,c){
+ const rows=T.sheet?.tabs?.[kind]?.rows||[];const ml=String(m).toLowerCase();
+ for(let i=rows.length-1;i>=0;i--){const r=rows[i];if(r.currency===c&&(r.merchant.toLowerCase()===ml||r.merchant.toLowerCase().startsWith(ml)))return r}
+ return null;
+}
+window.openFlowDraft=function(dir,merchant,currency){
+ const kind=dir==='out'?'out':'in',last=lastSheetRow(kind,merchant,currency);
+ let owner='';try{owner=localStorage.getItem('fiat_ops_flow_owner')||''}catch(e){}
+ const back=document.createElement('div');back.className='fd-back';
+ back.innerHTML=`<div class="fd-box"><div class="section-title"><h3>${kind==='out'?'出U（结算）':'充U（充值）'} · ${esc(merchant)} ${esc(currency)}</h3><button class="drawer-close" data-x>×</button></div>
+ <div class="fd-grid">
+  <div class="field"><label>商户名称</label><input data-f="m" type="text" value="${esc(last?last.merchant:merchant)}"></div>
+  <div class="field"><label>币种</label><input data-f="c" type="text" value="${esc(currency)}"></div>
+  <div class="field"><label>${kind==='out'?'订单金额（'+esc(currency)+'）':'充U金额（USDT）'}</label><input data-f="a" type="text" inputmode="decimal"></div>
+  <div class="field"><label>日期</label><input data-f="d" type="text" value="${todayMD()}"></div>
+  <div class="field"><label>商户汇率</label><input data-f="mr" type="text" inputmode="decimal">${last&&last.mrateText?`<button class="fd-last" data-use="mr" data-v="${esc(last.mrateText)}">上次 ${esc(last.mrateText)}（${esc(last.dateRaw)}）</button>`:''}</div>
+  <div class="field"><label>优惠汇率</label><input data-f="pr" type="text" inputmode="decimal">${last&&last.prateText?`<button class="fd-last" data-use="pr" data-v="${esc(last.prateText)}">上次 ${esc(last.prateText)}（${esc(last.dateRaw)}）</button>`:''}</div>
+  <div class="field"><label>专员</label><input data-f="o" type="text" value="${esc(owner)}"></div>
+  ${kind==='in'?`<div class="field"><label>商户地址</label><input data-f="ad" type="text">${last&&last.address?`<button class="fd-last" data-use="ad" data-v="${esc(last.address)}">上次 ${esc(last.address.slice(0,8))}…${esc(last.address.slice(-4))}</button>`:''}</div>`:'<div></div>'}
+ </div>
+ <div data-out></div>
+ <div class="actions" style="margin-top:12px;justify-content:flex-end"><button class="btn primary" data-make>产生</button></div></div>`;
+ document.body.appendChild(back);
+ const q=sel=>back.querySelector(sel),f=k=>q(`[data-f=${k}]`);
+ const close=()=>back.remove();
+ back.addEventListener('click',async e=>{
+  if(e.target===back||e.target.closest('[data-x]'))return close();
+  const u=e.target.closest('[data-use]');if(u){f(u.dataset.use).value=u.dataset.v;return}
+  const cp=e.target.closest('[data-copy-seg]');if(cp){try{await navigator.clipboard.writeText(cp.dataset.copySeg);flashCopied(cp)}catch(err){toast('复制失败')}return}
+  if(!e.target.closest('[data-make]'))return;
+  const v={m:f('m').value.trim(),c:f('c').value.trim().toUpperCase(),a:cleanNumText(f('a').value),d:f('d').value.trim(),mr:cleanNumText(f('mr').value),pr:cleanNumText(f('pr').value),o:f('o').value.trim(),ad:kind==='in'?f('ad').value.trim():''};
+  const miss=[['m','商户'],['c','币种'],['a','金额'],['d','日期'],['o','专员'],['mr','商户汇率'],['pr','优惠汇率']].filter(([k])=>!v[k]).map(([,l])=>l);
+  if(kind==='in'&&!v.ad)miss.push('商户地址');
+  if(miss.length){toast('缺：'+miss.join('、'));return}
+  if(![v.a,v.mr,v.pr].every(x=>Number(x)>0)){toast('金额与汇率要是数字');return}
+  if(kind==='in'&&!(RE_TRC.test(v.ad)||RE_ERC.test(v.ad))){toast('地址格式不对');return}
+  try{localStorage.setItem('fiat_ops_flow_owner',v.o)}catch(err){}
+  const seg1=[v.m,v.c,v.a].join('\t'),seg2=[v.d,v.o,v.mr,v.pr].join('\t');
+  const tpl=kind==='out'?'settle':'topup',mem=getFee(tpl,v.m,v.c),fee=mem?mem.pct:0;
+  const prev=kind==='out'?buildSettleText({amount:v.a,rateRaw:v.pr,feePct:fee,address:T.sheet?.tabs?.out?.headerAddr||''}).text:buildTopupTexts({merchant:v.m,currency:v.c,usdt:v.a,rateRaw:v.pr,feePct:fee,address:v.ad}).topup;
+  const seg=(label,text)=>`<div class="fd-seg"><span><b>${label}</b>　${esc(text.replace(/\t/g,' ｜ '))}</span><button class="btn" data-copy-seg="${esc(text)}">复制</button></div>`;
+  q('[data-out]').innerHTML=`<div style="margin-top:10px">${seg('贴到 B 栏',seg1)}${kind==='in'?seg('贴到 H 栏',v.ad):''}${seg('贴到 J 栏',seg2)}</div>
+   <div class="output" style="min-height:0;margin-top:10px;font-size:12px">${esc(prev)}</div><div class="pr-muted" style="margin-top:4px">手续费 ${fee}%${mem?'':'（无记忆）'}</div>`;
+ });
+};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-flow-dir]');if(!b)return;e.stopPropagation();openFlowDraft(b.dataset.flowDir,b.dataset.flowM,b.dataset.flowC)});
 // 测试用：让开发版可以直接灌入 CSV 验证（不经过书签）
 window.__tplTest={parseCSV,parseTab,network,check,applySheet,state:()=>T,rowState,genRow,recId};
 setupSheetBookmarklet();loadSettings();
