@@ -263,7 +263,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
   </div>
 
   <div class="card" style="margin-top:16px">
-    <div class="section-title"><h3>ERC 出金 Hash 待补</h3></div><div id="ercReminders"></div>
+    <div class="section-title"><h3>出金 Hash 待补</h3></div><div id="ercReminders"></div>
   </div>
 </section>
 
@@ -2452,6 +2452,8 @@ $('prCopyAll').addEventListener('click',async()=>{
 .tpl-erc-item:first-child{border-top:0}
 .tpl-manual>summary{cursor:pointer}
 .upload-sec{margin-bottom:28px}.upload-sec .topbar h2{font-size:19px}
+.pr-rule-note{display:none!important}
+#page-home .workflow-card{display:none!important}
 .dev-badge{position:fixed;left:12px;bottom:12px;z-index:200;background:#e98719;color:#fff;font-weight:800;font-size:12px;padding:5px 10px;border-radius:8px}
 @media (max-width:900px){.tpl-out-grid,.tpl-settings{grid-template-columns:1fr}}
 </style>
@@ -2601,8 +2603,8 @@ function parseTab(kind,csv){
   const mk=()=>({kind,row:i+1,orderNo:g('orderNo'),merchant,currencyRaw:cur,currency:cur.toUpperCase().replace(/\s+/g,''),amountText:g('amount'),hash:g('hash'),dateRaw:g('date'),date:normDate(g('date')),owner:g('owner'),mrateText:g('mrate'),prateText:g('prate'),note:g('note'),address:addr});
   if(i<startRow){
    if(addr)seenAddr.add(ak);
-   // ERC 出金 Hash 待补不受行数限制：较早的 ERC 出金行也留下来检查
-   if(kind==='out'){const o=mk();if(network(o).net==='ERC')ercOld.push(o)}
+   // 出金 Hash 待补不受行数限制：较早的 ERC 行与没有 Hash 的行也留下来检查
+   if(kind==='out'){const o=mk();if(network(o).net==='ERC'||!hasValidHash(o.hash))ercOld.push(o)}
    return;
   }
   const rec={kind,row:i+1,orderNo:g('orderNo'),merchant,currencyRaw:cur,currency:cur.toUpperCase().replace(/\s+/g,''),amountText:g('amount'),hash:g('hash'),dateRaw:g('date'),date:normDate(g('date')),owner:g('owner'),mrateText:g('mrate'),prateText:g('prate'),note:g('note'),address:addr};
@@ -2803,13 +2805,17 @@ $('sheetGenSel').onclick=()=>{
 
 // ---------- ERC 出金 Hash 待补 ----------
 const ercKey=r=>['out',r.orderNo,r.merchant,r.currency,r.amountText,r.dateRaw].join('|');
+// Hash 要是真正的交易 Hash 格式才算已填（「等待商户打款」之类的文字不算）
+const hasValidHash=h=>RE_ERC_HASH.test(h||'')||RE_TRC_HASH.test(h||'');
+// 结算行才检查：有币种、金额、优惠汇率（排除内转等没有汇率的纪录）
+const needsHash=r=>r.currency&&r.amountText&&r.prateText;
 function updateErc(){
  const t=T.sheet?.tabs?.out;const rows=t?.ok?[...(t.ercOld||[]),...t.rows]:null;if(!rows)return;
  rows.forEach(r=>{
-  if(network(r).net!=='ERC')return;
-  const k=ercKey(r),label=`${r.merchant} ${r.currency} ${r.amountText}（${r.dateRaw}，第 ${r.row} 行）`;
-  if(!r.hash.trim()){if(!T.erc[k])T.erc[k]={status:'pending',first:Date.now(),label,row:r.row}}
-  else if(T.erc[k]&&T.erc[k].status!=='done'){T.erc[k].status='done';T.erc[k].doneAt=Date.now();log('ERC Hash 已补上：'+label)}
+  if(!needsHash(r))return;
+  const k=ercKey(r),net=network(r).net,label=`${net} · ${r.merchant} ${r.currency} ${r.amountText}（${r.dateRaw}，第 ${r.row} 行）${r.hash&&!hasValidHash(r.hash)?'：'+r.hash.slice(0,20):''}`;
+  if(!hasValidHash(r.hash)){if(!T.erc[k])T.erc[k]={status:'pending',first:Date.now(),label,row:r.row};else if(T.erc[k].status!=='ignored')T.erc[k].label=label}
+  else if(T.erc[k]&&T.erc[k].status!=='done'){T.erc[k].status='done';T.erc[k].doneAt=Date.now()}
  });
 }
 function renderErc(){
