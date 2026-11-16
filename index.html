@@ -794,23 +794,19 @@ function summary(){
  return Object.values(map).sort((a,b)=>a.currency.localeCompare(b.currency));
 }
 function recommendation(x){
- const sym=SYMBOLS[x.currency]||'';
  const wd=x.withdraw||0;const open=x.payout.filter(y=>y.status==='开启').length;const usable=usableBalanceForCurrency(x.currency,x.payout);
- const lockedText=usable.locked>0?`；另有 ${sym}${fmt(usable.locked,0)} 卡在 ${usable.lockedMerchants} 个商户（${usable.lockedChannels} 个已关闭通道），不计入可动用。`:'';
- if(open===0&&x.payout.length)return {type:'risk',text:'代付无可用通道',reason:`目前无开启通道${lockedText}`};
- const r=riskOf(x.currency);
- // 有后台 Payout Monitor 资料：以「安全余额」判断（1h：过去 1 小时 ×1.2×1.5；24h：过去 24 小时 ×1.2×1.3）
- if(r&&Number.isFinite(Number(r.fundsGapToday))){
-   const g1=Number(r.fundsGap)-usable.locked,g24=Number(r.fundsGapToday)-usable.locked;
-   if(g1<0)return {type:'risk',text:`立即补 ${sym}${fmt(-g1,0)}`,reason:`可动用余额撑不过 1 小时（安全余额 ${sym}${fmt(r.safeBalance,0)}）${lockedText}`};
-   if(g24<0)return {type:'risk',text:`今天需补 ${sym}${fmt(-g24,0)}`,reason:`1 小时内足够，但撑不过 24 小时（24h 安全余额 ${sym}${fmt(r.safeBalanceToday,0)}）${lockedText}`};
-   if(wd>0&&g24<wd*0.2)return {type:'watch',text:'观察',reason:`扣掉 24h 安全余额后只剩 ${sym}${fmt(g24,0)}，不到日均 2 成${lockedText}`};
-   return {type:'settle',text:`可结算 ${sym}${fmt(g24,0)}`,reason:`可动用余额扣掉 24h 安全余额后的多余部分${lockedText}`};
- }
- // 没有后台资料：沿用 Withdrawal Stats 日均判断
- if(wd>0&&usable.amount<wd)return {type:'risk',text:`建议补 ${sym}${fmt(wd-usable.amount,0)}`,reason:`可动用余额低于 1 天 Withdrawal 日均；开启代付 ${open} 家${lockedText}`};
- if(wd>0&&usable.amount>wd*2)return {type:'settle',text:`可结算 ${sym}${fmt(usable.amount-wd,0)}`,reason:`保留约 1 天 Withdrawal 后仍有多余余额${lockedText}`};
- return {type:'ok',text:'观察',reason:`余额与通道暂时稳定；开启代付 ${open} 家。`};
+ const lockedText=usable.locked>0?`；另有 ${SYMBOLS[x.currency]||''}${fmt(usable.locked,0)} 卡在 ${usable.lockedMerchants} 个商户（${usable.lockedChannels} 个已关闭通道）。`:'';
+ if(wd>0&&usable.amount<wd){return {type:'risk',text:`建议补 ${SYMBOLS[x.currency]||''}${fmt(wd-usable.amount,0)}`,reason:`可动用余额低于 1 天 Withdrawal 日均；开启代付 ${open} 家${lockedText}`}}
+ if(wd>0&&usable.amount>wd*2){return {type:'settle',text:`可结算 ${SYMBOLS[x.currency]||''}${fmt(usable.amount-wd,0)}`,reason:`以可动用余额判断，保留约 1 天 Withdrawal 后仍有多余余额${lockedText}`}}
+ if(open===0&&x.payout.length){return {type:'risk',text:'代付无可用通道',reason:`目前无开启通道${lockedText}`}}
+ return {type:'ok',text:'观察',reason:`余额与通道暂时稳定；开启代付 ${open} 家。`}
+}
+// 后台 Payout Monitor 算法的建议（只显示作比较，不取代上面的原始判断）
+function backendSuggestion(x){
+ const r=riskOf(x.currency);if(!r||!Number.isFinite(Number(r.fundsGapToday)))return '';
+ const sym=SYMBOLS[x.currency]||'',usable=usableBalanceForCurrency(x.currency,x.payout);
+ const g1=Number(r.fundsGap)-usable.locked,g24=Number(r.fundsGapToday)-usable.locked;
+ return g1<0?`立即补 ${sym}${fmt(-g1,0)}`:g24<0?`今天需补 ${sym}${fmt(-g24,0)}`:`可结算 ${sym}${fmt(g24,0)}`;
 }
 function normalizeName(v){
   return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -1243,7 +1239,7 @@ function renderAll(){
      <td>${level24hCell(x.currency,usable)}</td>
      <td><span class="badge ${po?'b-green':'b-gray'}">${po}/${x.payout.length}</span></td>
      <td><span class="badge ${pi?'b-green':'b-gray'}">${pi}/${x.payin.length}</span>${x.deposit?`<div class="hint">日均 ${SYMBOLS[x.currency]||''}${fmt(x.deposit,0)}</div>`:''}</td>
-     <td class="recommend ${cls}">${r.text}</td>
+     <td class="recommend ${cls}">${r.text}${backendSuggestion(x)?`<div class="hint" style="font-weight:600">后台算法：${backendSuggestion(x)}</div>`:''}</td>
    </tr>
    <tr class="detail-row"><td colspan="8">
      <div class="currency-detail" id="detail-${x.currency}">
@@ -1299,7 +1295,7 @@ function withdrawCell(x){
  }
  const max=Math.max(1,...daily.map(d=>d.a));
  const bars=daily.length?`<div class="wd-bars" title="${daily.map(d=>d.d.slice(5)+' '+sym+fmt(d.a,0)).join('\n')}">${daily.map(d=>`<i style="height:${Math.max(2,d.a/max*22)}px" class="${d.d===todayStr?'today':''}"></i>`).join('')}</div>`:'';
- return `<b>${sym} ${fmt(avg,0)}</b>${x.withdraw?'':'<span class="hint">（后台完整日）</span>'}${pace}${bars}`;
+ return `<b>${x.withdraw?sym+' '+fmt(x.withdraw,0):'—'}</b><div class="hint">${statsSourceText('withdraw')}</div>${pmAvg?`<div class="hint">后台参考 ${sym}${fmt(pmAvg,0)}</div>`:''}${pace}${bars}`;
 }function riskOf(c){return state.backend?.risk?.[c]||null}
 function availCell(x,usable){
  const sym=SYMBOLS[x.currency]||'';
