@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fiat Operations Command Center</title>
+<title>Fiat Operations</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f4f7fb;--panel:#fff;--text:#142033;--muted:#687386;--line:#e4e9f1;--nav:#0f1d33;--blue:#2563eb;--green:#0f9f6e;--orange:#e98719;--red:#dc3f4f;--purple:#7c3aed;--shadow:0 12px 35px rgba(15,29,51,.08);--radius:18px}
@@ -138,17 +138,15 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 <body>
 <div class="app">
 <aside class="sidebar">
-<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1><p>Operations Command Center</p></div></div>
+<div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
 <button class="nav-btn" data-page="robot">▣　商戶餘額（後台）</button>
 <div class="group-title">上傳資料</div>
-<button class="nav-btn" data-page="withdraw">⇧　Withdrawal Stats</button>
-<button class="nav-btn" data-page="deposit">⇧　Deposit Stats</button>
-<button class="nav-btn" data-page="payout">⇧　代付通道</button>
-<button class="nav-btn" data-page="payin">⇧　代收通道</button>
+<button class="nav-btn" data-page="uploads">⇧　上傳資料</button>
 <div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="payout-record">▣　Payout Record</button>
+<button class="nav-btn" data-page="flow">⇄　出入金</button>
 </aside>
 
 <main class="main">
@@ -219,11 +217,56 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 </section>
 
 
-<section class="page" id="page-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>首頁 Withdrawal 日均以這裡為準。書籤同步會自動抓後台 Withdrawal Stats（最近 7 個完整日）；手動上傳的檔案優先。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="withdrawSource"></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><button class="btn" onclick="clearUploadData('withdraw')">清空</button></div><div id="withdrawResult"></div></div></section>
-<section class="page" id="page-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>書籤同步會自動抓後台 Deposit Stats（最近 7 個完整日）；手動上傳的檔案優先。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="depositSource"></div></div><div class="card upload-box"><input type="file" id="depositFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="depositDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('deposit')">解析並保存</button><button class="btn" onclick="clearUploadData('deposit')">清空</button></div><div id="depositResult"></div></div></section>
+<section class="page" id="page-uploads">
+<div class="topbar"><div><h2>上傳資料</h2></div></div>
+<div class="upload-sec" id="sec-withdraw"><div class="topbar"><div><h2>Withdrawal Stats</h2><p>首頁 Withdrawal 日均以這裡為準。書籤同步會自動抓後台 Withdrawal Stats（最近 7 個完整日）；手動上傳的檔案優先。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="withdrawSource"></div></div><div class="card upload-box"><input type="file" id="withdrawFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="withdrawDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('withdraw')">解析並保存</button><button class="btn" onclick="clearUploadData('withdraw')">清空</button></div><div id="withdrawResult"></div></div></div>
+<div class="upload-sec" id="sec-deposit"><div class="topbar"><div><h2>Deposit Stats</h2><p>書籤同步會自動抓後台 Deposit Stats（最近 7 個完整日）；手動上傳的檔案優先。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="depositSource"></div></div><div class="card upload-box"><input type="file" id="depositFile" accept=".xlsx,.xls,.csv"><div class="field" style="max-width:220px;margin:16px auto"><label>無日期時手動填天數</label><input id="depositDays" type="number" min="1" value="7"></div><div class="actions"><button class="btn primary" onclick="loadStats('deposit')">解析並保存</button><button class="btn" onclick="clearUploadData('deposit')">清空</button></div><div id="depositResult"></div></div></div>
 
-<section class="page" id="page-payout"><div class="topbar"><div><h2>代付通道</h2><p>來源：後台 Payment Manage › Withdraw，書籤同步時自動更新。上傳 PaymentManageList 為備用，下次同步會被後台資料取代。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="payoutSource"></div></div><div class="card upload-box"><input type="file" id="payoutFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payout')">解析並保存</button><button class="btn" onclick="clearUploadData('payout')">清空</button></div><div id="payoutResult"></div></div></section>
-<section class="page" id="page-payin"><div class="topbar"><div><h2>代收通道</h2><p>來源：後台 Payment Manage › Deposit，書籤同步時自動更新。上傳 PaymentManageList 為備用，下次同步會被後台資料取代。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="payinSource"></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><button class="btn" onclick="clearUploadData('payin')">清空</button></div><div id="payinResult"></div></div></section>
+<div class="upload-sec" id="sec-payout"><div class="topbar"><div><h2>代付通道</h2><p>來源：後台 Payment Manage › Withdraw，書籤同步時自動更新。上傳 PaymentManageList 為備用，下次同步會被後台資料取代。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="payoutSource"></div></div><div class="card upload-box"><input type="file" id="payoutFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payout')">解析並保存</button><button class="btn" onclick="clearUploadData('payout')">清空</button></div><div id="payoutResult"></div></div></div>
+<div class="upload-sec" id="sec-payin"><div class="topbar"><div><h2>代收通道</h2><p>來源：後台 Payment Manage › Deposit，書籤同步時自動更新。上傳 PaymentManageList 為備用，下次同步會被後台資料取代。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="payinSource"></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><button class="btn" onclick="clearUploadData('payin')">清空</button></div><div id="payinResult"></div></div></div>
+</section>
+<section class="page" id="page-flow">
+<div class="topbar"><div><h2>出入金</h2></div></div>
+  <div class="card tpl-sync">
+    <div class="tpl-sync-row">
+      <a class="bookmarklet" id="sheetBookmarklet" href="#" onclick="event.preventDefault();toast('拖到书签列使用')">⇪ 同步出入金表</a>
+      <div class="tpl-sync-status" id="sheetStatus">尚未同步</div>
+      <input id="sheetPaste" type="text" placeholder="⌘V 贴上同步资料" style="width:200px">
+    </div>
+    <div class="tpl-filter">
+      <label>日期 <input id="sheetDate" type="text" placeholder="11/16" style="width:110px"></label>
+      <label>方向 <select id="sheetDir" style="width:auto"><option value="all">全部</option><option value="out">结算</option><option value="in">充值</option></select></label>
+      <button class="btn" id="sheetToday">今天</button>
+      <label>商户 <input id="sheetSearch" type="text" placeholder="搜寻商户" style="width:150px"></label>
+      <span class="hint" id="sheetCount"></span>
+    </div>
+    <details class="fallback" style="margin-top:10px"><summary>设定</summary>
+      <div class="tpl-settings">
+        <div class="field"><label>TRC出金 gid</label><input id="setGidOut" type="text"></div>
+        <div class="field"><label>TRC入金 gid</label><input id="setGidIn" type="text"></div>
+        <div class="field" style="grid-column:1/-1"><label>ERC 收U地址</label><input id="setErcAddr" type="text" placeholder="0x…"></div>
+      </div>
+      <div class="actions"><button class="btn primary" id="saveTplSettings">保存设定</button></div>
+    </details>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="section-title"><h3>待生成清单</h3>
+      <div class="actions"><button class="btn" id="sheetSelAll">全选可生成</button><button class="btn" id="sheetSelNone">取消全选</button><button class="btn primary" id="sheetGenSel">生成选取</button></div></div>
+    <div class="pr-table-wrap"><table class="tpl-table"><thead><tr><th><input type="checkbox" id="sheetSelHead" title="全选／全部取消"></th><th>行</th><th>方向</th><th>网络</th><th>商户</th><th>币种</th><th>金额</th><th>日期</th><th>专员</th><th>商户／优惠汇率</th><th>地址</th><th>模板</th><th>Fee %</th><th>选项</th><th>状态</th><th></th></tr></thead><tbody id="sheetList"></tbody></table></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="section-title"><div><h3>生成结果</h3><div class="hint" id="sheetOutMeta"></div></div>
+      <div class="actions"><button class="btn" id="copyAllMerchant">复制全部商户话术</button><button class="btn" id="copyAllFinance">复制全部充值申请</button><button class="btn danger" id="clearOutputs">清除结果</button></div></div>
+    <div id="sheetOutputs" class="tpl-outputs"></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="section-title"><h3>ERC 出金 Hash 待补</h3></div><div id="ercReminders"></div>
+  </div>
+</section>
+
 
 <section class="page" id="page-settlement">
 <div class="topbar"><div><h2>結算話術</h2><p>TRC 與 ERC 均支援批量貼上</p></div></div>
@@ -378,7 +421,8 @@ function flashCopied(btn,label){
     if(btn.dataset.copyOrig!==undefined)btn.innerHTML=btn.dataset.copyOrig;
   },1300);
 }
-function showPage(name){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');const b=[...document.querySelectorAll('.nav-btn')].find(x=>x.dataset.page===name);if(b)b.classList.add('active');window.scrollTo(0,0)}
+const PAGE_ALIAS={withdraw:'uploads',deposit:'uploads',payout:'uploads',payin:'uploads'};
+function showPage(name){const sec=PAGE_ALIAS[name]?name:null;if(sec)name=PAGE_ALIAS[name];document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');const b=[...document.querySelectorAll('.nav-btn')].find(x=>x.dataset.page===name);if(b)b.classList.add('active');window.scrollTo(0,0);if(sec)document.getElementById('sec-'+sec)?.scrollIntoView()}
 document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tool]').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tool-pane').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('tool-'+b.dataset.tool).classList.add('active')});
 
@@ -2375,6 +2419,495 @@ $('prCopyAll').addEventListener('click',async()=>{
   toast(complete?`已复制 ${passRows.length} 笔（共 ${texts.length} 则话术）`:`已复制，但有 ${rowErrors} 笔处理失败`);
   flashCopied($('prCopyAll'),complete?'已复制':'已部分复制');
 });
+})();
+</script>
+<style>
+.tpl-sync-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.tpl-sync-status{font-size:13px;line-height:1.6}
+.tpl-sync-status .err{color:var(--red);font-weight:700}
+.tpl-filter{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px;font-size:13px}
+.tpl-filter input,.tpl-filter select{padding:7px 9px}
+.tpl-settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.tpl-table{width:100%;border-collapse:collapse}
+.tpl-table th,.tpl-table td{padding:8px;border-bottom:1px solid var(--line);font-size:12px;text-align:left;vertical-align:top;white-space:nowrap}
+.tpl-table th{font-size:11px;color:var(--muted);background:#f9fbfd}
+.tpl-table input[type=text],.tpl-table select{padding:5px 7px;font-size:12px;width:auto}
+.tpl-table .fee{width:62px}
+.tpl-table tr.demo td{background:#fffbea}
+.tpl-table tr.done td{opacity:.6}
+.tpl-addr{font-family:ui-monospace,Menlo,monospace;font-size:11px;white-space:normal!important;min-width:150px;max-width:190px;word-break:break-all}
+.tpl-meta{font-size:12px;color:#536177;margin:0 0 8px;line-height:1.7;word-break:break-all}
+.tpl-out-item.err{background:#fff5f6;border-color:#ffd4d9;color:var(--red)}
+.tpl-miss{color:var(--red);font-weight:700;white-space:normal;min-width:120px}
+.tpl-warn{color:#b86208;white-space:normal;min-width:120px}
+.tpl-ok{color:var(--green);font-weight:700}
+.tpl-outputs{display:grid;gap:12px}
+.tpl-out-item{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fbfdff}
+.tpl-out-item h4{margin:0 0 8px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tpl-out-item .output{min-height:0;margin-bottom:8px}
+.tpl-out-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tpl-logs{max-height:280px;overflow:auto;font-size:12px;line-height:1.7}
+.tpl-logs .warn{color:#b86208}.tpl-logs .error{color:var(--red)}
+.tpl-erc-item{display:flex;justify-content:space-between;gap:8px;align-items:center;border-top:1px solid #edf0f4;padding:8px 0;font-size:12px}
+.tpl-erc-item:first-child{border-top:0}
+.tpl-manual>summary{cursor:pointer}
+.upload-sec{margin-bottom:28px}.upload-sec .topbar h2{font-size:19px}
+.dev-badge{position:fixed;left:12px;bottom:12px;z-index:200;background:#e98719;color:#fff;font-weight:800;font-size:12px;padding:5px 10px;border-radius:8px}
+@media (max-width:900px){.tpl-out-grid,.tpl-settings{grid-template-columns:1fr}}
+</style>
+<script>
+// ===== 话术产生器（纯函式）：手动表单与「出入金表格」清单共用，确保格式一字不差 =====
+function round2(x){return Math.round((Number(x)+Number.EPSILON)*100)/100}
+function cleanNumText(v){return String(v==null?'':v).replace(/[,，\s]/g,'').trim()}
+// Settle：最后金额维持真实值（与原本相同），显示的换算值 = 最后金额 + 手续费，确保第三行加减对得上（2026-11-16 确认「金额要是对的就好」）
+function buildSettleText({amount,rateRaw,feePct,address}){
+ const rateText=cleanNumText(rateRaw);
+ const amt=Number(cleanNumText(amount)),rate=Number(rateText),pct=Number(feePct)||0;
+ if(!amt||!rate)return {error:'请填写金额与汇率'};
+ let out=`Settle\n`,net=round2(amt/rate),gross=net;
+ if(pct){
+  const fee=round2(amt/rate*pct/100);
+  net=round2(amt/rate-amt/rate*pct/100);
+  gross=round2(net+fee);
+  out+=`${trimNumber(amt)}/${trimRate(rateText)}=${trimNumber(gross)}\n${trimNumber(gross)}×${trimNumber(pct)}%=${trimNumber(fee)}\n${trimNumber(gross)}-${trimNumber(fee)}=${trimNumber(net)} U`;
+ }else{
+  out+=`${trimNumber(amt)}/${trimRate(rateText)}=${trimNumber(gross)} U`;
+ }
+ out+=`\n\nAddress：${address||''}\nConfirm：`;
+ return {text:out,net};
+}
+// Top-Up（发商户）＋ 充值申请话术（发财务）：同一次生成，原始逻辑与格式不变
+function buildTopupTexts({merchant,currency,usdt,rateRaw,feePct,address,isRelay,isNewAddress}){
+ merchant=String(merchant||'').trim();currency=String(currency||'').trim();address=String(address||'').trim();
+ rateRaw=cleanNumText(rateRaw);
+ usdt=Number(cleanNumText(usdt));
+ const rate=Number(rateRaw);
+ feePct=Number(feePct)||0;
+ if(!usdt||!rate)return {error:'请填写 USDT 与汇率'};
+
+ // 手续费是从我方要付出的 USDT 里先扣（％是算在 USDT 本身，不是算在换算後的法币上），
+ // 扣完的净 USDT 才拿去乘/除汇率，这样换算出来的法币金额才是商户真实会拿到的数字。
+ // 匯率方向規則：一般幣種的匯率代表「1 USDT 可兌換多少法幣」，使用乘法。
+ // 已由實際 EUR 充值案例確認：EUR 匯率按「1 EUR = X USDT」提供，因此使用除法。
+ // 其他幣種匯率按「1 USDT = X 法幣」提供，因此使用乘法。
+ // 不依匯率數字大小猜測方向。
+ const EUR_QUOTE_DIRECTION='FIAT_TO_USDT';
+ const normalizedCurrency=String(currency||'').trim().toUpperCase();
+ const useDivide=normalizedCurrency==='EUR' && EUR_QUOTE_DIRECTION==='FIAT_TO_USDT';
+ const opSymbol=useDivide?'/':'×';
+ const fee=usdt*feePct/100;
+ const netUsdt=usdt-fee;
+ const result=useDivide?netUsdt/rate:netUsdt*rate;
+
+ let out=`Top-Up\n`;
+ if(feePct){
+   out+=`${trimNumber(usdt)}-Fee ${trimNumber(fee)}U=${trimNumber(netUsdt)}\n${trimNumber(netUsdt)}${opSymbol}${trimRate(rateRaw)}=${trimNumber(result)}`;
+ }else{
+   out+=`${trimNumber(usdt)}${opSymbol}${trimRate(rateRaw)}=${trimNumber(result)}`;
+ }
+ out+=`\n\nAddress：${address}\nConfirm：`;
+
+ let reportOut='';
+ if(merchant&&currency){
+  const reportOpSymbol=useDivide?'/':'*';
+  reportOut=isRelay?`【通过中转账户支付】\n`:'';
+  if(feePct){
+   reportOut+=`${merchant}申请充${trimNumber(usdt)}U,${currency} 汇率${trimRate(rateRaw)},充值手续费${trimNumber(feePct)}%\n`;
+   reportOut+=`${trimNumber(usdt)}-Fee ${trimNumber(fee)}U=${trimNumber(netUsdt)}\n`;
+   reportOut+=`${trimNumber(netUsdt)}${reportOpSymbol}${trimRate(rateRaw)}=${trimNumber(result)}\n`;
+   reportOut+=`麻烦你了`;
+  }else{
+   reportOut+=`${merchant}申请充${trimNumber(usdt)}U,${currency} 汇率${trimRate(rateRaw)}。\n`;
+   reportOut+=`${trimNumber(usdt)}${reportOpSymbol}${trimRate(rateRaw)}= ${trimNumber(result)} ${currency}。麻烦你了`;
+  }
+  if(address)reportOut+=`\n地址:${address}`;
+  if(isNewAddress)reportOut+=`\n\n地址商户已两人确认，麻烦添加白名单然后充值`;
+ }
+ return {topup:out,charge:reportOut,result};
+}
+
+
+// ===== 出入金：出入金表格同步 → 话术（开发版）=====
+(function(){
+const TPL_KEY='fiat_ops_tpl_v1';
+const SHEET_ID='1kbj8VsqqEw60Q8mtPJulThwEAqAGnRfo';
+const SHEET_ORIGIN='https://docs.google.com';
+const SCAN_ROWS=600;
+const RECENT_ROWS=40;
+// 结算手续费（USDT %）起始值：来自已确认的商户规则表 B 类；其余商户第一次生成时记住
+const FEE_SEED={'settle|betterbro|ARS':2.5,'settle|betterbro|UAH':2.5,'settle|betterbro|COP':2,'settle|cripten|ARS':3,'settle|thelocal|BDT':2,'settle|kora|NGN':1,'settle|platcore|KGS':1,'settle|paynoomo|INR':2};
+const RE_TRC=/^T[1-9A-HJ-NP-Za-km-z]{33}$/,RE_ERC=/^0x[0-9a-fA-F]{40}$/;
+const RE_ERC_HASH=/0x[0-9a-fA-F]{64}/,RE_TRC_HASH=/(^|[^0-9a-fA-Fx])[0-9a-fA-F]{64}($|[^0-9a-fA-F])/;
+
+let T;try{T=JSON.parse(localStorage.getItem(TPL_KEY)||'{}')}catch(e){T={}}
+T.fees=T.fees||{};T.erc=T.erc||{};T.logs=Array.isArray(T.logs)?T.logs:[];T.generated=T.generated||{};
+T.settings=Object.assign({gidOut:'2014869040',gidIn:'494414719',ercSettleAddr:''},T.settings||{});
+T.sheet=T.sheet||null;
+const saveT=()=>{try{localStorage.setItem(TPL_KEY,JSON.stringify(T))}catch(e){toast('本机储存已满，资料未保存')}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tm=t=>new Date(t).toLocaleString('zh-TW',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+const todayMD=()=>{const d=new Date();return (d.getMonth()+1)+'/'+d.getDate()};
+
+function log(){} // 操作日志已取消（2026-11-16）
+
+// ---------- 解析 ----------
+function parseCSV(text){
+ const rows=[];let row=[],cell='',q=false;
+ for(let i=0;i<text.length;i++){const c=text[i];
+  if(q){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++}else q=false}else cell+=c}
+  else if(c==='"')q=true;
+  else if(c===','){row.push(cell);cell=''}
+  else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell=''}
+  else if(c!=='\r')cell+=c;}
+ if(cell!==''||row.length){row.push(cell);rows.push(row)}
+ return rows;
+}
+function normDate(v){
+ v=String(v||'');let m=v.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);if(m)return (+m[2])+'/'+(+m[3]);
+ m=v.match(/(\d{1,2})\s*\/\s*(\d{1,2})/);if(m)return (+m[1])+'/'+(+m[2]);
+ m=v.match(/(\d{1,2})月(\d{1,2})/);if(m)return (+m[1])+'/'+(+m[2]);
+ return '';
+}
+// 栏位位置（A=0）。Google 表格的 gviz 读取会把「数字栏」的表头清空，所以用固定位置，
+// 再用读得到的文字表头（商户／币种／地址／Hash／专员／Note）核对顺序没变。
+const COLS={
+ out:{orderNo:0,merchant:1,currency:2,amount:3,hash:8,date:9,owner:10,mrate:11,prate:12,note:15},
+ in:{orderNo:0,merchant:1,currency:2,amount:3,address:7,hash:8,date:9,owner:10,mrate:11,prate:12,note:15}};
+const HEAD_CHECK={
+ out:{1:/^商户(名称)?$/,2:/币种/,8:/hash/i,10:/专员/,15:/^notes?$/i},
+ in:{1:/^商户(名称)?$/,2:/币种/,7:/商户地址/,8:/hash/i,10:/专员/,15:/^notes?$/i}};
+function parseTab(kind,csv){
+ const rows=parseCSV(csv),col=COLS[kind];
+ // 只看 A–P 栏：出金分页右边很远处另有一块表，里面也有「商户」「Hash」字样
+ const hIdx=rows.findIndex(r=>{const c16=r.slice(0,16);return c16.some(c=>/^商户(名称)?$/.test(String(c).trim()))&&c16.some(c=>/hash/i.test(c))});
+ if(hIdx<0)throw new Error('找不到表头（需含「商户」与「Hash」）');
+ const head=rows[hIdx].map(c=>String(c).replace(/\s+/g,''));
+ const bad=Object.entries(HEAD_CHECK[kind]).filter(([i,re])=>!re.test(head[i]||''));
+ if(bad.length)throw new Error('栏位顺序和预期不同（第 '+bad.map(([i])=>String.fromCharCode(65+ +i)).join('、')+' 栏），请检查表格或通知我更新');
+ let headerAddr='';
+ rows.slice(0,hIdx).forEach(r=>r.forEach(c=>{const m=String(c).match(/收U地址\s*[：:]\s*([A-Za-z0-9]+)/);if(m)headerAddr=m[1]}));
+ // gid 填错时 Google 会默默回传别的分页，用「收U地址」那一行辨认是不是对的分页
+ if(kind==='out'&&!headerAddr)throw new Error('没读到第 1 行「收U地址」，gid 可能指向了别的分页');
+ if(kind==='in'&&headerAddr)throw new Error('这个分页有「收U地址」，像是出金分页，请检查入金 gid');
+ const startRow=Math.max(hIdx+1,rows.length-SCAN_ROWS);
+ const seenAddr=new Set(),data=[],ercOld=[];
+ rows.forEach((r,i)=>{
+  if(i<=hIdx)return;
+  const g=k=>col[k]!=null?String(r[col[k]]==null?'':r[col[k]]).trim():'';
+  const merchant=g('merchant');if(!merchant)return;
+  const addr=kind==='in'?g('address'):'';const ak=merchant.toLowerCase()+'|'+addr;
+  const cur=g('currency');
+  const mk=()=>({kind,row:i+1,orderNo:g('orderNo'),merchant,currencyRaw:cur,currency:cur.toUpperCase().replace(/\s+/g,''),amountText:g('amount'),hash:g('hash'),dateRaw:g('date'),date:normDate(g('date')),owner:g('owner'),mrateText:g('mrate'),prateText:g('prate'),note:g('note'),address:addr});
+  if(i<startRow){
+   if(addr)seenAddr.add(ak);
+   // ERC 出金 Hash 待补不受行数限制：较早的 ERC 出金行也留下来检查
+   if(kind==='out'){const o=mk();if(network(o).net==='ERC')ercOld.push(o)}
+   return;
+  }
+  const rec={kind,row:i+1,orderNo:g('orderNo'),merchant,currencyRaw:cur,currency:cur.toUpperCase().replace(/\s+/g,''),amountText:g('amount'),hash:g('hash'),dateRaw:g('date'),date:normDate(g('date')),owner:g('owner'),mrateText:g('mrate'),prateText:g('prate'),note:g('note'),address:addr};
+  if(addr){rec.newAddress=!seenAddr.has(ak);seenAddr.add(ak)}
+  data.push(rec);
+ });
+ return {headerAddr,rows:data,ercOld,total:rows.length};
+}
+
+// ---------- 判断 ----------
+function network(r){
+ const noteErc=/erc/i.test(r.note),noteTrc=/trc/i.test(r.note);
+ let net='TRC',basis='预设',warn='';
+ if(r.kind==='in'&&(RE_ERC.test(r.address)||RE_TRC.test(r.address))){net=RE_ERC.test(r.address)?'ERC':'TRC';basis='地址'}
+ else if(RE_ERC_HASH.test(r.hash)){net='ERC';basis='Hash'}
+ else if(RE_TRC_HASH.test(r.hash)){net='TRC';basis='Hash'}
+ else if(noteErc){net='ERC';basis='Note'}
+ if(basis==='地址'||basis==='Hash'){
+  if(net==='TRC'&&noteErc)warn=`Note 写 ERC，但${basis}是 TRC 格式`;
+  if(net==='ERC'&&noteTrc)warn=`Note 写 TRC，但${basis}是 ERC 格式`;
+ }
+ if(basis==='地址'&&r.hash){const he=RE_ERC_HASH.test(r.hash),ht=RE_TRC_HASH.test(r.hash);if((net==='TRC'&&he&&!ht)||(net==='ERC'&&ht&&!he))warn='地址与 Hash 的网络格式不一致'}
+ return {net,basis,warn};
+}
+const recId=r=>[r.kind,r.orderNo,r.merchant,r.currency,r.amountText,r.dateRaw].join('|');
+const feeKey=(tpl,m,c)=>tpl+'|'+String(m).toLowerCase()+'|'+String(c).toUpperCase();
+function getFee(tpl,m,c){const k=feeKey(tpl,m,c);if(T.fees[k])return T.fees[k];if(FEE_SEED[k]!=null)return {pct:FEE_SEED[k],src:'规则表'};return null}
+function addressFor(r,net,tpl){
+ if(r.kind==='in')return r.address;
+ if(net==='ERC')return T.settings.ercSettleAddr||'';
+ return T.sheet?.tabs?.out?.headerAddr||'';
+}
+function check(r,st){
+ const miss=[],warn=[];
+ [['merchant','商户'],['currency','币种'],['amountText','金额'],['date','日期'],['owner','专员'],['mrateText','商户汇率'],['prateText','优惠汇率']].forEach(([k,l])=>{if(!String(r[k]||'').trim())miss.push(l)});
+ if(r.amountText&&!(Number(cleanNumText(r.amountText))>0))warn.push('金额不是有效数字');
+ if(r.prateText&&!(Number(cleanNumText(r.prateText))>0))warn.push('优惠汇率不是有效数字');
+ if(r.mrateText&&!(Number(cleanNumText(r.mrateText))>0))warn.push('商户汇率不是有效数字');
+ if(r.currency&&!/^[A-Z]{3}$/.test(r.currency))warn.push('币种格式异常');
+ const nw=network(r);if(nw.warn)warn.push(nw.warn);
+ const addr=st.address;
+ if(!addr)miss.push(r.kind==='in'?'商户地址':(nw.net==='ERC'?'ERC 收U地址':'收U地址'));
+ else if(nw.net==='ERC'?!RE_ERC.test(addr):!RE_TRC.test(addr))warn.push('地址格式与 '+nw.net+' 不符');
+ // 手续费非必填：空白 = 无手续费
+ if(String(st.fee).trim()!==''&&!(Number(st.fee)>=0))miss.push('Fee% 不是有效数字');
+ return {miss,warn,net:nw.net,basis:nw.basis};
+}
+
+// ---------- 清单 ----------
+const RS={};let VISIBLE=[];
+const DEMO={demo:true,kind:'out',row:'—',orderNo:'',merchant:'Merchant A',currency:'PHP',currencyRaw:'PHP',amountText:'1000',hash:'',dateRaw:'',date:todayMD(),owner:'示范',mrateText:'58',prateText:'58.5',note:'',address:''};
+function rowState(r){
+ const id=recId(r);
+ if(!RS[id]){
+  const tpl=r.demo?'topup':(r.kind==='in'?'topup':'settle');
+  const mem=r.demo?{pct:1.5}:getFee(tpl,r.merchant,r.currency);
+  const net=network(r).net;
+  RS[id]={tpl,fee:mem?String(mem.pct):'',relay:false,newAddr:!!r.newAddress,sel:false,address:r.demo?'TPSzwHR6UmSr3f4p7hYfxQ2C6yLyX73wWG':addressFor(r,net,tpl)};
+ }
+ return RS[id];
+}
+function allRows(){
+ if(!T.sheet)return [];
+ return [...(T.sheet.tabs.out?.rows||[]),...(T.sheet.tabs.in?.rows||[])];
+}
+function filteredRows(){
+ const d=$('sheetDate').value.trim(),dir=$('sheetDir').value,kw=$('sheetSearch').value.trim().toLowerCase();
+ if(!T.sheet)return [DEMO];
+ const res=[];
+ ['out','in'].forEach(k=>{
+  if(dir!=='all'&&dir!==k)return;
+  let rows=T.sheet.tabs[k]?.rows||[];
+  rows=d?rows.filter(r=>r.date===normDate(d)):rows.slice(-RECENT_ROWS);
+  if(kw)rows=rows.filter(r=>r.merchant.toLowerCase().includes(kw));
+  res.push(...rows);
+ });
+ return res;
+}
+function renderStatus(){
+ const s=T.sheet,el=$('sheetStatus');
+ if(!s){el.innerHTML='<b>尚未同步</b>';return}
+ const parts=['out','in'].map(k=>{const t=s.tabs[k],n=k==='out'?'TRC出金':'TRC入金';return t?.ok?`${n} ${t.rows.length} 行`:`<span class="err">${n} 读取失败：${esc(t?.error||'无资料')}</span>`});
+ el.innerHTML=`<b>上次同步 ${tm(s.syncedAt)}</b><br>${parts.join(' · ')}${s.tabs.out?.ok?`<br><span class="hint">收U地址：${esc(s.tabs.out.headerAddr||'未读到')}</span>`:''}`;
+}
+function renderList(){
+ VISIBLE=filteredRows();
+ $('sheetCount').textContent=T.sheet?`显示 ${VISIBLE.length} 行`:'';
+ if(!VISIBLE.length){$('sheetList').innerHTML=`<tr><td colspan="16" class="hint">没有资料</td></tr>`;return}
+ $('sheetList').innerHTML=VISIBLE.map((r,i)=>{
+  const st0=rowState(r);
+  // 同一商户刚记住费率时，同画面其他空白的行也带入
+  if(st0.fee===''&&!r.demo){const m0=getFee(st0.tpl,r.merchant,r.currency);if(m0)st0.fee=String(m0.pct)}
+  const st=rowState(r),c=check(r,st),id=recId(r),gen=T.generated[id];
+  const status=c.miss.length?`<div class="tpl-miss">缺：${esc(c.miss.join('、'))}</div>`:'<div class="tpl-ok">完整</div>';
+  const warn=c.warn.length?`<div class="tpl-warn">⚠ ${esc(c.warn.join('；'))}</div>`:'';
+  const lower=r.currencyRaw&&r.currencyRaw!==r.currency?`<div class="pr-muted">原写 ${esc(r.currencyRaw)}</div>`:'';
+  const mem=r.demo?null:getFee(st.tpl,r.merchant,r.currency);
+  const memTxt=r.demo?'示范':mem?`记忆 ${mem.pct}%${mem.src==='规则表'?'（规则表）':''}`:'无记忆';
+  const opts=st.tpl==='topup'?`<label><input type="checkbox" data-k="relay" ${st.relay?'checked':''}> 中转</label><br><label><input type="checkbox" data-k="newAddr" ${st.newAddr?'checked':''}> 新地址${r.newAddress?'<span class="pr-muted">（首次出现）</span>':''}</label>`:'';
+  return `<tr data-i="${i}" class="${r.demo?'demo':''} ${gen?'done':''}">
+   <td><input type="checkbox" data-k="sel" ${st.sel?'checked':''} ${c.miss.length?'disabled':''}></td>
+   <td>${esc(r.row)}</td>
+   <td>${r.demo?'<span class="badge b-orange">示范</span> ':''}${r.kind==='out'?'<span class="badge b-gray">结算</span>':'<span class="badge b-green">充值</span>'}</td>
+   <td><b>${c.net}</b><div class="pr-muted">依${c.basis}</div></td>
+   <td><b>${esc(r.merchant)}</b></td>
+   <td>${esc(r.currency)}${lower}</td>
+   <td class="money">${esc(r.amountText)}</td>
+   <td>${esc(r.dateRaw||r.date)}</td>
+   <td>${esc(r.owner)}</td>
+   <td>${esc(r.mrateText)} / <b>${esc(r.prateText)}</b></td>
+   <td class="tpl-addr">${st.address?`<span class="tpl-addr-full">${esc(st.address)}</span> <button class="icon-btn" data-act="copyaddr" title="复制地址">⧉</button>`:''}</td>
+   <td><select data-k="tpl"><option value="settle" ${st.tpl==='settle'?'selected':''}>Settle</option><option value="topup" ${st.tpl==='topup'?'selected':''}>Top-Up</option></select></td>
+   <td><input class="fee" type="text" inputmode="decimal" data-k="fee" value="${esc(st.fee)}" placeholder="无"><div class="pr-muted">${memTxt}</div></td>
+   <td>${opts}</td>
+   <td>${status}${warn}${gen?`<div class="pr-copied-tag">已生成 ${tm(gen)}</div>`:''}</td>
+   <td><button class="btn" data-act="gen" ${c.miss.length?'disabled':''}>生成</button></td></tr>`;
+ }).join('');
+ syncHead();
+}
+$('sheetList').addEventListener('change',e=>{
+ const tr=e.target.closest('tr[data-i]');if(!tr)return;
+ const r=VISIBLE[+tr.dataset.i],st=rowState(r),k=e.target.dataset.k;if(!k)return;
+ if(k==='sel'||k==='relay'||k==='newAddr')st[k]=e.target.checked;
+ else if(k==='tpl'){st.tpl=e.target.value;if(!r.demo){const m=getFee(st.tpl,r.merchant,r.currency);st.fee=m?String(m.pct):''}}
+ else if(k==='fee')st.fee=e.target.value.trim();
+ if(k!=='sel')renderList();else syncHead();
+});
+$('sheetList').addEventListener('click',async e=>{
+ const ca=e.target.closest('[data-act=copyaddr]');
+ if(ca){const r=VISIBLE[+ca.closest('tr').dataset.i];try{await navigator.clipboard.writeText(rowState(r).address);flashCopied(ca,'')}catch(err){toast('复制失败')}return}
+ const b=e.target.closest('[data-act=gen]');if(!b)return;
+ const r=VISIBLE[+b.closest('tr').dataset.i];
+ const out=genRow(r);if(out.error){toast(out.error);return}
+ showOutputs([out]);renderList();
+});
+
+// ---------- 生成 ----------
+function genRow(r){
+ const st=rowState(r),c=check(r,st);
+ if(c.miss.length)return {error:`${r.merchant}：缺 ${c.miss.join('、')}`};
+ if(c.warn.length&&!r.demo&&!confirm(`${r.merchant} ${r.currency} ${r.amountText}\n有以下警告：\n· ${c.warn.join('\n· ')}\n\n仍要生成吗？`))return {error:'已取消'};
+ const feeBlank=String(st.fee).trim()==='';
+ const fee=feeBlank?0:Number(st.fee);
+ if(!r.demo&&!feeBlank){
+  const k=feeKey(st.tpl,r.merchant,r.currency),mem=getFee(st.tpl,r.merchant,r.currency),label=`${r.merchant} ${r.currency} ${st.tpl==='settle'?'Settle':'Top-Up'}`;
+  if(!mem){T.fees[k]={pct:fee,at:Date.now()};log(`记住费率：${label} ${fee}%`)}
+  else if(Number(mem.pct)!==fee){
+   if(confirm(`${label} 的费率记忆是 ${mem.pct}%，这次填 ${fee}%。\n\n要把记忆改成 ${fee}% 吗？\n（选「取消」：这次仍用 ${fee}% 生成，记忆不变）`)){T.fees[k]={pct:fee,at:Date.now()};log(`费率记忆更新：${label} ${mem.pct}% → ${fee}%`,'warn')}
+   else log(`本次用 ${fee}% 生成，记忆保持 ${mem.pct}%：${label}`,'warn');
+  }
+ }
+ let res;
+ if(st.tpl==='settle'){const s=buildSettleText({amount:r.amountText,rateRaw:r.prateText,feePct:fee,address:st.address});if(s.error)return s;res={merchantText:s.text,financeText:''}}
+ else{const t=buildTopupTexts({merchant:r.merchant,currency:r.currency,usdt:r.amountText,rateRaw:r.prateText,feePct:fee,address:st.address,isRelay:st.relay,isNewAddress:st.newAddr});if(t.error)return t;res={merchantText:t.topup,financeText:t.charge}}
+ if(!r.demo){T.generated[recId(r)]=Date.now();saveT();log(`生成 ${st.tpl==='settle'?'Settle':'Top-Up＋充值申请'}：${r.merchant} ${r.currency} ${r.amountText}（第 ${r.row} 行）`)}
+ const meta=`类型：${r.kind==='out'?'结算':'充值'}　模板：${st.tpl==='settle'?'Settle':'Top-Up＋充值申请'}　商户：${r.merchant}　币种：${r.currency}　金额：${r.amountText}　优惠汇率：${r.prateText}　手续费：${fee}%　链别：${c.net}（依${c.basis}）\nAddress：${st.address}`;
+ return Object.assign(res,{meta,title:`${r.demo?'【示范】':''}${r.kind==='out'?'结算':'充值'} · ${r.merchant} ${r.currency} ${r.amountText}${r.row!=='—'?' · 第 '+r.row+' 行':''}`});
+}
+let LAST=[];
+function showOutputs(list){
+ LAST=list;
+ $('sheetOutMeta').textContent=`${list.length} 笔 · ${tm(Date.now())}`;
+ $('sheetOutputs').innerHTML=list.map((o,i)=>o.error?`<div class="tpl-out-item err"><h4>未生成</h4>${esc(o.error)}</div>`:`<div class="tpl-out-item"><h4>${esc(o.title)}</h4><div class="tpl-meta">${esc(o.meta||'').replace(/\n/g,'<br>')}</div><div class="tpl-out-grid">
+  <div><div class="section-title" style="margin-bottom:6px"><span class="hint">商户（TG）</span><button class="btn" onclick="copyText('tplOutM${i}',this)">复制</button></div><div class="output" id="tplOutM${i}">${esc(o.merchantText)}</div></div>
+  ${o.financeText?`<div><div class="section-title" style="margin-bottom:6px"><span class="hint">财务（充值申请）</span><button class="btn" onclick="copyText('tplOutF${i}',this)">复制</button></div><div class="output" id="tplOutF${i}">${esc(o.financeText)}</div></div>`:'<div></div>'}
+ </div></div>`).join('');
+}
+async function copyJoined(texts,btn,label){
+ if(!texts.length){toast('没有可复制的'+label);return}
+ const text=texts.join('\n\n');
+ try{await navigator.clipboard.writeText(text);flashCopied(btn)}catch(e){toast('复制失败，请逐笔复制')}
+}
+$('copyAllMerchant').onclick=e=>copyJoined(LAST.filter(o=>!o.error).map(o=>o.merchantText).filter(Boolean),e.currentTarget,'商户话术');
+$('copyAllFinance').onclick=e=>copyJoined(LAST.filter(o=>!o.error).map(o=>o.financeText).filter(Boolean),e.currentTarget,'充值申请');
+const selAll=on=>{VISIBLE.forEach(r=>{const st=rowState(r);st.sel=on&&!check(r,st).miss.length});renderList()};
+$('sheetSelAll').onclick=()=>selAll(true);
+$('sheetSelNone').onclick=()=>selAll(false);
+$('sheetSelHead').onchange=e=>selAll(e.target.checked);
+$('clearOutputs').onclick=()=>{LAST=[];$('sheetOutputs').innerHTML='';$('sheetOutMeta').textContent=''};
+function syncHead(){const ok=VISIBLE.filter(r=>!check(r,rowState(r)).miss.length);const n=ok.filter(r=>rowState(r).sel).length;const h=$('sheetSelHead');h.checked=ok.length>0&&n===ok.length;h.indeterminate=n>0&&n<ok.length}
+let BUSY=false;
+$('sheetGenSel').onclick=()=>{
+ if(BUSY)return;
+ const rows=VISIBLE.filter(r=>rowState(r).sel);
+ if(!rows.length){toast('请先勾选要生成的行');return}
+ const again=rows.filter(r=>T.generated[recId(r)]);
+ if(again.length&&!confirm(`有 ${again.length} 笔之前已生成过：\n${again.map(r=>r.merchant+' '+r.currency+' '+r.amountText).join('\n')}\n\n要再生成一次吗？（取消 = 只生成没生成过的）`))rows.splice(0,rows.length,...rows.filter(r=>!T.generated[recId(r)]));
+ BUSY=true;$('sheetGenSel').disabled=true;
+ const outs=[],errs=[];
+ // 未完成的行也列出来，不默默略过
+ VISIBLE.filter(r=>!rowState(r).sel&&check(r,rowState(r)).miss.length).forEach(r=>errs.push(`${r.merchant} ${r.currency} ${r.amountText}（第 ${r.row} 行）缺：${check(r,rowState(r)).miss.join('、')}`));
+ rows.forEach(r=>{const o=genRow(r);if(o.error)errs.push(o.error);else{outs.push(o);rowState(r).sel=false}});
+ showOutputs([...outs,...errs.map(e=>({error:e}))]);renderList();
+ BUSY=false;$('sheetGenSel').disabled=false;
+ toast(`已生成 ${outs.length} 笔${errs.length?`，${errs.length} 笔未生成`:''}`);
+ if(errs.length)log('批量生成未完成：'+errs.join('；'),'warn');
+};
+
+// ---------- ERC 出金 Hash 待补 ----------
+const ercKey=r=>['out',r.orderNo,r.merchant,r.currency,r.amountText,r.dateRaw].join('|');
+function updateErc(){
+ const t=T.sheet?.tabs?.out;const rows=t?.ok?[...(t.ercOld||[]),...t.rows]:null;if(!rows)return;
+ rows.forEach(r=>{
+  if(network(r).net!=='ERC')return;
+  const k=ercKey(r),label=`${r.merchant} ${r.currency} ${r.amountText}（${r.dateRaw}，第 ${r.row} 行）`;
+  if(!r.hash.trim()){if(!T.erc[k])T.erc[k]={status:'pending',first:Date.now(),label,row:r.row}}
+  else if(T.erc[k]&&T.erc[k].status!=='done'){T.erc[k].status='done';T.erc[k].doneAt=Date.now();log('ERC Hash 已补上：'+label)}
+ });
+}
+function renderErc(){
+ const items=Object.entries(T.erc).filter(([,v])=>v.status==='pending'||v.status==='notified');
+ $('ercReminders').innerHTML=items.length?items.map(([k,v])=>`<div class="tpl-erc-item"><div><b>${esc(v.label)}</b><div class="pr-muted">${v.status==='notified'?'已提醒 '+tm(v.notifiedAt):'发现于 '+tm(v.first)}</div></div><div class="actions">${v.status==='pending'?`<button class="btn" data-erc="notified" data-key="${esc(k)}">标记已提醒</button>`:''}<button class="btn" data-erc="ignored" data-key="${esc(k)}">忽略</button></div></div>`).join(''):'<div class="hint">无</div>';
+}
+$('ercReminders').addEventListener('click',e=>{
+ const b=e.target.closest('[data-erc]');if(!b)return;const v=T.erc[b.dataset.key];if(!v)return;
+ v.status=b.dataset.erc;if(v.status==='notified')v.notifiedAt=Date.now();
+ log(`ERC Hash 待补「${v.label}」→ ${v.status==='notified'?'已提醒':'忽略'}`);saveT();renderErc();
+});
+
+// ---------- 同步 ----------
+function applySheet(p){
+ if(T.sheet&&T.sheet.syncedAt===p.syncedAt)return 0;
+ const tabs={};let n=0;
+ ['out','in'].forEach(k=>{
+  const t=p.tabs?.[k],name=k==='out'?'TRC出金':'TRC入金';
+  if(!t||!t.ok){tabs[k]={ok:false,error:t?.error||'没有收到资料',rows:[]};log(`${name} 读取失败：${tabs[k].error}`,'error');return}
+  try{const r=parseTab(k,t.csv);tabs[k]={ok:true,gid:t.gid,headerAddr:r.headerAddr,rows:r.rows,ercOld:r.ercOld||[],total:r.total};n+=r.rows.length}
+  catch(e){tabs[k]={ok:false,error:e.message,rows:[]};log(`${name} 解析失败：${e.message}`,'error')}
+ });
+ T.sheet={syncedAt:p.syncedAt,tabs};
+ Object.keys(RS).forEach(k=>delete RS[k]);
+ updateErc();saveT();
+ log(`同步出入金表：出金 ${tabs.out.ok?tabs.out.rows.length+' 行':'失败'}，入金 ${tabs.in.ok?tabs.in.rows.length+' 行':'失败'}`,tabs.out.ok&&tabs.in.ok?'info':'error');
+ showPage('flow');
+ if(!$('sheetDate').value)$('sheetDate').value=todayMD();
+ renderAllTpl();
+ toast(tabs.out.ok&&tabs.in.ok?'已同步出入金表':'出入金表部分读取失败，请看错误讯息');
+ return n;
+}
+window.addEventListener('message',e=>{
+ if(e.origin!==SHEET_ORIGIN)return;
+ const d=e.data;if(!d||d.type!=='fiatops-sheet'||!d.payload)return;
+ const n=applySheet(d.payload);
+ try{e.source.postMessage({type:'fiatops-ack',count:n},e.origin)}catch(err){}
+});
+function sheetBookmarkletSource(){
+ const target=location.origin,page=location.origin+location.pathname;
+ return `(async()=>{
+const TG=${JSON.stringify(target)},PG=${JSON.stringify(page)},ID=${JSON.stringify(SHEET_ID)},G=${JSON.stringify({out:T.settings.gidOut,in:T.settings.gidIn})};
+if(location.origin!=='https://docs.google.com'||location.pathname.indexOf(ID)<0){alert('請在「商戶出入金登記表NEW」Google 表格頁面點這個書籤');return}
+let w=window.open(PG+'#sheet','fiatops_sheet');
+const box=document.createElement('div');box.style.cssText='position:fixed;right:20px;bottom:20px;z-index:2147483647;background:#0f1d33;color:#fff;padding:14px 18px;border-radius:12px;font:14px/1.5 -apple-system,sans-serif;max-width:360px';box.textContent='Fiat Ops 讀取出入金表…';document.body.appendChild(box);
+const tabs={};
+for(const k of ['out','in']){try{const r=await fetch('/spreadsheets/d/'+ID+'/gviz/tq?tqx=out:csv&headers=0&gid='+G[k],{credentials:'include'});if(!r.ok)throw new Error('HTTP '+r.status);const csv=await r.text();if(/^\\s*</.test(csv))throw new Error('回傳的不是表格資料（可能沒有權限或未登入）');tabs[k]={ok:true,gid:G[k],csv}}catch(e){tabs[k]={ok:false,gid:G[k],error:String(e.message||e)}}}
+const payload={syncedAt:Date.now(),sheetId:ID,tabs};
+const json=JSON.stringify({type:'fiatops-sheet',payload});
+const okAll=tabs.out.ok&&tabs.in.ok;
+let acked=false;const onAck=e=>{if(e.origin===TG&&e.data&&e.data.type==='fiatops-ack'){acked=true;window.removeEventListener('message',onAck);box.textContent='✓ 已同步到 Fiat Ops'+(okAll?'':'（有分頁讀取失敗）');setTimeout(()=>box.remove(),6000)}};
+window.addEventListener('message',onAck);
+const send=async()=>{for(let i=0;i<40&&!acked;i++){try{if(w)w.postMessage({type:'fiatops-sheet',payload},TG)}catch(e){}await new Promise(r=>setTimeout(r,500))}};
+if(w){box.textContent='傳送到 Fiat Ops…';await send()}
+if(!acked){
+box.innerHTML='';const p=document.createElement('div');p.textContent=(w?'Fiat Ops 視窗沒有回應。':'瀏覽器擋住了彈出視窗。')+'表格資料已讀取'+(okAll?'':'（有分頁讀取失敗）')+'，請選一種方式送出：';box.appendChild(p);
+const mk=(t,fn)=>{const b=document.createElement('button');b.textContent=t;b.style.cssText='margin:8px 8px 0 0;padding:6px 10px;border:0;border-radius:8px;cursor:pointer;font-weight:700';b.onclick=fn;box.appendChild(b)};
+mk('開啟 Fiat Ops 並傳送',async()=>{w=window.open(PG+'#sheet','fiatops_sheet');if(!w){p.textContent='仍被擋住：請按「複製資料」，再到 Fiat Ops 的貼上框按 ⌘V';return}p.textContent='傳送中…';await send();if(!acked)p.textContent='Fiat Ops 沒有回應：請按「複製資料」，再到 Fiat Ops 的貼上框按 ⌘V'});
+mk('複製資料',async()=>{try{await navigator.clipboard.writeText(json);p.textContent='✓ 已複製。到 Fiat Ops「結算／充值模板」的貼上框按 ⌘V'}catch(e){p.textContent='複製失敗：'+e.message}});
+mk('關閉',()=>box.remove());
+}
+})()`;
+}
+function setupSheetBookmarklet(){$('sheetBookmarklet').href='javascript:'+encodeURIComponent(sheetBookmarkletSource())}
+
+// ---------- 设定 ----------
+function loadSettings(){$('setGidOut').value=T.settings.gidOut;$('setGidIn').value=T.settings.gidIn;$('setErcAddr').value=T.settings.ercSettleAddr}
+$('saveTplSettings').onclick=()=>{
+ const go=$('setGidOut').value.trim(),gi=$('setGidIn').value.trim(),ea=$('setErcAddr').value.trim();
+ if(!/^\d+$/.test(go)||!/^\d+$/.test(gi)){toast('gid 只能是数字');return}
+ if(ea&&!RE_ERC.test(ea)){toast('ERC 地址格式不对（0x 开头 + 40 位）');return}
+ if(T.settings.ercSettleAddr&&ea!==T.settings.ercSettleAddr&&!confirm(`ERC 收U地址要从\n${T.settings.ercSettleAddr}\n改成\n${ea||'（空白）'}\n吗？`))return;
+ const changed=[];
+ if(go!==T.settings.gidOut||gi!==T.settings.gidIn)changed.push('gid（请重新拖书签）');
+ if(ea!==T.settings.ercSettleAddr)changed.push('ERC 收U地址');
+ T.settings={gidOut:go,gidIn:gi,ercSettleAddr:ea};saveT();setupSheetBookmarklet();
+ Object.keys(RS).forEach(k=>delete RS[k]);renderList();
+ if(changed.length)log('设定已更新：'+changed.join('、'));toast('已保存设定');
+};
+
+$('sheetPaste').addEventListener('paste',e=>{
+ e.preventDefault();const text=(e.clipboardData||window.clipboardData).getData('text');
+ let d;try{d=JSON.parse(text)}catch(err){toast('贴上的不是同步资料');return}
+ if(!d||d.type!=='fiatops-sheet'||!d.payload||d.payload.sheetId!==SHEET_ID){toast('贴上的不是出入金表同步资料');return}
+ log('经由贴上同步（书签无法开新视窗时）');applySheet(d.payload);e.target.value='';
+});
+$('sheetDate').addEventListener('input',renderList);
+$('sheetSearch').addEventListener('input',renderList);
+$('sheetDir').addEventListener('change',renderList);
+$('sheetToday').onclick=()=>{$('sheetDate').value=todayMD();renderList()};
+
+function renderAllTpl(){renderStatus();renderList();renderErc()}
+// 测试用：让开发版可以直接灌入 CSV 验证（不经过书签）
+window.__tplTest={parseCSV,parseTab,network,check,applySheet,state:()=>T,rowState,genRow,recId};
+setupSheetBookmarklet();loadSettings();
+if(T.sheet)$('sheetDate').value=todayMD();
+renderAllTpl();
+if(location.hash==='#sheet'){showPage('flow');toast('等待出入金表资料…')}
 })();
 </script>
 </body></html>
