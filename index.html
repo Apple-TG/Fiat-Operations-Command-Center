@@ -248,6 +248,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
   <div class="card" style="margin-top:16px">
     <div class="section-title"><h3>A　预备操作</h3>
       <div class="actions"><button class="btn" id="sheetSelAll">全选可生成</button><button class="btn" id="sheetSelNone">取消全选</button><button class="btn primary" id="sheetGenSel">生成选取</button></div></div>
+    <div class="flow-banner" id="flowBanner"></div>
     <div class="flow-stats" id="flowStats"></div>
     <div class="tpl-filter">
       <label>日期 <input id="sheetDate" type="text" placeholder="11/16" style="width:100px"></label>
@@ -257,7 +258,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
       <label><input id="sheetUndone" type="checkbox" style="width:auto"> 只看未收尾</label>
       <span class="hint" id="sheetCount"></span><span class="hint" id="sheetBackendAt"></span>
     </div>
-    <div class="pr-table-wrap" style="margin-top:10px"><table class="tpl-table"><thead><tr><th><input type="checkbox" id="sheetSelHead" title="全选／全部取消"></th><th>行</th><th>方向</th><th>商户</th><th>币种</th><th>金额</th><th>日期</th><th>专员</th><th>商户汇率</th><th>优惠汇率</th><th>资料</th><th>状态</th><th>进度</th></tr></thead><tbody id="sheetList"></tbody></table></div>
+    <div class="pr-table-wrap" style="margin-top:10px"><table class="tpl-table"><thead><tr><th><input type="checkbox" id="sheetSelHead" title="全选／全部取消"></th><th>状态</th><th>行</th><th>方向</th><th>商户</th><th>币种</th><th>金额</th><th>日期</th><th>专员</th><th>商户汇率</th><th>优惠汇率</th><th>资料</th><th>进度</th><th></th></tr></thead><tbody id="sheetList"></tbody></table></div>
   </div>
 
   <!-- B. 操作资料确认（选取一笔后展开） -->
@@ -2658,6 +2659,20 @@ $('prCopyAll').addEventListener('click',async()=>{
 .pr-ops-wrap{position:relative;display:inline-flex;align-items:center;gap:6px}
 .pr-ops-panel{position:absolute;top:110%;left:40px;z-index:60;min-width:180px;max-height:280px;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:4px}
 .pr-ops-panel[hidden]{display:none}.pr-op{display:flex;gap:6px;align-items:center;font-size:13px;white-space:nowrap}.pr-op input{width:auto}
+.flow-banner{font-size:17px;font-weight:700;margin:0 0 12px;padding:12px 14px;border-radius:12px;background:#f7f9fc;border:1px solid var(--line)}
+.flow-banner:empty{display:none}.flow-banner b{font-size:22px}.flow-banner .red{color:var(--red)}.flow-banner .orange{color:#c66a08}.flow-banner .blue{color:var(--blue)}.flow-banner .green{color:var(--green)}
+.tpl-table tr.row-bad td,.tpl-table tr.row-changed td{background:#fff3f4}
+.tpl-table tr.row-todo td,.tpl-table tr.row-gen td{background:#fff9ef}
+.tpl-table tr.row-copied td{background:#f2f7ff}
+.tpl-table tr.row-done td{background:#f3fbf7;color:#6b7a8c}
+.tpl-table tr.row-bad td:first-child,.tpl-table tr.row-changed td:first-child{box-shadow:inset 4px 0 0 var(--red)}
+.tpl-table tr.row-todo td:first-child,.tpl-table tr.row-gen td:first-child{box-shadow:inset 4px 0 0 #e98719}
+.tpl-table tr.row-copied td:first-child{box-shadow:inset 4px 0 0 var(--blue)}
+.tpl-table tr.row-done td:first-child{box-shadow:inset 4px 0 0 var(--green)}
+.st.big{font-size:13px;padding:5px 10px}
+.tpl-table tr.row-out td{border-top:0;cursor:default}
+.flow-inline{display:grid;grid-template-columns:1fr 1fr;gap:10px;white-space:normal}.flow-inline .output{min-height:0;font-size:12px;margin-top:4px}.flow-inline .pr-muted{grid-column:1/-1}
+.fi-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);font-weight:700}
 .dev-badge{position:fixed;left:12px;bottom:12px;z-index:200;background:#e98719;color:#fff;font-weight:800;font-size:12px;padding:5px 10px;border-radius:8px}
 @media (max-width:900px){.tpl-out-grid,.tpl-settings{grid-template-columns:1fr}}
 </style>
@@ -2987,25 +3002,42 @@ function renderStatus(){
  const parts=['out','in'].map(k=>{const t=s.tabs[k],n=k==='out'?'TRC出金':'TRC入金';return t?.ok?`${n} ${t.rows.length} 行`:`<span class="err">${n} 读取失败：${esc(t?.error||'无资料')}</span>`});
  el.innerHTML=`<b>上次同步 ${tm(s.syncedAt)}</b><br>${parts.join(' · ')}${s.tabs.out?.ok?`<br><span class="hint">收U地址：${esc(s.tabs.out.headerAddr||'未读到')}</span>`:''}`;
 }
+// 处理优先顺序：资料变更 → 资料不完整 → 待生成 → 已生成未复制 → 已复制等后台 → 已完成（2026-11-17）
+const PRIO={changed:0,bad:1,todo:2,gen:3,copied:4,done:5};
+const EXPANDED=new Set();let SHOW_DONE=false;
 function renderList(){
  const BI=backendIndex();
  SCOPE=scopeRows();
  const counts={todo:0,bad:0,gen:0,copied:0,done:0,changed:0};
  const withStatus=SCOPE.map(r=>{const s=statusOf(r,BI);counts[s]++;return [r,s]});
  const hashPending=Object.values(T.erc).filter(v=>v.status==='pending'||v.status==='notified').length;
+ // 顶部大字提醒
+ const need=[counts.changed&&`<b class="red">${counts.changed}</b> 笔资料已变更 ⚠`,counts.bad&&`<b class="red">${counts.bad}</b> 笔资料不完整`,counts.todo&&`<b class="orange">${counts.todo}</b> 笔待生成`,counts.gen&&`<b class="orange">${counts.gen}</b> 笔已生成未复制`,counts.copied&&`<b class="blue">${counts.copied}</b> 笔已复制等后台`,hashPending&&`<b class="orange">${hashPending}</b> 笔 Hash 待补`].filter(Boolean);
+ $('flowBanner').innerHTML=!T.sheet?'':need.length?`还有：${need.join('　·　')}`:'<span class="green">✓ 这个范围的都处理完了</span>';
  $('flowStats').innerHTML=Object.entries(STATUS).map(([k,l])=>`<button class="fs ${k} ${STATUS_FILTER===k?'on':''}" data-sf="${k}"><b>${counts[k]}</b>${l}</button>`).join('')+`<button class="fs hash" data-sf="hash"><b>${hashPending}</b>Hash 待补</button>`;
- VISIBLE=withStatus.filter(([r,s])=>(!STATUS_FILTER||STATUS_FILTER===s)&&(!$('sheetUndone').checked||!progress(r,BI).done)).map(([r])=>r);
- $('sheetCount').textContent=T.sheet?`显示 ${VISIBLE.length} 行`:'';
+ let list=withStatus.filter(([r,s])=>(!STATUS_FILTER||STATUS_FILTER===s)&&(!$('sheetUndone').checked||!progress(r,BI).done));
+ const doneHidden=!STATUS_FILTER&&!SHOW_DONE?list.filter(([,s])=>s==='done').length:0;
+ if(doneHidden)list=list.filter(([,s])=>s!=='done');
+ list.sort((a,b)=>PRIO[a[1]]-PRIO[b[1]]||(Number(a[0].row)||0)-(Number(b[0].row)||0));
+ VISIBLE=list.map(([r])=>r);
+ $('sheetCount').innerHTML=T.sheet?`显示 ${VISIBLE.length} 行${doneHidden?`　<button class="fee-ref" data-act="showdone" style="display:inline">＋显示已完成 ${doneHidden} 笔</button>`:SHOW_DONE&&!STATUS_FILTER?`　<button class="fee-ref" data-act="showdone" style="display:inline">收起已完成</button>`:''}`:'';
  {const tt=[BI.prAt&&'Payout Record',BI.acAt&&'Auto Charge'].filter(Boolean);$('sheetBackendAt').textContent=BI.prAt||BI.acAt?`后台同步 ${tm(Math.max(BI.prAt,BI.acAt))}（${tt.join('、')}）`:'后台未同步'}
- if(!VISIBLE.length){$('sheetList').innerHTML=`<tr><td colspan="13" class="hint">没有资料</td></tr>`;syncHead();renderDetail();renderIssues();return}
- $('sheetList').innerHTML=VISIBLE.map((r,i)=>{
+ if(!VISIBLE.length){$('sheetList').innerHTML=`<tr><td colspan="14" class="hint">没有资料</td></tr>`;syncHead();renderDetail();renderIssues();return}
+ $('sheetList').innerHTML=list.map(([r,s],i)=>{
   const st=rowState(r);
   if(st.fee===''&&!r.demo){const m0=getFee(feeGroup(st.tpl),r.merchant,r.currency);if(m0)st.fee=String(m0.pct)}
-  const c=check(r,st),s=statusOf(r,BI),p=progress(r,BI);
+  const c=check(r,st),p=progress(r,BI),sid=sidOf(r);
   const data=c.miss.length?`<div class="tpl-miss">缺：${esc(c.miss.join('、'))}</div>`:'<div class="tpl-ok">完整</div>';
   const warn=c.warn.length?`<div class="tpl-warn">⚠ ${esc(c.warn.join('；'))}</div>`:'';
-  return `<tr data-i="${i}" class="${r.demo?'demo':''} ${FOCUS===sidOf(r)?'focus':''}">
+  const act=s==='bad'?'':s==='copied'||s==='done'?`<button class="btn" data-act="quick" data-mode="copy">再复制</button>`:`<button class="btn primary" data-act="quick">${s==='changed'?'重新生成并复制':'生成并复制'}</button>`;
+  const rec=T.recs[sid],last=rec&&rec.gens.length?rec.gens[rec.gens.length-1]:null;
+  const out=EXPANDED.has(sid)&&last?`<tr class="row-out row-${s}"><td></td><td colspan="13"><div class="flow-inline">
+   ${last.merchantText?`<div><div class="fi-head">商户话术 <button class="btn" data-copy-rec="m" data-sid="${esc(sid)}">复制</button></div><div class="output">${esc(last.merchantText)}</div></div>`:''}
+   ${last.financeText?`<div><div class="fi-head">充值申请（财务） <button class="btn" data-copy-rec="f" data-sid="${esc(sid)}">复制</button></div><div class="output">${esc(last.financeText)}</div></div>`:''}
+   <div class="pr-muted">v${rec.gens.length} · ${tm(last.at)} · ${OPS[last.op]} · ${TPLS[last.tpl]} · 手续费 ${last.fee}%${rec.stale?' · <span style="color:var(--red)">已过期</span>':''}　<button class="fee-ref" data-act="fold" style="display:inline">收起</button></div></div></td></tr>`:'';
+  return `<tr data-i="${i}" class="row-${s} ${r.demo?'demo':''} ${FOCUS===sid?'focus':''}">
    <td><input type="checkbox" data-k="sel" ${st.sel?'checked':''} ${c.miss.length?'disabled':''}></td>
+   <td><span class="st st-${s} big">${STATUS[s]}</span></td>
    <td>${esc(r.row)}</td>
    <td>${r.demo?'<span class="badge b-orange">示范</span> ':''}${r.kind==='out'?'<span class="badge b-gray">结算</span>':'<span class="badge b-green">充值</span>'}</td>
    <td><b>${esc(r.merchant)}</b></td>
@@ -3016,11 +3048,30 @@ function renderList(){
    <td>${esc(r.mrateText)}</td>
    <td><b>${esc(r.prateText)}</b></td>
    <td>${data}${warn}</td>
-   <td><span class="st st-${s}">${STATUS[s]}</span></td>
-   <td><div class="flow-prog"><span class="${p.gen?'ok':''}">话术</span><span class="${p.hash?'ok':''}">Hash</span><span class="${p.back}">${esc(p.backTxt)}</span></div></td></tr>`;
+   <td><div class="flow-prog"><span class="${p.gen?'ok':''}">话术</span><span class="${p.hash?'ok':''}">Hash</span><span class="${p.back}">${esc(p.backTxt)}</span></div></td>
+   <td>${act}</td></tr>${out}`;
  }).join('');
  syncHead();renderDetail();renderIssues();
 }
+// 一键：生成（或沿用最新一版）→ 复制商户话术（没有就复制充值申请）→ 在该行下方展开结果
+async function quickRow(r,mode){
+ const sid=sidOf(r);let rec=T.recs[sid];
+ if(mode!=='copy'||!rec||!rec.gens.length){const o=genRow(r);if(o.error){if(o.error!=='已取消')toast(o.error);renderList();return}rec=T.recs[sid]}
+ const last=rec&&rec.gens.length?rec.gens[rec.gens.length-1]:null;if(!last){renderList();return}
+ const text=last.merchantText||last.financeText;
+ EXPANDED.add(sid);
+ try{await navigator.clipboard.writeText(text);markCopied(sid);toast(`已复制 ${r.merchant} 的${last.merchantText?'商户话术':'充值申请'}${last.merchantText&&last.financeText?'（充值申请在下方另外复制）':''}`)}
+ catch(e){toast('已生成，复制失败，请用下方按钮复制')}
+ renderList();
+}
+$('sheetList').addEventListener('click',async e=>{
+ const q=e.target.closest('[data-act=quick]');
+ if(q){e.stopPropagation();const r=VISIBLE[+q.closest('tr').dataset.i];await quickRow(r,q.dataset.mode);return}
+ const cr=e.target.closest('[data-copy-rec]');
+ if(cr){e.stopPropagation();const rec=T.recs[cr.dataset.sid],last=rec?.gens[rec.gens.length-1];if(!last)return;try{await navigator.clipboard.writeText(cr.dataset.copyRec==='m'?last.merchantText:last.financeText);flashCopied(cr);markCopied(cr.dataset.sid)}catch(err){toast('复制失败')}return}
+ if(e.target.closest('[data-act=fold]')){e.stopPropagation();const tr=e.target.closest('tr');const prev=tr.previousElementSibling;const r=VISIBLE[+prev.dataset.i];EXPANDED.delete(sidOf(r));renderList();return}
+},true);
+$('sheetCount').addEventListener('click',e=>{if(e.target.closest('[data-act=showdone]')){SHOW_DONE=!SHOW_DONE;renderList()}});
 $('flowStats').addEventListener('click',e=>{const b=e.target.closest('[data-sf]');if(!b)return;
  if(b.dataset.sf==='hash'){$('ercReminders').scrollIntoView({behavior:'smooth',block:'center'});return}
  STATUS_FILTER=STATUS_FILTER===b.dataset.sf?'':b.dataset.sf;renderList()});
@@ -3030,7 +3081,7 @@ $('sheetList').addEventListener('change',e=>{
  if(e.target.dataset.k==='sel'){st.sel=e.target.checked;syncHead()}
 });
 $('sheetList').addEventListener('click',e=>{
- if(e.target.closest('input,button,select,a'))return;
+ if(e.target.closest('input,button,select,a,.row-out'))return;
  const tr=e.target.closest('tr[data-i]');if(!tr)return;
  const r=VISIBLE[+tr.dataset.i];FOCUS=FOCUS===sidOf(r)?null:sidOf(r);renderList();
  if(FOCUS)$('flowDetail').scrollIntoView({behavior:'smooth',block:'nearest'});
