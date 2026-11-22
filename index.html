@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fiat Operations</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/zh.js"></script>
 <style>
 :root{--bg:#f4f7fb;--panel:#fff;--text:#142033;--muted:#687386;--line:#e4e9f1;--nav:#0f1d33;--blue:#2563eb;--green:#0f9f6e;--orange:#e98719;--red:#dc3f4f;--purple:#7c3aed;--shadow:0 12px 35px rgba(15,29,51,.08);--radius:18px}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text)}
@@ -140,10 +143,8 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 <aside class="sidebar">
 <div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
-<button class="nav-btn" data-page="robot">▣　商戶餘額（後台）</button>
-<div class="group-title">上傳資料</div>
+
 <button class="nav-btn" data-page="uploads">⇧　上傳資料</button>
-<div class="group-title">工具中心</div>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
 <button class="nav-btn" data-page="flow">⇄　出入金</button>
 <button class="nav-btn" data-page="payout-record">▣　Payout Record</button>
@@ -152,7 +153,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 <main class="main">
 <div class="sync-bar" id="syncBar"></div>
 <section class="page active" id="page-home">
-<div class="topbar"><div><h2>首頁總覽</h2><p id="lastUpdated">尚未匯入資料</p></div><div class="actions"><button class="btn" onclick="renderAll()">↻ 重新整理</button><button class="btn danger" onclick="resetAll()">清空全部資料</button></div></div>
+<div class="topbar"><div><h2>首頁總覽</h2><p id="lastUpdated">尚未匯入資料</p></div><div class="actions"><a class="btn primary" id="homeSyncBtn" href="#" onclick="event.preventDefault();window.fopsSyncBtn?.('backend',this)">⇪ 同步后台</a><button class="btn" onclick="renderAll()">↻ 重新整理</button><button class="btn danger" onclick="resetAll()">清空全部資料</button></div></div>
 
 <div class="card workflow-card compact">
   <div class="workflow-head">
@@ -188,34 +189,13 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
     只顯示有商戶餘額
   </label>
 </div>
-<table class="currency-table"><thead><tr><th>幣種</th><th>可動用餘額</th><th>Withdrawal 日均</th><th>1h 水位</th><th>24h 水位</th><th>代付</th><th>代收</th><th>建議</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="8">尚未匯入資料</td></tr></tbody></table>
+<table class="currency-table"><thead><tr><th>幣種</th><th>可動用餘額</th><th>Withdrawal 日均</th><th>代付</th><th>代收</th><th>建議</th></tr></thead><tbody id="dashboardBody"><tr><td colspan="6">尚未匯入資料</td></tr></tbody></table>
 </div>
 <div class="card" style="margin-top:16px"><div class="section-title"><div><h3>綜合資金分析</h3><div class="hint">依可動用餘額、日均與通道狀態自動判斷</div></div></div><div class="analysis-grid" id="analysisGrid"><div class="hint">尚未有分析結果</div></div></div>
 </div>
 </div></section>
 
-<section class="page" id="page-robot">
-<div class="topbar"><div><h2>商戶餘額（後台）</h2><p>來源：comtools › Payout Monitor › Dashboard › Merchant Balance。此頁只讀，有誤請回後台處理後重新同步。</p></div></div>
-<div class="card sync-card">
-  <div class="sync-status empty" id="syncStatus"><small class="hint">上次同步</small><br><b>尚未同步</b></div>
-  <div>
-    <a class="bookmarklet" id="bookmarkletLink" href="#" onclick="event.preventDefault();toast('請把這個按鈕拖到書籤列，再到後台頁面點擊')">⇪ 同步到 Fiat Ops</a>
-  </div>
-  <div style="flex-basis:100%">
-    <ol class="sync-steps">
-      <li>第一次使用：把上面藍色按鈕<b>拖到瀏覽器書籤列</b>。</li>
-      <li>在已登入的後台（happywork2026.com）任一頁面，點書籤「⇪ 同步到 Fiat Ops」。</li>
-      <li>書籤會依序讀取後台資料（約 1–2 分鐘）：商戶餘額與資金缺口、代付／代收通道、Withdrawal／Deposit Stats、最新 100 筆 Valid Payout Record，然後自動開啟本頁寫入。只讀取，不會改動後台。</li>
-    </ol>
-  </div>
-</div>
-<div class="card" style="margin-top:16px"><div class="section-title"><div><h3>商戶餘額明細</h3><div class="hint" id="balanceMeta"></div></div></div><div id="robotResult"></div></div>
-<div class="card" style="margin-top:16px">
-<details class="fallback"><summary>備用：手動貼上單一幣種的 Merchant Balance 表格</summary>
-<div class="field" style="margin-top:12px"><label>在後台 Payout Monitor 選好幣種後，從「Provider　Account　Current Balance」表頭開始整張複製貼上（只會更新該幣種）</label><textarea id="robotInput" rows="10" placeholder="Provider&#9;Account&#9;Current Balance (INR / USD)&#10;BibiPay&#9;BibiPay_INRFIAT&#9;5,943,195.43 / 63,290.61"></textarea></div><div class="actions"><button class="btn primary" onclick="parseRobot()">解析並保存</button><button class="btn" onclick="clearRobot()">清空輸入</button></div>
-</details>
-</div>
-</section>
+
 
 
 <section class="page" id="page-uploads">
@@ -227,54 +207,43 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 <div class="upload-sec" id="sec-payin"><div class="topbar"><div><h2>代收通道</h2><p>來源：後台 Payment Manage › Deposit，書籤同步時自動更新。上傳 PaymentManageList 為備用，下次同步會被後台資料取代。</p></div></div><div class="card" style="margin-bottom:16px"><div class="hint" id="payinSource"></div></div><div class="card upload-box"><input type="file" id="payinFile" accept=".xlsx,.xls,.csv"><div class="actions"><button class="btn primary" onclick="loadChannels('payin')">解析並保存</button><button class="btn" onclick="clearUploadData('payin')">清空</button></div><div id="payinResult"></div></div></div>
 </section>
 <section class="page" id="page-flow">
-<div class="topbar"><div><h2>出入金</h2></div></div>
-  <div class="card tpl-sync">
-    <div class="tpl-sync-row">
-      <a class="bookmarklet" id="sheetBookmarklet" href="#" onclick="event.preventDefault();toast('拖到书签列使用')">⇪ 同步出入金表</a>
-      <div class="tpl-sync-status" id="sheetStatus">尚未同步</div>
-      <input id="sheetPaste" type="text" placeholder="⌘V 贴上同步资料" style="width:200px">
-    </div>
-    <details class="fallback" style="margin-top:10px"><summary>设定</summary>
+<div class="topbar"><div><h2>出入金</h2><p class="hint" id="sheetStatus"></p></div><div class="actions"><a class="btn primary" id="sheetBookmarklet" href="#" onclick="event.preventDefault();window.fopsSyncBtn?.('sheet',this)">⇪ 同步</a><button class="btn" onclick="const b=document.getElementById('flowSettings');b.hidden=!b.hidden">⚙ 设定</button></div></div>
+  <div class="card" id="flowSettings" style="margin-bottom:16px" hidden><div class="section-title"><h3>设定</h3></div>
       <div class="tpl-settings">
         <div class="field"><label>TRC出金 gid</label><input id="setGidOut" type="text"></div>
         <div class="field"><label>TRC入金 gid</label><input id="setGidIn" type="text"></div>
         <div class="field" style="grid-column:1/-1"><label>ERC 收U地址</label><input id="setErcAddr" type="text" placeholder="0x…"></div>
       </div>
       <div class="actions"><button class="btn primary" id="saveTplSettings">保存设定</button></div>
-    </details>
-  </div>
+    </div>
+  <input id="sheetPaste" type="text" hidden>
 
   <!-- A. 预备操作管理 -->
-  <div class="card" style="margin-top:16px">
-    <div class="section-title"><h3>A　预备操作</h3>
-      <div class="actions"><button class="btn" id="sheetSelAll">全选可生成</button><button class="btn" id="sheetSelNone">取消全选</button><button class="btn primary" id="sheetGenSel">生成选取</button></div></div>
-    <div class="flow-banner" id="flowBanner"></div>
+  <div class="card">
+    <div class="section-title"><h3>表格</h3>
+      <div style="display:none"><button class="btn" id="sheetSelAll"></button><button class="btn" id="sheetSelNone"></button><button class="btn primary" id="sheetGenSel"></button><input type="checkbox" id="sheetSelHead"></div></div>
+    <div class="flow-banner" id="flowBanner" hidden></div>
     <div class="flow-stats" id="flowStats"></div>
     <div class="tpl-filter">
-      <label>日期 <input id="sheetDate" type="text" placeholder="11/16" style="width:100px"></label>
-      <button class="btn" id="sheetToday">今天</button>
+      <label>日期 <input id="sheetRange" type="text" readonly placeholder="选日期（可选区间）" style="width:170px;cursor:pointer"><input id="sheetCal" type="hidden"><input id="sheetCalTo" type="hidden"><input id="sheetDate" type="hidden"></label>
+      <button class="btn" id="sheetToday" style="display:none"></button>
       <label>方向 <select id="sheetDir" style="width:auto"><option value="all">全部</option><option value="out">结算</option><option value="in">充值</option></select></label>
-      <label>商户 <input id="sheetSearch" type="text" placeholder="搜寻商户" style="width:140px"></label>
+      <input id="sheetSearch" type="hidden" value="">
       <label><input id="sheetUndone" type="checkbox" style="width:auto"> 只看未收尾</label>
       <span class="hint" id="sheetCount"></span><span class="hint" id="sheetBackendAt"></span>
     </div>
-    <div class="pr-table-wrap" style="margin-top:10px"><table class="tpl-table"><thead><tr><th><input type="checkbox" id="sheetSelHead" title="全选／全部取消"></th><th>状态</th><th>行</th><th>方向</th><th>商户</th><th>币种</th><th>金额</th><th>日期</th><th>专员</th><th>商户汇率</th><th>优惠汇率</th><th>资料</th><th>进度</th><th></th></tr></thead><tbody id="sheetList"></tbody></table></div>
+    <div class="pr-table-wrap" style="margin-top:10px"><table class="tpl-table"><thead><tr><th>状态</th><th>行</th><th>方向</th><th>商户</th><th>币种</th><th>金额</th><th>日期</th><th>专员</th><th>商户汇率</th><th>优惠汇率</th><th>手续费</th><th>资料</th><th>进度</th></tr></thead><tbody id="sheetList"></tbody></table></div>
   </div>
 
   <!-- B. 操作资料确认（选取一笔后展开） -->
   <div class="card" id="flowDetail" style="margin-top:16px" hidden></div>
 
-  <!-- C. 算式与话术 -->
-  <div class="card" style="margin-top:16px">
-    <div class="section-title"><div><h3>C　算式与话术</h3><div class="hint" id="sheetOutMeta"></div></div>
-      <div class="actions"><button class="btn" id="copyAllMerchant">复制全部商户话术</button><button class="btn" id="copyAllFinance">复制全部充值申请</button><button class="btn danger" id="clearOutputs">清除结果</button></div></div>
-    <div id="sheetOutputs" class="tpl-outputs"></div>
-  </div>
+  <div hidden><div id="sheetOutMeta"></div><button id="copyAllMerchant"></button><button id="copyAllFinance"></button><button id="clearOutputs"></button><div id="sheetOutputs"></div></div>
 
   <!-- D. 异常与待处理 -->
   <div class="grid two" style="margin-top:16px">
-    <div class="card"><div class="section-title"><h3>D　异常与待处理</h3></div><div id="flowIssues"></div>
-      <div class="section-title" style="margin-top:14px"><h3 style="font-size:14px">出金 Hash 待补</h3></div><div id="ercReminders"></div></div>
+    <div class="card"><div class="section-title"><h3>异常与待处理（今日）</h3></div><div id="flowIssues"></div>
+      <div class="section-title" style="margin-top:14px"><h3 style="font-size:14px">Hash 待补</h3></div><div id="ercReminders"></div></div>
     <div class="card"><div class="section-title"><h3>操作纪录</h3><div class="actions"><select id="logFilter" style="width:auto;padding:6px 8px"><option value="all">全部</option><option value="error">只看错误／警告</option></select><button class="btn" id="exportFlow">汇出</button><button class="btn" id="importFlowBtn">汇入</button><input type="file" id="importFlow" accept=".json" hidden></div></div><div id="tplLogs" class="tpl-logs"></div></div>
   </div>
 </section>
@@ -343,12 +312,10 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 
 <section class="page" id="page-payout-record">
 <div class="topbar">
-  <div><h2>Payout Record</h2><p>批量验证 Payout Record、智能读取 Note，并生成结算话术 <span class="badge b-gray" id="prFileName" style="margin-left:6px">尚未导入</span></p></div>
+  <div><h2>Payout Record</h2><p>批量验证 Payout Record、智能读取 Note，并生成财务话术 <span class="badge b-gray" id="prFileName" style="margin-left:6px">尚未导入</span></p></div>
   <div class="actions pr-actions">
-    <button class="btn primary" id="prSyncBtn" disabled>⇩ 载入后台同步资料</button>
-    <button class="btn" id="prFileBtn">📁 选择文件导入</button>
-    <input id="prFile" type="file" accept=".xlsx,.xls,.csv,.txt,.json" hidden>
-    <div class="pr-fee-exempt-wrap">
+    <div style="display:none"><button id="prSyncBtn"></button><button id="prFileBtn"></button><input id="prFile" type="file" hidden></div>
+    <div class="pr-fee-exempt-wrap" style="display:none">
       <button class="btn" id="prFeeExemptToggle">⚙ Fiat Fee 例外设置</button>
       <div class="card pr-fee-exempt-panel" id="prFeeExemptPanel" hidden>
         <div class="field" style="margin-bottom:8px">
@@ -462,10 +429,10 @@ state.backend=state.backend&&typeof state.backend==='object'?state.backend:null;
 function bookmarkletSource(){
   const target=location.origin,page=location.origin+location.pathname;
   return `(async()=>{
-const T=${JSON.stringify(target)},PG=${JSON.stringify(page)},EVERY=10*60e3,CUR=${JSON.stringify(BACKEND_CURRENCIES)};
+const T=${JSON.stringify(target)},PG=${JSON.stringify(page)},EVERY=0,CUR=${JSON.stringify(BACKEND_CURRENCIES)};
 if(location.origin!==${JSON.stringify(BACKEND_ORIGIN)}){alert('請在已登入的後台 ${BACKEND_ORIGIN.replace('https://','')} 頁面點這個書籤');return}
 if(window.__fopsBackend){window.__fopsBackend.run('manual');return}
-let w=null;const openW=()=>{try{w=window.open('','fiatops');if(w){let blank=false;try{blank=w.location.href==='about:blank'}catch(e){}if(blank)w.location.href=PG+'#sync'}}catch(e){w=null}return w};openW();
+let w=null;const findW=()=>{try{if(w&&!w.closed)return w}catch(e){}try{if(window.opener&&!window.opener.closed){w=window.opener;return w}}catch(e){}w=null;return null};const openW=()=>{if(findW())return w;try{w=window.open(PG+'#sync','fiatops')}catch(e){w=null}return w};findW();
 const box=document.createElement('div');box.style.cssText='position:fixed;right:20px;bottom:20px;z-index:2147483647;background:#0f1d33;color:#fff;padding:14px 18px;border-radius:12px;font:14px/1.5 -apple-system,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.3)';document.body.appendChild(box);
 const collect=async()=>{
 const post=async(u,b)=>{const r=await fetch(u,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json();if(j.code!==0)throw new Error(j.msg||('HTTP '+r.status));return j.data};
@@ -491,11 +458,11 @@ let acked=false,busy=false,last=0;
 window.addEventListener('message',e=>{if(e.origin!==T||!e.data)return;if(e.data.type==='fiatops-ack')acked=true;if(e.data.type==='fiatops-resync'&&(e.data.what==='backend'||e.data.what==='all')){w=e.source;run('manual')}});
 const send=async payload=>{acked=false;for(let i=0;i<40&&!acked;i++){try{if(w&&!w.closed)w.postMessage({type:'fiatops-sync',payload},T)}catch(e){}await new Promise(r=>setTimeout(r,500))}return acked};
 const hm=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
-const run=async why=>{if(busy)return;busy=true;try{const payload=await collect();payload.auto=why==='auto';if(!w||w.closed)openW();const ok=await send(payload);last=Date.now();box.textContent=ok?'✓ Fiat Ops 後台自動同步中（每 10 分鐘）· 最後 '+hm():'⚠ Fiat Ops 視窗沒有回應，點這裡開啟';}catch(e){box.textContent='⚠ 同步失敗：'+e.message}busy=false};
+const run=async why=>{if(busy)return;busy=true;try{if(!findW()){box.textContent='⚠ 未連上 Fiat Ops：請從 Fiat Ops 的「開啟後台」按鈕開這個分頁，或點這裡連接';busy=false;return}const payload=await collect();payload.auto=why==='auto';const ok=await send(payload);last=Date.now();box.textContent=ok?'✓ Fiat Ops 後台已連線（手動更新）· 最後 '+hm():'⚠ Fiat Ops 視窗沒有回應，點這裡連接';}catch(e){box.textContent='⚠ 同步失敗：'+e.message}busy=false};
 const hello=()=>{try{if(w&&!w.closed)w.postMessage({type:'fiatops-hello',src:'backend',last,every:EVERY},T)}catch(e){}};
 box.style.cursor='pointer';box.onclick=()=>{openW();run('manual')};
 window.__fopsBackend={run};
-setInterval(()=>run('auto'),EVERY);setInterval(hello,20000);
+setInterval(hello,20000);
 await run('first');
 })()`;
 }
@@ -510,7 +477,7 @@ window.addEventListener('message',e=>{
   const d=e.data;if(!d)return;
   if(d.type==='fiatops-hello'){window.FOPS_SRC.backend={win:e.source,last:d.last,every:d.every,at:Date.now()};window.renderSyncBar?.();return}
   if(d.type!=='fiatops-sync'||!d.payload)return;
-  window.FOPS_SRC.backend={win:e.source,last:Date.now(),every:600000,at:Date.now()};
+  window.FOPS_SRC.backend={win:e.source,last:Date.now(),every:0,at:Date.now()};
   const count=applyBackendSync(d.payload);
   try{e.source.postMessage({type:'fiatops-ack',count},e.origin)}catch(err){}
 });
@@ -609,12 +576,10 @@ function syncLabel(){
 }
 function renderSyncStatus(){
   const box=document.getElementById('syncStatus');if(!box)return;
-  if(!state.backend?.syncedAt){box.className='sync-status empty';box.innerHTML='<small class="hint">上次同步</small><br><b>尚未同步</b>';return}
+  if(!state.backend?.syncedAt){box.innerHTML='尚未同步';return}
   const age=syncAgeMinutes();
-  const range=state.backend.start?`${new Date(state.backend.start).toISOString().slice(0,10)} ~ ${new Date(state.backend.end).toISOString().slice(0,10)}（UTC）`:'';
-  const errs=state.backend.errors?.length?`<div class="hint" style="color:var(--red)">失敗：${state.backend.errors.join('；')}</div>`:'';
-  box.className='sync-status'+(age>SYNC_STALE_MINUTES?' stale':'');
-  box.innerHTML=`<small class="hint">上次同步</small><br><b>${new Date(state.backend.syncedAt).toLocaleString('zh-TW',{hour12:false})}</b><div class="hint">${state.backend.currencyCount||0} 個幣種｜區間 ${range}${age>SYNC_STALE_MINUTES?'｜已超過 '+SYNC_STALE_MINUTES+' 分鐘，請重新同步':''}</div>${errs}`;
+  const errs=state.backend.errors?.length?` · <span style="color:var(--red)">失敗：${state.backend.errors.join('；')}</span>`:'';
+  box.innerHTML=`上次同步 <b>${new Date(state.backend.syncedAt).toLocaleString('zh-TW',{hour12:false})}</b> · ${state.backend.currencyCount||0} 個幣種${age>SYNC_STALE_MINUTES?' · <span style="color:var(--orange)">已超過 '+SYNC_STALE_MINUTES+' 分鐘</span>':''}${errs}`;
 }
 
 // 備用：手動貼上單一幣種的 Merchant Balance 表格（只替換該幣種）
@@ -820,7 +785,7 @@ function recommendation(x){
  const wd=x.withdraw||0;const open=x.payout.filter(y=>y.status==='开启').length;const usable=usableBalanceForCurrency(x.currency,x.payout);
  const lockedText=usable.locked>0?`；另有 ${SYMBOLS[x.currency]||''}${fmt(usable.locked,0)} 卡在 ${usable.lockedMerchants} 个商户（${usable.lockedChannels} 个已关闭通道）。`:'';
  if(wd>0&&usable.amount<wd){return {type:'risk',text:`建议补 ${SYMBOLS[x.currency]||''}${fmt(wd-usable.amount,0)}`,reason:`可动用余额低于 1 天 Withdrawal 日均；开启代付 ${open} 家${lockedText}`}}
- if(wd>0&&usable.amount>wd*2){return {type:'settle',text:`可结算 ${SYMBOLS[x.currency]||''}${fmt(usable.amount-wd,0)}`,reason:`以可动用余额判断，保留约 1 天 Withdrawal 后仍有多余余额${lockedText}`}}
+ if(wd>0&&usable.amount>wd*2){const amt=usable.amount-wd,u=x.fiat>0&&x.usd>0?amt*x.usd/x.fiat:0;return {type:'settle',text:`可结算 ${SYMBOLS[x.currency]||''}${fmt(amt,0)}${u?`（${fmt(u,0)} U）`:''}`,reason:`以可动用余额判断，保留约 1 天 Withdrawal 后仍有多余余额${lockedText}`}}
  if(open===0&&x.payout.length){return {type:'risk',text:'代付无可用通道',reason:`目前无开启通道${lockedText}`}}
  return {type:'ok',text:'观察',reason:`余额与通道暂时稳定；开启代付 ${open} 家。`}
 }
@@ -1233,7 +1198,6 @@ function renderAll(){
            <b>${SYMBOLS[x.currency]||''} ${fmt(m.fiat)}</b>
            <div class="hint">${fmt(m.usd)} U</div>
            ${providerAdvice(x.currency,m.provider)}
-           <div class="flow-quick"><button class="btn" data-flow-dir="out" data-flow-m="${String(m.provider||m.account||'').replace(/[&<>"]/g,'')}" data-flow-c="${x.currency}">出U</button><button class="btn" data-flow-dir="in" data-flow-m="${String(m.provider||m.account||'').replace(/[&<>"]/g,'')}" data-flow-c="${x.currency}">充U</button></div>
          </div>
        </div>
        <div>${channelSummaryButton(matchedPayout,x.currency,merchantIndex,'payout')}</div>
@@ -1258,13 +1222,11 @@ function renderAll(){
      <td class="currency">▸ ${x.currency}</td>
      <td class="money">${availCell(x,usable)}</td>
      <td>${withdrawCell(x)}</td>
-     <td>${level1hCell(x.currency,usable)}</td>
-     <td>${level24hCell(x.currency,usable)}</td>
      <td><span class="badge ${po?'b-green':'b-gray'}">${po}/${x.payout.length}</span></td>
      <td><span class="badge ${pi?'b-green':'b-gray'}">${pi}/${x.payin.length}</span>${x.deposit?`<div class="hint">日均 ${SYMBOLS[x.currency]||''}${fmt(x.deposit,0)}</div>`:''}</td>
      <td class="recommend ${cls}">${r.text}${backendSuggestion(x)?`<div class="hint" style="font-weight:600">后台算法：${backendSuggestion(x)}</div>`:''}</td>
    </tr>
-   <tr class="detail-row"><td colspan="8">
+   <tr class="detail-row"><td colspan="6">
      <div class="currency-detail" id="detail-${x.currency}">
        <div class="detail-scroll">
          <div class="merchant-channel-table">
@@ -1278,7 +1240,7 @@ function renderAll(){
        </div>
      </div>
    </td></tr>`;
- }).join(''):'<tr><td colspan="8">目前沒有商戶餘額資料</td></tr>';
+ }).join(''):'<tr><td colspan="6">目前沒有商戶餘額資料</td></tr>';
 
  document.getElementById('analysisGrid').innerHTML=analysis.length?
    analysis.map(({x,r})=>`<div class="analysis-box ${r.type==='risk'?'risk':r.type==='settle'?'settle':'watch'}"><small>${x.currency}</small><b>${r.text}</b><span>${r.reason}${backendRiskNote(x.currency)}</span></div>`).join(''):
@@ -1318,7 +1280,7 @@ function withdrawCell(x){
  }
  const max=Math.max(1,...daily.map(d=>d.a));
  const bars=daily.length?`<div class="wd-bars" title="${daily.map(d=>d.d.slice(5)+' '+sym+fmt(d.a,0)).join('\n')}">${daily.map(d=>`<i style="height:${Math.max(2,d.a/max*22)}px" class="${d.d===todayStr?'today':''}"></i>`).join('')}</div>`:'';
- return `<b>${x.withdraw?sym+' '+fmt(x.withdraw,0):'—'}</b><div class="hint">${statsSourceText('withdraw')}</div>${pmAvg?`<div class="hint">后台参考 ${sym}${fmt(pmAvg,0)}</div>`:''}${pace}${bars}`;
+ return `<b>${x.withdraw?sym+' '+fmt(x.withdraw,0):'—'}</b><div class="hint">${statsSourceText('withdraw')}</div>${pmAvg?`<div class="hint">后台参考（7 日）${sym}${fmt(pmAvg,0)}</div>`:''}`;
 }function riskOf(c){return state.backend?.risk?.[c]||null}
 function availCell(x,usable){
  const sym=SYMBOLS[x.currency]||'';
@@ -1754,7 +1716,7 @@ setupBookmarklet();
 renderAll();
 renderSourceNotes();
 renderCurrencyProgress();
-if(location.hash==='#sync'){showPage('robot');toast('等待後台同步資料…')}
+if(location.hash==='#sync'){showPage('home');toast('等待後台同步資料…')}
 </script>
 
 <script>
@@ -1955,8 +1917,10 @@ function smartCalc(x){
 // Fee(Fiat) 例外商户名单：名单内的商户，Amount(Fiat) 本身就是正确的结算金额，
 // Fee(Fiat) 只是另外从商户余额扣款、跟这笔结算金额无关，所以话术不把它加回去还原。
 function normalizeProviderKey(v){return String(v||'').trim().toLowerCase();}
+// 商户外扣 Fiat 手续费（规则表 E／F 类 + Gigadat 的 1%）：话术不把 Fee(Fiat) 加回（2026-11-23 改为固定名单）
+const PR_FEE_EXEMPT_DEFAULT=['apayone','bovapay','betatransfer','inwizo','supefinanew','monnify','gigadat'];
 function isPrFeeExempt(provider){
-  const list=Array.isArray(state.prFeeExempt)?state.prFeeExempt:[];
+  const list=[...PR_FEE_EXEMPT_DEFAULT,...(Array.isArray(state.prFeeExempt)?state.prFeeExempt:[])];
   return list.includes(normalizeProviderKey(provider));
 }
 // 依目前的例外名单，动态算出话术要显示的「结算金额」：
@@ -2433,11 +2397,15 @@ window.renderPRSyncBar=function(){
   btn.disabled=false;
   info.textContent=`后台同步：${new Date(d.at).toLocaleString('zh-TW',{hour12:false})}｜最新 ${d.list.length} 笔 Valid`+(ts.length?`（${fmtTime(Math.min(...ts))} – ${fmtTime(Math.max(...ts))}）`:'')+'｜更早的记录请重新同步或导入文件';
 };
-$('prSyncBtn').addEventListener('click',()=>{
-  const d=prSyncedData();if(!d)return;
+// 后台同步到了就自动载入（不用再按「载入后台同步资料」）
+function prLoadSynced(){
+  const d=prSyncedData();if(!d||!Array.isArray(d.list))return;
+  if(window.__prLoadedAt===d.at)return;window.__prLoadedAt=d.at;
   const rows=d.list.filter(x=>Number(x.delFlag)===0).map(backendPRToRow);
   runPRRows(rows,'后台同步 '+new Date(d.at).toLocaleString('zh-TW',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}));
-});
+}
+$('prSyncBtn').addEventListener('click',()=>{window.__prLoadedAt=0;prLoadSynced()});
+{const orig=window.renderPRSyncBar;window.renderPRSyncBar=function(){orig();try{prLoadSynced()}catch(e){console.warn(e)}}}
 window.renderPRSyncBar();
 
 $('prFile').addEventListener('change',e=>{
@@ -2655,6 +2623,10 @@ $('prCopyAll').addEventListener('click',async()=>{
 .tpl-out-item.stale{border-color:#ffd4d9;background:#fff8f8}.tpl-out-item h4 span{font-size:11px;color:var(--muted);font-weight:600}
 @media (max-width:900px){.flow-detail-grid{grid-template-columns:1fr 1fr}}
 .sync-bar .sb{display:inline-flex;align-items:center;gap:6px;cursor:default}.sync-bar .dot{width:8px;height:8px;border-radius:50%;background:#c3ccd9;display:inline-block}.sync-bar .dot.on{background:var(--green);box-shadow:0 0 0 3px rgba(15,159,110,.15)}
+.fee-cell{white-space:nowrap}.tpl-table tr[data-i]{cursor:pointer}.flow-regen{color:var(--red);font-weight:700;font-size:12px;margin:2px 0 6px}.fee-in{width:52px;padding:5px 6px;border:1px solid var(--line);border-radius:8px;text-align:right;margin-right:3px}
+.fi-opt{font-weight:500;color:var(--text);margin-left:12px;white-space:nowrap}.fi-opt input{width:auto;margin:0 3px 0 0;vertical-align:-1px}
+#page-uploads .topbar p{display:none}#prFileName{display:none}
+.sync-bar .sb-open{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer}.sync-bar .sb-open:hover{border-color:#b7c6e0}.sync-bar .sb-all{background:var(--blue);border-color:var(--blue);color:#fff}
 .sync-bar .sb-re{border:0;background:#eef2f8;border-radius:6px;padding:1px 7px;cursor:pointer;font-weight:800;color:var(--blue)}
 .pr-ops-wrap{position:relative;display:inline-flex;align-items:center;gap:6px}
 .pr-ops-panel{position:absolute;top:110%;left:40px;z-index:60;min-width:180px;max-height:280px;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:4px}
@@ -2793,8 +2765,8 @@ function normDate(v){
 // 栏位位置（A=0）。Google 表格的 gviz 读取会把「数字栏」的表头清空，所以用固定位置，
 // 再用读得到的文字表头（商户／币种／地址／Hash／专员／Note）核对顺序没变。
 const COLS={
- out:{orderNo:0,merchant:1,currency:2,amount:3,feeU:6,usdt:7,hash:8,date:9,owner:10,mrate:11,prate:12,note:15},
- in:{orderNo:0,merchant:1,currency:2,amount:3,feeU:6,address:7,hash:8,date:9,owner:10,mrate:11,prate:12,note:15}};
+ out:{orderNo:0,merchant:1,currency:2,amount:3,arrive:4,feeF:5,feeU:6,feeU2:16,usdt:7,hash:8,date:9,owner:10,mrate:11,prate:12,note:15},
+ in:{orderNo:0,merchant:1,currency:2,amount:3,exch:4,feeF:5,feeU:6,address:7,hash:8,date:9,owner:10,mrate:11,prate:12,note:15}};
 const HEAD_CHECK={
  out:{1:/^商户(名称)?$/,2:/币种/,8:/hash/i,10:/专员/,15:/^notes?$/i},
  in:{1:/^商户(名称)?$/,2:/币种/,7:/商户地址/,8:/hash/i,10:/专员/,15:/^notes?$/i}};
@@ -2826,7 +2798,7 @@ function parseTab(kind,csv){
    if(kind==='out'){const o=mk();if(network(o).net==='ERC'||!hasValidHash(o.hash))ercOld.push(o)}
    return;
   }
-  const rec={usdtText:g('usdt'),feeUText:g('feeU'),kind,row:i+1,orderNo:g('orderNo'),merchant,currencyRaw:cur,currency:cur.toUpperCase().replace(/\s+/g,''),amountText:g('amount'),hash:g('hash'),dateRaw:g('date'),date:normDate(g('date')),owner:g('owner'),mrateText:g('mrate'),prateText:g('prate'),note:g('note'),address:addr};
+  const rec={usdtText:g('usdt'),feeUText:g('feeU'),arriveText:g('arrive'),feeFText:g('feeF'),feeU2Text:g('feeU2'),exchText:g('exch'),kind,row:i+1,orderNo:g('orderNo'),merchant,currencyRaw:cur,currency:cur.toUpperCase().replace(/\s+/g,''),amountText:g('amount'),hash:g('hash'),dateRaw:g('date'),date:normDate(g('date')),owner:g('owner'),mrateText:g('mrate'),prateText:g('prate'),note:g('note'),address:addr};
   if(addr){rec.newAddress=!seenAddr.has(ak);seenAddr.add(ak)}
   data.push(rec);
  });
@@ -2882,7 +2854,8 @@ function check(r,st){
  else if(st.op==='topup'&&(nw.net==='ERC')!==RE_ERC.test(addr))warn.push('地址格式与 '+nw.net+' 不符');
  // 手续费非必填：空白 = 无手续费
  if(String(st.fee).trim()!==''&&!(Number(st.fee)>=0))miss.push('Fee% 不是有效数字');
- return {miss,warn,net:nw.net,basis:nw.basis};
+ const pend=r.kind==='in'&&!r.demo&&!/[a-f0-9]{64}/i.test(String(r.hash||''))?['HASH']:[];
+ return {miss,pend,warn,net:nw.net,basis:nw.basis};
 }
 
 // ---------- 纪录 ID（稳定）：有商户单号用单号，否则用「分页＋行号＋商户」----------
@@ -2930,7 +2903,7 @@ const normH=h=>{const m=String(h||'').match(/(?:0x)?([0-9a-fA-F]{64})/);return m
 function backendIndex(){
  const idx={pr:new Map(),ac:new Map(),prAt:0,acAt:0};
  try{const d=JSON.parse(localStorage.getItem('fiat_ops_pr_synced')||'null');if(d&&Array.isArray(d.list)){idx.prAt=d.at;d.list.forEach(x=>{const k=normH(x.hashId);if(k)idx.pr.set(k,x)})}}catch(e){}
- try{const d=JSON.parse(localStorage.getItem('fiat_ops_ac_synced')||'null');if(d&&Array.isArray(d.list)){idx.acAt=d.at;d.list.forEach(x=>{const k=normH(x.h);if(k)idx.ac.set(k,x)})}}catch(e){}
+ try{const d=JSON.parse(localStorage.getItem('fiat_ops_ac_synced')||'null');if(d&&Array.isArray(d.list)){idx.acAt=d.at;d.list.forEach(x=>{const k=normH(x.h);if(!k)return;const o=idx.ac.get(k);if(!o||(o.s!=='CHARGED'&&x.s==='CHARGED')||(o.s!=='CHARGED'&&x.s!=='INVALID'))idx.ac.set(k,x)})}}catch(e){}
  return idx;
 }
 function progress(r,BI){
@@ -2990,7 +2963,8 @@ function scopeRows(){
  ['out','in'].forEach(k=>{
   if(dir!=='all'&&dir!==k)return;
   let rows=T.sheet.tabs[k]?.rows||[];
-  rows=d?rows.filter(r=>r.date===normDate(d)):rows.slice(-RECENT_ROWS);
+  const f=$('sheetCal').value,t=$('sheetCalTo').value||f;
+  rows=f?rows.filter(r=>{const iso=mdToISO(r.date);return iso&&iso>=f&&iso<=t}):d?rows.filter(r=>r.date===normDate(d)):rows.slice(-RECENT_ROWS);
   if(kw)rows=rows.filter(r=>r.merchant.toLowerCase().includes(kw));
   res.push(...rows);
  });
@@ -2998,9 +2972,9 @@ function scopeRows(){
 }
 function renderStatus(){
  const s=T.sheet,el=$('sheetStatus');
- if(!s){el.innerHTML='<b>尚未同步</b>';return}
+ if(!s){el.innerHTML='尚未同步';return}
  const parts=['out','in'].map(k=>{const t=s.tabs[k],n=k==='out'?'TRC出金':'TRC入金';return t?.ok?`${n} ${t.rows.length} 行`:`<span class="err">${n} 读取失败：${esc(t?.error||'无资料')}</span>`});
- el.innerHTML=`<b>上次同步 ${tm(s.syncedAt)}</b><br>${parts.join(' · ')}${s.tabs.out?.ok?`<br><span class="hint">收U地址：${esc(s.tabs.out.headerAddr||'未读到')}</span>`:''}`;
+ el.innerHTML=`上次同步 <b>${tm(s.syncedAt)}</b> · ${parts.join(' · ')}`;
 }
 // 处理优先顺序：资料变更 → 资料不完整 → 待生成 → 已生成未复制 → 已复制等后台 → 已完成（2026-11-17）
 const PRIO={changed:0,bad:1,todo:2,gen:3,copied:4,done:5};
@@ -3014,29 +2988,32 @@ function renderList(){
  // 顶部大字提醒
  const need=[counts.changed&&`<b class="red">${counts.changed}</b> 笔资料已变更 ⚠`,counts.bad&&`<b class="red">${counts.bad}</b> 笔资料不完整`,counts.todo&&`<b class="orange">${counts.todo}</b> 笔待生成`,counts.gen&&`<b class="orange">${counts.gen}</b> 笔已生成未复制`,counts.copied&&`<b class="blue">${counts.copied}</b> 笔已复制等后台`,hashPending&&`<b class="orange">${hashPending}</b> 笔 Hash 待补`].filter(Boolean);
  $('flowBanner').innerHTML=!T.sheet?'':need.length?`还有：${need.join('　·　')}`:'<span class="green">✓ 这个范围的都处理完了</span>';
- $('flowStats').innerHTML=Object.entries(STATUS).map(([k,l])=>`<button class="fs ${k} ${STATUS_FILTER===k?'on':''}" data-sf="${k}"><b>${counts[k]}</b>${l}</button>`).join('')+`<button class="fs hash" data-sf="hash"><b>${hashPending}</b>Hash 待补</button>`;
- let list=withStatus.filter(([r,s])=>(!STATUS_FILTER||STATUS_FILTER===s)&&(!$('sheetUndone').checked||!progress(r,BI).done));
- const doneHidden=!STATUS_FILTER&&!SHOW_DONE?list.filter(([,s])=>s==='done').length:0;
+ const unfilled=SCOPE.filter(r=>!progress(r,BI).done).length;
+ const pendOnly=r=>{const c=check(r,rowState(r));return !c.miss.length&&c.pend.length>0};
+ const badN=counts.bad+withStatus.filter(([r,s])=>s!=='bad'&&pendOnly(r)).length;
+ $('flowStats').innerHTML=[['unfilled','后台未填写',unfilled,'todo'],['bad','资料不完整',badN,'bad'],['done','已完成',counts.done,'done']].map(([k,l,n,c])=>`<button class="fs ${c} ${STATUS_FILTER===k?'on':''}" data-sf="${k}"><b>${n}</b>${l}</button>`).join('');
+ let list=withStatus.filter(([r,s])=>(!STATUS_FILTER||(STATUS_FILTER==='unfilled'?!progress(r,BI).done:STATUS_FILTER==='bad'?(s==='bad'||pendOnly(r)):STATUS_FILTER===s))&&(!$('sheetUndone').checked||!progress(r,BI).done));
+ const doneHidden=0;
  if(doneHidden)list=list.filter(([,s])=>s!=='done');
  list.sort((a,b)=>PRIO[a[1]]-PRIO[b[1]]||(Number(a[0].row)||0)-(Number(b[0].row)||0));
  VISIBLE=list.map(([r])=>r);
- $('sheetCount').innerHTML=T.sheet?`显示 ${VISIBLE.length} 行${doneHidden?`　<button class="fee-ref" data-act="showdone" style="display:inline">＋显示已完成 ${doneHidden} 笔</button>`:SHOW_DONE&&!STATUS_FILTER?`　<button class="fee-ref" data-act="showdone" style="display:inline">收起已完成</button>`:''}`:'';
+ $('sheetCount').innerHTML=T.sheet?`显示 ${VISIBLE.length} 行${false?`　<button class="fee-ref" data-act="showdone" style="display:inline">＋显示已完成 ${doneHidden} 笔</button>`:SHOW_DONE&&!STATUS_FILTER?`　<button class="fee-ref" data-act="showdone" style="display:inline">收起已完成</button>`:''}`:'';
  {const tt=[BI.prAt&&'Payout Record',BI.acAt&&'Auto Charge'].filter(Boolean);$('sheetBackendAt').textContent=BI.prAt||BI.acAt?`后台同步 ${tm(Math.max(BI.prAt,BI.acAt))}（${tt.join('、')}）`:'后台未同步'}
- if(!VISIBLE.length){$('sheetList').innerHTML=`<tr><td colspan="14" class="hint">没有资料</td></tr>`;syncHead();renderDetail();renderIssues();return}
+ if(!VISIBLE.length){$('sheetList').innerHTML=`<tr><td colspan="13" class="hint">没有资料</td></tr>`;syncHead();renderDetail();renderIssues();return}
  $('sheetList').innerHTML=list.map(([r,s],i)=>{
   const st=rowState(r);
   if(st.fee===''&&!r.demo){const m0=getFee(feeGroup(st.tpl),r.merchant,r.currency);if(m0)st.fee=String(m0.pct)}
   const c=check(r,st),p=progress(r,BI),sid=sidOf(r);
-  const data=c.miss.length?`<div class="tpl-miss">缺：${esc(c.miss.join('、'))}</div>`:'<div class="tpl-ok">完整</div>';
+  const data=c.miss.length?`<div class="tpl-miss">缺：${esc([...c.miss,...c.pend].join('、'))}</div>`:c.pend.length?`<div class="tpl-miss">缺：HASH</div>`:'<div class="tpl-ok">完整</div>';
   const warn=c.warn.length?`<div class="tpl-warn">⚠ ${esc(c.warn.join('；'))}</div>`:'';
   const act=s==='bad'?'':s==='copied'||s==='done'?`<button class="btn" data-act="quick" data-mode="copy">再复制</button>`:`<button class="btn primary" data-act="quick">${s==='changed'?'重新生成并复制':'生成并复制'}</button>`;
   const rec=T.recs[sid],last=rec&&rec.gens.length?rec.gens[rec.gens.length-1]:null;
-  const out=EXPANDED.has(sid)&&last?`<tr class="row-out row-${s}"><td></td><td colspan="13"><div class="flow-inline">
+  const regen=rec&&last&&rec.regenAt===last.at?`<div class="flow-regen">⚠ 资料已变更，已用新资料重新生成</div>`:'';
+  const out=!EXPANDED.has(sid)?'':!last?`<tr class="row-out row-${s}"><td colspan="13"><div class="tpl-miss" style="padding:6px 4px">${c.miss.length?'缺：'+esc(c.miss.join('、'))+'，不能生成':'尚未生成'}</div></td></tr>`:`<tr class="row-out row-${s}"><td colspan="13">${regen}<div class="flow-inline">
    ${last.merchantText?`<div><div class="fi-head">商户话术 <button class="btn" data-copy-rec="m" data-sid="${esc(sid)}">复制</button></div><div class="output">${esc(last.merchantText)}</div></div>`:''}
-   ${last.financeText?`<div><div class="fi-head">充值申请（财务） <button class="btn" data-copy-rec="f" data-sid="${esc(sid)}">复制</button></div><div class="output">${esc(last.financeText)}</div></div>`:''}
-   <div class="pr-muted">v${rec.gens.length} · ${tm(last.at)} · ${OPS[last.op]} · ${TPLS[last.tpl]} · 手续费 ${last.fee}%${rec.stale?' · <span style="color:var(--red)">已过期</span>':''}　<button class="fee-ref" data-act="fold" style="display:inline">收起</button></div></div></td></tr>`:'';
+   ${last.financeText?`<div><div class="fi-head"><span>充值申请（财务）<label class="fi-opt"><input type="checkbox" data-opt="relay" data-sid="${esc(sid)}" ${st.relay?'checked':''}> 透过中转账户支付</label><label class="fi-opt"><input type="checkbox" data-opt="newAddr" data-sid="${esc(sid)}" ${st.newAddr?'checked':''}> 新地址（提醒白名单）${r.newAddress?'<span class="pr-muted">首次出现</span>':''}</label></span> <button class="btn" data-copy-rec="f" data-sid="${esc(sid)}">复制</button></div><div class="output">${esc(last.financeText)}</div></div>`:''}
+   </div></td></tr>`;
   return `<tr data-i="${i}" class="row-${s} ${r.demo?'demo':''} ${FOCUS===sid?'focus':''}">
-   <td><input type="checkbox" data-k="sel" ${st.sel?'checked':''} ${c.miss.length?'disabled':''}></td>
    <td><span class="st st-${s} big">${STATUS[s]}</span></td>
    <td>${esc(r.row)}</td>
    <td>${r.demo?'<span class="badge b-orange">示范</span> ':''}${r.kind==='out'?'<span class="badge b-gray">结算</span>':'<span class="badge b-green">充值</span>'}</td>
@@ -3047,49 +3024,71 @@ function renderList(){
    <td>${esc(r.owner)}</td>
    <td>${esc(r.mrateText)}</td>
    <td><b>${esc(r.prateText)}</b></td>
+   <td class="fee-cell"><input class="fee-in" type="text" inputmode="decimal" data-k="fee" value="${esc(st.fee)}" placeholder="无" title="手续费 %（空白 = 无手续费）">%</td>
    <td>${data}${warn}</td>
-   <td><div class="flow-prog"><span class="${p.gen?'ok':''}">话术</span><span class="${p.hash?'ok':''}">Hash</span><span class="${p.back}">${esc(p.backTxt)}</span></div></td>
-   <td>${act}</td></tr>${out}`;
+   <td><div class="flow-prog"><span class="${p.hash?'ok':''}">Hash</span><span class="${p.back==='done'?'ok':''}" title="${esc(p.backTxt)}">${r.kind==='out'?'Payout Record已填':'Auto Charge已填'}</span></div></td>
+   </tr>${out}`;
  }).join('');
  syncHead();renderDetail();renderIssues();
 }
 // 一键：生成（或沿用最新一版）→ 复制商户话术（没有就复制充值申请）→ 在该行下方展开结果
 async function quickRow(r,mode){
+ r=await freshRow(r);if(!r)return;
  const sid=sidOf(r);let rec=T.recs[sid];
- if(mode!=='copy'||!rec||!rec.gens.length){const o=genRow(r);if(o.error){if(o.error!=='已取消')toast(o.error);renderList();return}rec=T.recs[sid]}
+ if(mode!=='copy'||!rec||!rec.gens.length||rec.stale){const o=genRow(r);if(o.error){if(o.error!=='已取消')toast(o.error);renderList();return}rec=T.recs[sid]}
  const last=rec&&rec.gens.length?rec.gens[rec.gens.length-1]:null;if(!last){renderList();return}
  const text=last.merchantText||last.financeText;
  EXPANDED.add(sid);
- try{await navigator.clipboard.writeText(text);markCopied(sid);toast(`已复制 ${r.merchant} 的${last.merchantText?'商户话术':'充值申请'}${last.merchantText&&last.financeText?'（充值申请在下方另外复制）':''}`)}
+ try{await Promise.race([navigator.clipboard.writeText(text),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),3000))]);markCopied(sid);toast(`已复制 ${r.merchant} 的${last.merchantText?'商户话术':'充值申请'}${last.merchantText&&last.financeText?'（充值申请在下方另外复制）':''}`)}
  catch(e){toast('已生成，复制失败，请用下方按钮复制')}
  renderList();
 }
+let EXPANDING=false;
+async function toggleRow(r){
+ const sid=sidOf(r);
+ if(EXPANDED.has(sid)){EXPANDED.delete(sid);renderList();return}
+ if(EXPANDING)return;EXPANDING=true;
+ try{
+  const r2=await freshRow(r);if(!r2)return;
+  const sid2=sidOf(r2),st=rowState(r2),c=check(r2,st),rec=T.recs[sid2];
+  if(!c.miss.length&&(!rec||!rec.gens.length||rec.stale)){
+   const wasStale=!!(rec&&rec.stale);
+   const o=genRow(r2,{skipDup:true});
+   if(o.error){if(o.error!=='已取消')toast(o.error);renderList();return}
+   if(wasStale)T.recs[sid2].regenAt=T.recs[sid2].gens[T.recs[sid2].gens.length-1].at;
+   saveT();
+  }
+  EXPANDED.add(sid2);renderList();
+ }finally{EXPANDING=false}
+}
 $('sheetList').addEventListener('click',async e=>{
+ if(!e.target.closest('input,button,select,a,label,.row-out')){const tr=e.target.closest('tr[data-i]');if(tr){await toggleRow(VISIBLE[+tr.dataset.i]);return}}
  const q=e.target.closest('[data-act=quick]');
  if(q){e.stopPropagation();const r=VISIBLE[+q.closest('tr').dataset.i];await quickRow(r,q.dataset.mode);return}
  const cr=e.target.closest('[data-copy-rec]');
  if(cr){e.stopPropagation();const rec=T.recs[cr.dataset.sid],last=rec?.gens[rec.gens.length-1];if(!last)return;try{await navigator.clipboard.writeText(cr.dataset.copyRec==='m'?last.merchantText:last.financeText);flashCopied(cr);markCopied(cr.dataset.sid)}catch(err){toast('复制失败')}return}
- if(e.target.closest('[data-act=fold]')){e.stopPropagation();const tr=e.target.closest('tr');const prev=tr.previousElementSibling;const r=VISIBLE[+prev.dataset.i];EXPANDED.delete(sidOf(r));renderList();return}
+
 },true);
 $('sheetCount').addEventListener('click',e=>{if(e.target.closest('[data-act=showdone]')){SHOW_DONE=!SHOW_DONE;renderList()}});
 $('flowStats').addEventListener('click',e=>{const b=e.target.closest('[data-sf]');if(!b)return;
  if(b.dataset.sf==='hash'){$('ercReminders').scrollIntoView({behavior:'smooth',block:'center'});return}
  STATUS_FILTER=STATUS_FILTER===b.dataset.sf?'':b.dataset.sf;renderList()});
 $('sheetList').addEventListener('change',e=>{
+ const opt=e.target.dataset.opt;
+ if(opt){const r=findBySid(e.target.dataset.sid);if(!r)return;const st=rowState(r);st[opt]=e.target.checked;
+  const o=genRow(r,{skipDup:true,skipWarn:true});if(o.error){if(o.error!=='已取消')toast(o.error)}else toast('已按新选项重新生成，请重新复制');EXPANDED.add(sidOf(r));renderList();return}
  const tr=e.target.closest('tr[data-i]');if(!tr)return;
  const r=VISIBLE[+tr.dataset.i],st=rowState(r);
  if(e.target.dataset.k==='sel'){st.sel=e.target.checked;syncHead()}
+ if(e.target.dataset.k==='fee'){const v=e.target.value.trim();if(v&&!/^\d+(\.\d+)?$/.test(v)){toast('手续费只能填数字（空白 = 无手续费）');e.target.value=st.fee;return}st.fee=v;
+  const sid=sidOf(r),rec=T.recs[sid];if(EXPANDED.has(sid)&&rec&&rec.gens.length&&!check(r,st).miss.length){const o=genRow(r,{skipDup:true,skipWarn:true});if(o.error){if(o.error!=='已取消')toast(o.error)}else toast('已按新手续费重新生成，请重新复制')}
+  renderList()}
 });
-$('sheetList').addEventListener('click',e=>{
- if(e.target.closest('input,button,select,a,.row-out'))return;
- const tr=e.target.closest('tr[data-i]');if(!tr)return;
- const r=VISIBLE[+tr.dataset.i];FOCUS=FOCUS===sidOf(r)?null:sidOf(r);renderList();
- if(FOCUS)$('flowDetail').scrollIntoView({behavior:'smooth',block:'nearest'});
-});
+
 
 // ---------- B. 操作资料确认 ----------
 function renderDetail(){
- const box=$('flowDetail');const r=FOCUS?findBySid(FOCUS):null;
+ const box=$('flowDetail');const r=null;
  if(!r){box.hidden=true;box.innerHTML='';return}
  box.hidden=false;
  const st=rowState(r),c=check(r,st),rec=T.recs[sidOf(r)],nw=network(r);
@@ -3133,7 +3132,7 @@ $('flowDetail').addEventListener('click',async e=>{
  if(e.target.closest('[data-act=close]')){FOCUS=null;renderList();return}
  const fr=e.target.closest('[data-act=feeref]');if(fr){st.fee=fr.dataset.v;renderList();return}
  const ca=e.target.closest('[data-act=copyaddr]');if(ca){try{await navigator.clipboard.writeText(st.address);flashCopied(ca)}catch(err){toast('复制失败')}return}
- if(e.target.closest('[data-act=gen]')){const o=genRow(r);if(o.error){if(o.error!=='已取消')toast(o.error);return}showOutputs([o]);renderList()}
+ if(e.target.closest('[data-act=gen]')){const r2=await freshRow(r);if(!r2)return;const o=genRow(r2);if(o.error){if(o.error!=='已取消')toast(o.error);return}showOutputs([o]);renderList()}
 });
 
 // ---------- 生成（每笔独立；保留每一版）----------
@@ -3182,9 +3181,8 @@ function showOutputs(list){
   const stale=o.sid&&T.recs[o.sid]?.stale;
   return `<div class="tpl-out-item ${stale?'stale':''}"><h4>${esc(o.title)}<span>${o.ver?`v${o.ver} · ${tm(o.at)}`:''}${stale?' <span class="badge b-red">已过期，请重新生成</span>':''}</span></h4>
   <div class="tpl-out-grid">
-   <div><div class="section-title" style="margin-bottom:6px"><span class="hint">算式</span><button class="btn" data-copy-out="F${i}">复制</button></div><div class="tpl-meta">${esc(o.inputs)}<br>Address：${esc(o.address)}</div><div class="output" id="tplOutF${i}" style="min-height:0">${esc(o.formula)}</div></div>
-   <div>${o.merchantText?`<div class="section-title" style="margin-bottom:6px"><span class="hint">商户话术</span><button class="btn" data-copy-out="M${i}">复制</button></div><div class="output" id="tplOutM${i}" style="min-height:0">${esc(o.merchantText)}</div>`:''}
-   ${o.financeText?`<div class="section-title" style="margin:8px 0 6px"><span class="hint">充值申请话术（财务）</span><button class="btn" data-copy-out="C${i}">复制</button></div><div class="output" id="tplOutC${i}" style="min-height:0">${esc(o.financeText)}</div>`:''}</div>
+   ${o.merchantText?`<div><div class="section-title" style="margin-bottom:6px"><span class="hint">商户话术</span><button class="btn" data-copy-out="M${i}">复制</button></div><div class="output" id="tplOutM${i}" style="min-height:0">${esc(o.merchantText)}</div></div>`:''}
+   ${o.financeText?`<div><div class="section-title" style="margin-bottom:6px"><span class="hint">充值申请话术（财务）</span><button class="btn" data-copy-out="C${i}">复制</button></div><div class="output" id="tplOutC${i}" style="min-height:0">${esc(o.financeText)}</div></div>`:''}
   </div></div>`}).join('');
 }
 $('sheetOutputs').addEventListener('click',async e=>{
@@ -3226,27 +3224,63 @@ $('sheetGenSel').onclick=()=>{
 };
 
 // ---------- D. 异常与待处理 ----------
+// 近 15 天（依表格日期 M/D 判断；跨年自动往前一年）
+function within15(md){const iso=mdToISO(md);if(!iso)return false;const d=new Date(iso+'T00:00:00'),t0=new Date();t0.setHours(0,0,0,0);const age=(t0-d)/864e5;return age>=0&&age<=15}
+// 表格只有 M/D 没有年份：从表格最下面往上找，连续 3 行超过 15 天就当作分界，分界以上（去年同月日）一律不算
+function cutoffRow(kind){const t=T.sheet?.tabs?.[kind];if(!t?.ok)return Infinity;const rows=[...(t.ercOld||[]),...t.rows].sort((a,b)=>a.row-b.row);let old=0;
+ for(let i=rows.length-1;i>=0;i--){if(!rows[i].date)continue;if(!within15(rows[i].date)){if(++old>=3)return rows[i].row}else old=0}return 0}
+const isRecent=r=>within15(r.date)&&Number(r.row)>cutoffRow(r.kind);
+// 只列三种：表格算式有误、后台（Payout Record／Auto Charge）与表格不一致；Hash 待补在下方另列（2026-11-23）
+const numOf=t=>{const n=Number(cleanNumText(t));return Number.isFinite(n)&&String(t||'').trim()!==''?n:NaN};
+function formulaIssue(r){
+ const R=numOf(r.prateText),FU=numOf(r.feeUText)||0,FF=numOf(r.feeFText)||0;
+ if(!(R>0))return null;
+ if(r.kind==='out'){
+  const U=numOf(r.usdtText),A=numOf(r.amountText),E=numOf(r.arriveText);if(!(U>0))return null;
+  const base=[E,A].filter(x=>x>0);if(!base.length)return null;
+  const FU2=numOf(r.feeU2Text)||0,pct=(Number(rowState(r).fee)||0)/100,fees=[...new Set([0,FU,FU2])];
+  const cands=base.flatMap(x=>[x/R,(x-FF)/R,x/R*(1-pct)].flatMap(v=>fees.map(f=>v-f)));
+  const best=cands.reduce((b,c)=>Math.abs(c-U)<Math.abs(b-U)?c:b);
+  return Math.abs(best-U)<=1?null:`实收 ${fmt(U,2)} U，按表格金额／汇率／手续费算约 ${fmt(best,2)} U（差 ${fmt(U-best,2)}）`;
+ }
+ const U=numOf(r.amountText),X=numOf(r.exchText);if(!(U>0&&X>0))return null;
+ const pct=(Number(rowState(r).fee)||0)/100,nets=[...new Set([U-FU,U*(1-pct)-FU])],cands=nets.flatMap(net=>[net*R,net/R,net*R-FF,net/R-FF]);
+ const best=cands.reduce((b,c)=>Math.abs(c-X)<Math.abs(b-X)?c:b);
+ return Math.abs(best-X)<=Math.max(1,X*1e-4)?null:`兑换金额 ${fmt(X,2)}，按充U／汇率／手续费算约 ${fmt(best,2)}（差 ${fmt(X-best,2)}）`;
+}
+function backendIssue(r,BI){
+ const hk=normH(r.hash);if(!hk)return null;
+ if(r.kind==='out'){
+  const x=BI.prAt&&BI.pr.get(hk);if(!x||!(Number(x.fiatAmount)>0&&String(x.provider||'').trim()))return null;
+  const bad=[],U=numOf(r.usdtText),R=numOf(r.prateText),A=numOf(r.amountText),E=numOf(r.arriveText),FF=numOf(r.feeFText)||0;
+  if(U>0&&Math.abs(Number(x.usdtAmount)-U)>0.01)bad.push(`U：后台 ${x.usdtAmount}／表格 ${r.usdtText}`);
+  if(R>0&&R!==1){
+   if(Number(x.discountRate)>0&&Math.abs(Number(x.discountRate)-R)>1e-9)bad.push(`优惠汇率：后台 ${x.discountRate}／表格 ${r.prateText}`);
+   const f=Number(x.fiatAmount),c=[A,E,E-FF,A-FF].filter(v=>v>0);if(c.length&&!c.some(v=>Math.abs(v-f)<=0.01))bad.push(`Fiat：后台 ${x.fiatAmount}／表格 ${r.arriveText||r.amountText}`);
+  }
+  return bad.length?bad.join('；'):null;
+ }
+ const x=BI.acAt&&BI.ac.get(hk);if(!x)return null;
+ const bad=[],U=numOf(r.amountText);
+ if(U>0&&Math.abs(Number(x.a)-U)>0.01)bad.push(`U：后台 ${x.a}／表格 ${r.amountText}`);
+ if(x.s&&x.s!=='CHARGED')bad.push(`状态 ${x.s}`);
+ return bad.length?bad.join('；'):null;
+}
 function renderIssues(){
- const items=[];
- if(T.sheet)['out','in'].forEach(k=>{const t=T.sheet.tabs[k];if(t&&!t.ok)items.push({lv:'error',txt:`${k==='out'?'TRC出金':'TRC入金'} 同步失败：${t.error}`})});
- const rows=T.sheet?SCOPE:[];
- const dup=new Map();rows.forEach(r=>{const k=[r.kind,r.merchant.toLowerCase(),r.currency,cleanNumText(r.amountText),r.date].join('|');dup.set(k,(dup.get(k)||[]).concat(r))});
+ const items=[],BI=backendIndex();
+ if(T.sheet)['out','in'].forEach(k=>{const t=T.sheet.tabs[k];if(t&&!t.ok)items.push({lv:'error',iso:'9999',txt:`${k==='out'?'TRC出金':'TRC入金'} 同步失败：${t.error}`})});
+ const today=todayMD(),rows=T.sheet?allRows().filter(r=>r.date===today&&Number(r.row)>cutoffRow(r.kind)):[];
  rows.forEach(r=>{
-  const st=rowState(r),c=check(r,st),rec=T.recs[sidOf(r)],at=`${r.merchant} ${r.currency} ${r.amountText}（第 ${r.row} 行）`;
-  const addrMiss=c.miss.filter(x=>/地址/.test(x)),rateMiss=c.miss.filter(x=>/汇率/.test(x)),other=c.miss.filter(x=>!/地址|汇率/.test(x));
-  if(addrMiss.length)items.push({lv:'error',sid:sidOf(r),txt:`地址缺少：${at}`});
-  if(rateMiss.length)items.push({lv:'error',sid:sidOf(r),txt:`汇率缺少（${rateMiss.join('、')}）：${at}`});
-  if(other.length)items.push({lv:'warn',sid:sidOf(r),txt:`必填缺少（${other.join('、')}）：${at}`});
-  if(rec&&rec.stale)items.push({lv:'error',sid:sidOf(r),txt:`资料已变更（${rec.stale.changes.map(x=>x.f).join('、')}），旧话术过期：${at}`});
-  if(rec&&rec.gens.length>1&&rec.copiedAt)items.push({lv:'warn',sid:sidOf(r),txt:`重复操作风险：已生成 ${rec.gens.length} 版并复制过：${at}`});
+  const at=`${r.dateRaw||r.date} · ${r.merchant} ${r.currency} ${r.amountText}（第 ${r.row} 行）`,iso=mdToISO(r.date)+String(r.row).padStart(6,'0');
+  const f=formulaIssue(r);if(f)items.push({lv:'error',iso,sid:sidOf(r),txt:`算式有误：${at}　${f}`});
+  const b=backendIssue(r,BI);if(b)items.push({lv:'error',iso,sid:sidOf(r),txt:`${r.kind==='out'?'Payout Record':'Auto Charge'} 与表格不一致：${at}　${b}`});
  });
- dup.forEach(list=>{if(list.length>1)items.push({lv:'warn',sid:sidOf(list[0]),txt:`重复操作风险：表格有 ${list.length} 笔相同（${list[0].merchant} ${list[0].currency} ${list[0].amountText}，${list[0].dateRaw}，第 ${list.map(x=>x.row).join('、')} 行）`})});
- T.genErrors.slice(0,10).forEach(x=>items.push({lv:'error',sid:x.sid,txt:`生成失败：${x.label} ${x.msg}（${tm(x.at)}）`}));
+ items.sort((a,b)=>b.iso.localeCompare(a.iso));
  $('flowIssues').innerHTML=items.length?items.map(x=>`<div class="flow-issue ${x.lv}">${esc(x.txt)}${x.sid?` <button class="fee-ref" data-goto="${esc(x.sid)}">查看</button>`:''}</div>`).join(''):'<div class="hint">无</div>';
 }
 $('flowIssues').addEventListener('click',e=>{
  const b=e.target.closest('[data-goto]');if(!b)return;const r=findBySid(b.dataset.goto);if(!r){toast('这笔纪录不在目前同步的资料里');return}
- $('sheetDate').value=r.date||'';$('sheetDir').value=r.kind;$('sheetSearch').value='';STATUS_FILTER='';FOCUS=sidOf(r);renderList();
+ $('sheetDate').value=r.date||'';$('sheetCal').value=$('sheetCalTo').value=mdToISO(r.date);syncRangeUI();$('sheetDir').value=r.kind;$('sheetSearch').value='';STATUS_FILTER='';FOCUS=sidOf(r);renderList();
  document.querySelector('#sheetList tr.focus')?.scrollIntoView({behavior:'smooth',block:'center'});
 });
 
@@ -3295,14 +3329,17 @@ function updateErc(){
  rows.forEach(r=>{
   const k=ercKey(r);
   if(!needsHash(r)){if(T.erc[k]&&T.erc[k].status!=='done')delete T.erc[k];return}
+  const md=normDate(r.dateRaw);if(T.erc[k])T.erc[k].date=md;
   const net=network(r).net,label=`${net} · ${r.merchant} ${r.currency} ${r.amountText}（${r.dateRaw}，第 ${r.row} 行）${r.hash&&!hasValidHash(r.hash)?'：'+r.hash.slice(0,20):''}`;
-  if(!hasValidHash(r.hash)){if(!T.erc[k]||T.erc[k].status==='done')T.erc[k]={status:'pending',first:Date.now(),label,row:r.row};else if(T.erc[k].status!=='ignored')T.erc[k].label=label}
+  if(!hasValidHash(r.hash)){if(!T.erc[k]||T.erc[k].status==='done')T.erc[k]={status:'pending',first:Date.now(),label,row:r.row,date:md};else if(T.erc[k].status!=='ignored')T.erc[k].label=label}
   else if(T.erc[k]&&T.erc[k].status!=='done'){T.erc[k].status='done';T.erc[k].doneAt=Date.now()}
  });
 }
 function renderErc(){
- const items=Object.entries(T.erc).filter(([,v])=>v.status==='pending'||v.status==='notified');
- $('ercReminders').innerHTML=items.length?items.map(([k,v])=>`<div class="tpl-erc-item"><div><b>${esc(v.label)}</b><div class="pr-muted">${v.status==='notified'?'已提醒 '+tm(v.notifiedAt):'发现于 '+tm(v.first)}</div></div><div class="actions">${v.status==='pending'?`<button class="btn" data-erc="notified" data-key="${esc(k)}">标记已提醒</button>`:''}<button class="btn" data-erc="ignored" data-key="${esc(k)}">忽略</button></div></div>`).join(''):'<div class="hint">无</div>';
+ const items=Object.entries(T.erc).filter(([,v])=>(v.status==='pending'||v.status==='notified')&&within15(v.date)&&Number(v.row)>cutoffRow('out'));
+ const topups=T.sheet?.tabs?.in?.ok?T.sheet.tabs.in.rows.filter(r=>isRecent(r)&&!/[a-f0-9]{64}/i.test(String(r.hash||''))&&!check(r,rowState(r)).miss.length):[];
+ const topHtml=topups.map(r=>`<div class="tpl-erc-item"><div><b>充值 · ${esc(r.merchant)} ${esc(r.currency)} ${esc(r.amountText)} U（${esc(r.dateRaw||r.date)}，第 ${esc(r.row)} 行）</b><div class="pr-muted">等财务打款，HASH 未填</div></div></div>`).join('');
+ $('ercReminders').innerHTML=(items.length||topups.length)?topHtml+items.map(([k,v])=>`<div class="tpl-erc-item"><div><b>${esc(v.label)}</b><div class="pr-muted">${v.status==='notified'?'已提醒 '+tm(v.notifiedAt):'发现于 '+tm(v.first)}</div></div><div class="actions">${v.status==='pending'?`<button class="btn" data-erc="notified" data-key="${esc(k)}">标记已提醒</button>`:''}<button class="btn" data-erc="ignored" data-key="${esc(k)}">忽略</button></div></div>`).join(''):'<div class="hint">无</div>';
 }
 $('ercReminders').addEventListener('click',e=>{
  const b=e.target.closest('[data-erc]');if(!b)return;const v=T.erc[b.dataset.key];if(!v)return;
@@ -3323,7 +3360,7 @@ function applySheet(p){
  T.sheet={syncedAt:p.syncedAt,tabs};
  updateErc();const newStale=detectChanges();saveT();
  log(`同步出入金表：出金 ${tabs.out.ok?tabs.out.rows.length+' 行':'失败'}，入金 ${tabs.in.ok?tabs.in.rows.length+' 行':'失败'}`,tabs.out.ok&&tabs.in.ok?'info':'error');
- if(!p.auto){showPage('flow');if(!$('sheetDate').value)$('sheetDate').value=todayMD()}
+ if(!p.auto){showPage('flow');if(!$('sheetDate').value){$('sheetDate').value=todayMD();$('sheetCal').value=$('sheetCalTo').value=mdToISO(todayMD());syncRangeUI()}}
  renderAllTpl();
  if(!p.auto)toast(tabs.out.ok&&tabs.in.ok?'已同步出入金表':'出入金表部分读取失败，请看错误讯息');
  else if(!(tabs.out.ok&&tabs.in.ok))toast('⚠ 出入金表自动同步：部分读取失败');
@@ -3334,30 +3371,79 @@ window.FOPS_SRC=window.FOPS_SRC||{};
 window.addEventListener('message',e=>{
  if(e.origin!==SHEET_ORIGIN)return;
  const d=e.data;if(!d)return;
- if(d.type==='fiatops-hello'){window.FOPS_SRC.sheet={win:e.source,last:d.last,every:d.every,at:Date.now()};renderSyncBar();return}
+ if(d.type==='fiatops-hello'){window.FOPS_SRC.sheet={win:e.source,last:d.last,checked:d.checked||0,every:d.every,at:Date.now()};renderSyncBar();return}
+ if(d.type==='fiatops-sheet-fail'){const f=SHEET_REQ[d.id];if(f){delete SHEET_REQ[d.id];f.reject(new Error(d.error||'读取失败'))}return}
  if(d.type!=='fiatops-sheet'||!d.payload)return;
- window.FOPS_SRC.sheet={win:e.source,last:Date.now(),every:180000,at:Date.now()};
+ window.FOPS_SRC.sheet={win:e.source,last:Date.now(),checked:Date.now(),every:0,at:Date.now()};
  const n=applySheet(d.payload);
  try{e.source.postMessage({type:'fiatops-ack',count:n},e.origin)}catch(err){}
+ const rq=d.payload.reqId&&SHEET_REQ[d.payload.reqId];if(rq){delete SHEET_REQ[d.payload.reqId];const t=d.payload.tabs||{};if(t.out?.ok&&t.in?.ok)rq.resolve();else rq.reject(new Error('有分页读取失败'))}
+ renderSyncBar();
 });
+// ---------- 扩充功能「Fiat Ops Sync」：手动按同步／生成并复制时才读取，不用点书签 ----------
+const EXT={req:{},last:{}};
+const extReady=()=>!!document.documentElement.dataset.fopsExt;
+window.addEventListener('message',e=>{if(e.source!==window||!e.data)return;const d=e.data;
+ if(d.type==='fops-ext-ready'){renderSyncBar();return}
+ if(d.type!=='fops-ext-res')return;const r=EXT.req[d.id];if(!r)return;delete EXT.req[d.id];d.ok?r.resolve(d.payload):r.reject(new Error(d.error||'读取失败'))});
+function extReq(what,opts){return new Promise((resolve,reject)=>{const id='x'+Date.now()+Math.random().toString(36).slice(2,6);EXT.req[id]={resolve,reject};
+ window.postMessage({type:'fops-ext-req',id,what,opts},location.origin);setTimeout(()=>{if(EXT.req[id]){delete EXT.req[id];reject(new Error('扩充功能没有回应'))}},120000)})}
+const EXT_BUSY={};
+async function extSync(what){
+ if(EXT_BUSY[what])return EXT_BUSY[what];
+ EXT_BUSY[what]=(async()=>{try{
+  if(what==='sheet'){const p=await extReq('sheet',{gids:{out:T.settings.gidOut,in:T.settings.gidIn}});applySheet(p);EXT.last.sheet=Date.now();if(!(p.tabs.out.ok&&p.tabs.in.ok))throw new Error('有分页读取失败');return p}
+  const p=await extReq('backend',{cur:BACKEND_CURRENCIES});applyBackendSync(p);EXT.last.backend=Date.now();return p;
+ }finally{delete EXT_BUSY[what];renderSyncBar()}})();
+ renderSyncBar();return EXT_BUSY[what];
+}
+window.extSync=extSync;
+window.fopsSyncBtn=async(what,btn)=>{
+ if(!extReady()){toast(what==='sheet'?'未侦测到扩充功能：可把「⇪ 同步」拖到书签列，在出入金表页面点击':'未侦测到扩充功能：可把「⇪ 同步」拖到书签列，在后台页面点击');return}
+ if(btn.dataset.busy)return;const t0=btn.textContent;btn.dataset.busy=1;btn.textContent='同步中…';
+ try{await extSync(what);toast(what==='sheet'?'✓ 已同步出入金表':'✓ 已同步后台')}catch(e){toast('⚠ 同步失败：'+e.message)}
+ finally{btn.textContent=t0;delete btn.dataset.busy}
+};
+// 生成／复制前向出入金表要一次最新资料；连不上就不用旧资料
+const SHEET_REQ={};
+function freshSheet(){if(extReady())return extSync('sheet');return new Promise((resolve,reject)=>{const live=srcLive('sheet');if(!live){reject(new Error('出入金表未连线'));return}
+ const id='q'+Date.now()+Math.random().toString(36).slice(2,6);SHEET_REQ[id]={resolve,reject};
+ try{live.win.postMessage({type:'fiatops-fetch',id},SHEET_ORIGIN)}catch(err){delete SHEET_REQ[id];reject(new Error('出入金表连线中断'));return}
+ setTimeout(()=>{if(SHEET_REQ[id]){delete SHEET_REQ[id];reject(new Error('出入金表没有回应'))}},15000)})}
+const rowSig=r=>r?JSON.stringify(r):'';
+// 回传：最新的那一行（没变或已更新）；失败回传 null 并提示
+async function freshRow(r){
+ if(r.demo)return r;
+ const sid=sidOf(r),before=rowSig(r);
+ toast('读取出入金表最新资料…');
+ try{await freshSheet()}catch(e){toast('⚠ '+e.message+'，为避免用到旧资料，这次不生成'+(extReady()?'':'。请从「↗ 出入金表」开启表格并点一次书签'));return null}
+ const now=findBySid(sid);
+ if(!now){toast(`⚠ 表格上已找不到 ${r.merchant}（第 ${r.row} 行），请确认`);renderList();return null}
+ if(rowSig(now)!==before)toast(`此行刚更新过，已用最新资料（${now.merchant} 第 ${now.row} 行）`);
+ return now;
+}
 function sheetBookmarkletSource(){
  const target=location.origin,page=location.origin+location.pathname;
  return `(async()=>{
-const TG=${JSON.stringify(target)},PG=${JSON.stringify(page)},ID=${JSON.stringify(SHEET_ID)},G=${JSON.stringify({out:T.settings.gidOut,in:T.settings.gidIn})},EVERY=3*60e3;
+const TG=${JSON.stringify(target)},PG=${JSON.stringify(page)},ID=${JSON.stringify(SHEET_ID)},G=${JSON.stringify({out:T.settings.gidOut,in:T.settings.gidIn})},EVERY=0;
 if(location.origin!=='https://docs.google.com'||location.pathname.indexOf(ID)<0){alert('請在「商戶出入金登記表NEW」Google 表格頁面點這個書籤');return}
 if(window.__fopsSheet){window.__fopsSheet.run('manual');return}
-let w=null;const openW=()=>{try{w=window.open('','fiatops');if(w){let blank=false;try{blank=w.location.href==='about:blank'}catch(e){}if(blank)w.location.href=PG+'#sheet'}}catch(e){w=null}return w};openW();
+let w=null;const findW=()=>{try{if(w&&!w.closed)return w}catch(e){}try{if(window.opener&&!window.opener.closed){w=window.opener;return w}}catch(e){}w=null;return null};const openW=()=>{if(findW())return w;try{w=window.open(PG+'#sheet','fiatops')}catch(e){w=null}return w};findW();
 const box=document.createElement('div');box.style.cssText='position:fixed;right:20px;bottom:20px;z-index:2147483647;background:#0f1d33;color:#fff;padding:10px 14px;border-radius:12px;font:13px/1.5 -apple-system,sans-serif;max-width:340px;cursor:pointer';box.textContent='Fiat Ops 讀取出入金表…';document.body.appendChild(box);
-const fetchTabs=async()=>{const tabs={};for(const k of ['out','in']){try{const r=await fetch('/spreadsheets/d/'+ID+'/gviz/tq?tqx=out:csv&headers=0&gid='+G[k],{credentials:'include'});if(!r.ok)throw new Error('HTTP '+r.status);const csv=await r.text();if(/^\\s*</.test(csv))throw new Error('回傳的不是表格資料（可能沒有權限或未登入）');tabs[k]={ok:true,gid:G[k],csv}}catch(e){tabs[k]={ok:false,gid:G[k],error:String(e.message||e)}}}return tabs};
-let acked=false,busy=false,last=0;
-window.addEventListener('message',e=>{if(e.origin!==TG||!e.data)return;if(e.data.type==='fiatops-ack')acked=true;if(e.data.type==='fiatops-resync'&&(e.data.what==='sheet'||e.data.what==='all')){w=e.source;run('manual')}});
+const fetchTabs=async()=>{const tabs={};for(const k of ['out','in']){try{const r=await fetch('/spreadsheets/d/'+ID+'/gviz/tq?tqx=out:csv&headers=0&range=A1:Q&gid='+G[k],{credentials:'include'});if(!r.ok)throw new Error('HTTP '+r.status);const csv=await r.text();if(/^\\s*</.test(csv))throw new Error('回傳的不是表格資料（可能沒有權限或未登入）');tabs[k]={ok:true,gid:G[k],csv}}catch(e){tabs[k]={ok:false,gid:G[k],error:String(e.message||e)}}}return tabs};
+let acked=false,busy=false,last=0,checked=0,lastSig='';
+window.addEventListener('message',e=>{if(e.origin!==TG||!e.data)return;if(e.data.type==='fiatops-ack')acked=true;if(e.data.type==='fiatops-resync'&&(e.data.what==='sheet'||e.data.what==='all')){w=e.source;run('manual')}if(e.data.type==='fiatops-fetch'){w=e.source;fetchNow(e.data.id)}});
 const send=async payload=>{acked=false;for(let i=0;i<40&&!acked;i++){try{if(w&&!w.closed)w.postMessage({type:'fiatops-sheet',payload},TG)}catch(e){}await new Promise(r=>setTimeout(r,500))}return acked};
+const hs=s=>{let x=0;for(let i=0;i<s.length;i++)x=(x*31+s.charCodeAt(i))|0;return x};
+const sigOf=tabs=>['out','in'].map(k=>tabs[k].ok?tabs[k].csv.length+':'+hs(tabs[k].csv):'x').join('|');
+const fetchNow=async id=>{try{const tabs=await fetchTabs();checked=Date.now();const payload={syncedAt:Date.now(),sheetId:ID,tabs,auto:true,reqId:id};try{w.postMessage({type:'fiatops-sheet',payload},TG)}catch(e){}if(tabs.out.ok&&tabs.in.ok){lastSig=sigOf(tabs);last=Date.now()}}catch(e){try{w.postMessage({type:'fiatops-sheet-fail',id,error:String(e.message||e)},TG)}catch(x){}}};
 const hm=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
-const run=async why=>{if(busy)return;busy=true;try{box.textContent='Fiat Ops 讀取出入金表…';const tabs=await fetchTabs();const payload={syncedAt:Date.now(),sheetId:ID,tabs,auto:why==='auto'};if(!w||w.closed)openW();const ok=await send(payload);last=Date.now();const okAll=tabs.out.ok&&tabs.in.ok;box.textContent=ok?('✓ Fiat Ops 出入金表自動同步中（每 3 分鐘）· 最後 '+hm()+(okAll?'':'（有分頁讀取失敗）')):'⚠ Fiat Ops 視窗沒有回應，點這裡開啟'}catch(e){box.textContent='⚠ 同步失敗：'+e.message}busy=false};
-const hello=()=>{try{if(w&&!w.closed)w.postMessage({type:'fiatops-hello',src:'sheet',last,every:EVERY},TG)}catch(e){}};
+const okText=()=>'✓ Fiat Ops 出入金表已連線（手動更新）· 最後更新 '+(last?hm2(last):'—');const hm2=t=>{const d=new Date(t);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+const run=async why=>{if(busy)return;busy=true;try{if(!findW()){box.textContent='⚠ 未連上 Fiat Ops：請從 Fiat Ops 的「開啟出入金表」按鈕開這個分頁，或點這裡連接';busy=false;return}if(why!=='auto')box.textContent='Fiat Ops 讀取出入金表…';const tabs=await fetchTabs();checked=Date.now();const okAll=tabs.out.ok&&tabs.in.ok,sg=sigOf(tabs);if(why==='auto'&&okAll&&sg===lastSig){box.textContent=okText();busy=false;return}const payload={syncedAt:Date.now(),sheetId:ID,tabs,auto:why==='auto'};const ok=await send(payload);if(ok){last=Date.now();if(okAll)lastSig=sg}box.textContent=ok?(okText()+(okAll?'':'（有分頁讀取失敗）')):'⚠ Fiat Ops 視窗沒有回應，點這裡連接'}catch(e){box.textContent='⚠ 同步失敗：'+e.message}busy=false};
+const hello=()=>{try{if(w&&!w.closed)w.postMessage({type:'fiatops-hello',src:'sheet',last,checked,every:EVERY},TG)}catch(e){}};
 box.onclick=()=>{openW();run('manual')};
 window.__fopsSheet={run};
-setInterval(()=>run('auto'),EVERY);setInterval(hello,20000);
+setInterval(hello,15000);
 await run('first');
 })()`;
 }
@@ -3385,6 +3471,24 @@ $('sheetPaste').addEventListener('paste',e=>{
  log('经由贴上同步（书签无法开新视窗时）');applySheet(d.payload);e.target.value='';
 });
 $('sheetDate').addEventListener('input',renderList);
+// 日历：显示 YYYY-MM-DD，内部仍用表格的 M/D 比对；预设今天
+function mdToISO(md){const m=String(md||'').match(/^(\d{1,2})\/(\d{1,2})$/);if(!m)return '';const now=new Date();let y=now.getFullYear();const t0=new Date();t0.setHours(23,59,59,999);if(new Date(y,+m[1]-1,+m[2])>t0)y--;return `${y}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`}
+function setDay(md){$('sheetDate').value=md||todayMD();$('sheetCal').value=$('sheetCalTo').value=mdToISO($('sheetDate').value);syncRangeUI();renderList()}
+window.setFlowDay=setDay;
+const onCal=()=>{let f=$('sheetCal').value,t=$('sheetCalTo').value;if(!f&&!t)f=t=mdToISO(todayMD());if(!f)f=t;if(!t)t=f;if(f>t)[f,t]=[t,f];
+ $('sheetCal').value=f;$('sheetCalTo').value=t;const [,m,d]=f.split('-');$('sheetDate').value=(+m)+'/'+(+d);syncRangeUI();renderList()};
+// 单一栏位选日期：点一天 = 当天；点两天 = 区间
+var FP=null;
+function syncRangeUI(){const f=$('sheetCal').value,t=$('sheetCalTo').value||f,s=x=>x?(+x.slice(5,7))+'/'+(+x.slice(8,10)):'';
+ if(FP&&f)FP.setDate([f,t],false);$('sheetRange').value=!f?'':f===t?s(f):s(f)+' – '+s(t)}
+(function(){
+ const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+ if(window.flatpickr){
+  FP=flatpickr($('sheetRange'),{mode:'range',dateFormat:'Y-m-d',locale:(flatpickr.l10ns&&flatpickr.l10ns.zh)||'default',
+   onClose:sel=>{if(!sel.length){syncRangeUI();return}$('sheetCal').value=iso(sel[0]);$('sheetCalTo').value=iso(sel[sel.length-1]);onCal()}});
+  setTimeout(syncRangeUI,0);
+ }else{const el=$('sheetRange');el.type='date';el.readOnly=false;el.addEventListener('change',()=>{$('sheetCal').value=$('sheetCalTo').value=el.value;onCal()})}
+})();
 $('sheetSearch').addEventListener('input',renderList);
 $('sheetUndone').addEventListener('change',renderList);
 window.renderFlowList=()=>{try{renderList()}catch(e){}};
@@ -3397,11 +3501,33 @@ function renderAllTpl(){renderStatus();renderList();renderErc();renderSyncBar();
 function srcLive(k){const x=(window.FOPS_SRC||{})[k];try{return x&&x.win&&!x.win.closed&&Date.now()-x.at<70000?x:null}catch(e){return null}}
 function renderSyncBar(){
  const bar=$('syncBar');if(!bar)return;
- const item=(key,label,at,hint)=>{const age=at?(Date.now()-at)/6e4:Infinity,live=srcLive(key);const cls=!at?'none':age>(key==='sheet'?10:30)?'stale':'';
-  return `<span class="sb ${cls}" title="${esc(hint)}"><i class="dot ${live?'on':''}"></i>${label} ${at?tm(at):'未同步'}${live?` · 自动每 ${Math.round((live.every||0)/60000)} 分`:' · 未连线'}<button class="sb-re" data-resync="${key}" title="立即重新同步">↻</button></span>`};
- bar.innerHTML=item('sheet','出入金表',T.sheet?.syncedAt,'在出入金表页面点一次书签「⇪ 同步出入金表」，之后会自动更新')+item('backend','后台',typeof state!=='undefined'&&state.backend?.syncedAt,'在后台页面点一次书签「⇪ 同步到 Fiat Ops」，之后会自动更新');
+ const ext=extReady();
+ const item=(key,label,at,hint)=>{const live=ext?{every:0}:srcLive(key);if(!ext&&live&&live.checked&&key==='sheet')at=Math.max(at||0,live.checked);const age=at?(Date.now()-at)/6e4:Infinity;const busy=ext&&EXT_BUSY[key];const cls=!at?'none':age>(key==='sheet'?10:30)?'stale':'';
+  return `<span class="sb ${cls}" title="${esc(hint)}"><i class="dot ${live?'on':''}"></i>${label} ${at?tm(at):'未同步'}${busy?' · 读取中…':live?(live.every?` · 自动每 ${(live.every||0)<60000?Math.round((live.every||0)/1000)+' 秒':Math.round((live.every||0)/60000)+' 分'}`:' · 手动'):' · 未连线'}<button class="sb-re" data-resync="${key}" title="立即重新同步">↻</button></span>`};
+ bar.innerHTML=item('sheet','出入金表',T.sheet?.syncedAt,ext?'扩充功能：按 ↻ 或「全部同步」读取；生成并复制前也会自动读一次':'用「↗ 出入金表」开启表格，在表格页点一次书签「⇪ 同步出入金表」')+item('backend','后台',typeof state!=='undefined'&&state.backend?.syncedAt,ext?'扩充功能：按 ↻ 或「全部同步」读取':'用「↗ 后台」开启后台，在后台页点一次书签「⇪ 同步到 Fiat Ops」')
+  +(ext?'':`<button class="sb-open" data-opentab="sheet" title="开启或切换到出入金表分页">↗ 出入金表</button><button class="sb-open" data-opentab="backend" title="开启或切换到后台分页">↗ 后台</button>`)+`<button class="sb-open sb-all" data-resync="all" title="两边一起重新同步">⟳ 全部同步</button>`;
 }
-document.addEventListener('click',e=>{const b=e.target.closest('[data-resync]');if(!b)return;e.stopPropagation();const k=b.dataset.resync,live=srcLive(k);
+// 由 Fiat Ops 开启的分页，书签会直接回传给这个视窗，不会另开新分页
+window.FOPS_TABS=window.FOPS_TABS||{};
+function openTab(k){
+ const url=k==='sheet'?`https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${T.settings.gidOut}`:BACKEND_ORIGIN+'/payments/payout_record';
+ let x=window.FOPS_TABS[k];
+ try{if(x&&!x.closed){x.focus();return}}catch(e){}
+ x=window.open('','fops_'+k);
+ if(!x){toast('浏览器挡住了弹出视窗，请允许本页开启弹出视窗');return}
+ let blank=false;try{blank=x.location.href==='about:blank'}catch(e){}
+ if(blank){x.location.href=url;toast(k==='sheet'?'已开启出入金表，载入后点一次书签「⇪ 同步出入金表」':'已开启后台，载入后点一次书签「⇪ 同步到 Fiat Ops」')}
+ else{try{x.focus()}catch(e){}}
+ window.FOPS_TABS[k]=x;
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-opentab]');if(!b)return;e.stopPropagation();openTab(b.dataset.opentab)});
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-resync]');if(!b)return;e.stopPropagation();const k=b.dataset.resync;
+ if(extReady()){const keys=k==='all'?['sheet','backend']:[k],name={sheet:'出入金表',backend:'后台'};toast('读取中：'+keys.map(x=>name[x]).join('、')+'…');
+  const res=await Promise.allSettled(keys.map(x=>extSync(x)));const ok=[],bad=[];res.forEach((r,i)=>r.status==='fulfilled'?ok.push(name[keys[i]]):bad.push(name[keys[i]]+'（'+r.reason.message+'）'));
+  toast((ok.length?'✓ 已同步：'+ok.join('、'):'')+(bad.length?(ok.length?'；':'')+'⚠ 失败：'+bad.join('、'):''));return}
+ if(k==='all'){const done=[],miss=[];[['sheet','出入金表',SHEET_ORIGIN],['backend','后台',BACKEND_ORIGIN]].forEach(([key,label,origin])=>{const lv=srcLive(key);if(!lv){miss.push(label);return}try{lv.win.postMessage({type:'fiatops-resync',what:key},origin);done.push(label)}catch(err){miss.push(label)}});
+  toast((done.length?'已要求重新同步：'+done.join('、'):'')+(miss.length?(done.length?'；':'')+'⚠ 未连线：'+miss.join('、')+'（请用 ↗ 按钮开启该页，再点一次书签）':''));return}
+ const live=srcLive(k);
  if(!live){toast(k==='sheet'?'请先到出入金表页面点一次书签「⇪ 同步出入金表」，之后会自动更新':'请先到后台页面点一次书签「⇪ 同步到 Fiat Ops」，之后会自动更新');return}
  try{live.win.postMessage({type:'fiatops-resync',what:k},k==='sheet'?SHEET_ORIGIN:'https://happywork2026.com');toast('已要求重新同步，约几秒到一两分钟')}catch(err){toast('连线中断，请到该页面再点一次书签')}});
 window.renderSyncBar=renderSyncBar;
@@ -3458,7 +3584,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-flow-dir]'
 setupSheetBookmarklet();loadSettings();
 // 每次打开页面都用已同步的资料重新检查一次 Hash 待补
 try{updateErc();saveT()}catch(e){}
-if(T.sheet)$('sheetDate').value=todayMD();
+$('sheetDate').value=todayMD();$('sheetCal').value=$('sheetCalTo').value=mdToISO(todayMD());syncRangeUI();
 renderAllTpl();
 if(location.hash==='#sheet'){showPage('flow');toast('等待出入金表资料…')}
 })();
