@@ -1926,8 +1926,51 @@ function isPrFeeExempt(provider){
 // 依目前的例外名单，动态算出话术要显示的「结算金额」：
 // 不例外且有 Fee(Fiat) 时，把 Fee(Fiat) 加回 Amount(Fiat) 还原成原始结算金额；
 // 名单内的商户，或本来就没有 Fee(Fiat) 的记录，则维持 Amount(Fiat) 原样。
+// ---- 话术写法：每家商户＋币种一组；预设来自规则表（外扣名单），按「记住这家的写法」才存 ----
+const PR_STYLE_KEY='fiat_ops_pr_style';
+function prStyleMem(){try{return JSON.parse(localStorage.getItem(PR_STYLE_KEY)||'{}')||{}}catch(e){return {}}}
+function prStyleKey(x){return normalizeProviderKey(x.provider)+'|'+String(x.currency||'').toUpperCase()}
+function prStyleOf(x){
+  const k=prStyleKey(x),tmp=PR.styleTmp&&PR.styleTmp[k],mem=prStyleMem()[k];
+  const base={fiatFee:isPrFeeExempt(x.provider)?'hide':'inside',usdtFee:'auto'};
+  const st=tmp||mem||base;return {...base,...st,key:k,src:tmp?'未保存':mem?'记忆':'规则表'};
+}
+function prUsesUsdFee(x){const st=prStyleOf(x);if(!(finite(x.fu)&&x.fu!==0))return false;if(st.usdtFee==='show')return true;if(st.usdtFee==='hide')return false;return !!x.smart?.chosen?.usesUsdFee}
+// ---- 与云端出金表核对（用 Hash 对行）；不一致就挡住话术，除非按「差异已确认」 ----
+const PR_ACK_KEY='fiat_ops_pr_sheet_ack';
+function prAck(){try{return JSON.parse(localStorage.getItem(PR_ACK_KEY)||'{}')||{}}catch(e){return {}}}
+function applySheetCheck(x){
+  if(!x.baseIssues)x.baseIssues=x.issues.slice();
+  x.issues=x.baseIssues.slice();x.sheetResolvedCalc=false;x.sheet=null;x.sheetMiss=false;x.sheetIssues=[];x.styleWarn='';
+  if(!x.internal&&x.hash&&window.sheetRowByHash&&window.sheetSyncedAt?.()){
+    const s=window.sheetRowByHash(x.hash);
+    if(!s)x.sheetMiss=true;
+    else{
+      x.sheet=s;const bad=[];
+      if(s.U>0&&finite(x.au)&&Math.abs(s.U-x.au)>0.01)bad.push(`U：表格 ${money4(s.U)}／后台 ${money4(x.au)}`);
+      if(s.R>0&&s.R!==1){
+        if(finite(x.dr)&&Math.abs(s.R-x.dr)>1e-9)bad.push(`优惠汇率：表格 ${s.R}／后台 ${x.dr}`);
+        const c=[s.A,s.E,s.E-s.FF,s.A-s.FF].filter(v=>v>0);
+        if(c.length&&finite(x.af)&&!c.some(v=>Math.abs(v-x.af)<=0.01))bad.push(`Fiat：表格 ${money(s.E>0?s.E:s.A)}／后台 ${money(x.af)}`);
+      }
+      x.sheetIssues=bad;
+      if(bad.length&&!prAck()[x.settlementId||prKey(x)])x.issues.push('与云端表格不一致');
+      // 取整的商户（例 U2CPay 9416.2 → 9416）：表格与后台的 U、汇率、Fiat 全部一致，且差在 1 U 内 → 以表格为证，不判 Check
+      if(!bad.length&&x.calcMismatch&&finite(x.calcDiff)&&Math.abs(x.calcDiff)<=1&&s.U>0&&Math.abs(s.U-x.au)<=0.01){x.issues=x.issues.filter(t=>t!=='USDT 结算结果与 Record 不一致');x.sheetResolvedCalc=true}
+    }
+  }
+  // 写法核对：照目前写法算出来的 U 要等于实收（Note 已写明金额的不检查）
+  if(!x.internal&&!x.noSpeech&&!finite(x.noteAmount)&&finite(x.au)&&finite(x.af)&&finite(x.dr)&&x.dr>0&&!x.calcMismatch){
+    const {hasFiatFee,grossFiat}=prGrossInfo(x);
+    const v=(hasFiatFee?(grossFiat-x.ff):x.af)/x.dr-(prUsesUsdFee(x)?x.fu:0);
+    if(Math.abs(v-x.au)>0.02){x.styleWarn=`照目前写法算出 ${money4(v)} U，与实收 ${money4(x.au)} U 不符`;x.issues.push('话术写法算不出实收 U')}
+  }
+  x.ok=x.internal?true:x.issues.length===0;
+  return x;
+}
+function refreshPRChecks(){PR.data.forEach(applySheetCheck)}
 function prGrossInfo(x){
-  const hasFiatFee=!isPrFeeExempt(x.provider)&&finite(x.ff)&&x.ff!==0;
+  const hasFiatFee=prStyleOf(x).fiatFee==='inside'&&finite(x.ff)&&x.ff!==0;
   const grossFiat=hasFiatFee?x.af+x.ff:x.af;
   return {hasFiatFee,grossFiat};
 }
@@ -2052,7 +2095,7 @@ function prFormulaParts(x){
   let formulaBody='';
   if(s){
     const base=hasFiatFee?`(${amount} - Fee ${money(x.ff)})/${rate}`:`${money(x.af)}/${rate}`;
-    formulaBody=s.usesUsdFee?`(${base}) - Fee ${money(x.fu)}U`:base;
+    formulaBody=prUsesUsdFee(x)?`(${base}) - Fee ${money(x.fu)}U`:base;
   }
   const formula=formulaBody?`${formulaBody}=${actual} U`:`${actual} U`;
   return {amount,rate,cur,actual,formula,formulaBody,hasFiatFee,grossFiat};
@@ -2170,6 +2213,7 @@ function updatePRCopyBtn(){
   const n=PR.selected.size;$('prCopyAll').disabled=!n;$('prCopyAll').textContent=`复制已选（${n}）`;
 }
 function renderPR(){
+  refreshPRChecks();
   const all=prScoped();
   const scopeTimes=PR.data.map(x=>x.createTime).filter(finite);
   $('prScopeInfo').textContent=PR.data.length?`显示范围内 ${all.length} / ${PR.data.length} 笔`+(scopeTimes.length?`｜资料涵盖 ${fmtTime(Math.min(...scopeTimes))} – ${fmtTime(Math.max(...scopeTimes))}`:''):'';
@@ -2223,10 +2267,14 @@ function renderPR(){
         ? `${fp.hasFiatFee?`<div>已还原结算金额：<b>${safeCell(fp.grossFiat)}</b> Fiat（Amount(Fiat) ${safeCell(x.af)} + Fee(Fiat) ${safeCell(x.ff)}）</div>`:''}
            <div>${esc(fp.formulaBody)} = <b>${prActualDisplay(x)} U</b></div>
            ${x.noteDiff?`<div class="pr-diff-alert">⚠ Note 与 Amount(USDT) 有差异，相差 <span class="pr-diff-amt">${diffSigned} U</span></div>`:''}
-           ${x.calcMismatch?`<div class="pr-diff-alert">⚠ 计算结果与 Amount(USDT) 不一致，相差 <span class="pr-diff-amt">${calcDiffSigned} U</span></div>`:''}
+           ${x.calcMismatch&&!x.sheetResolvedCalc?`<div class="pr-diff-alert">⚠ 计算结果与 Amount(USDT) 不一致，相差 <span class="pr-diff-amt">${calcDiffSigned} U</span></div>`:''}
            ${x.internalReason?`<div class="pr-muted">内转依据：${esc(x.internalReason)}</div>`:''}`
         : '';
-      const otherIssues=x.issues.filter(t=>t!=='USDT 结算结果与 Record 不一致');
+      const otherIssues=x.issues.filter(t=>t!=='USDT 结算结果与 Record 不一致'&&t!=='与云端表格不一致'&&t!=='话术写法算不出实收 U');
+      const ackd=!!prAck()[x.settlementId||prKey(x)];
+      const sheetHtml=x.sheet?(x.sheetIssues.length?`<div class="pr-bad">表格第 ${x.sheet.row} 行不一致：${x.sheetIssues.map(esc).join('；')}</div>${ackd?'<div class="pr-muted">已确认照后台</div>':`<button class="fee-ref" data-sheet-ack="${esc(x.settlementId||prKey(x))}">差异已确认，照后台出话术</button>`}`:`<div class="pr-ok-line">✓ 表格第 ${x.sheet.row} 行一致</div>`)+(x.sheet.sameOrder?`<div class="pr-muted">表格同单号另有 ${x.sheet.sameOrder} 笔 Hash（合并打款？）</div>`:''):x.sheetMiss?'<div class="pr-muted">表格找不到这个 Hash</div>':'';
+      const stl=prStyleOf(x),hasFF=finite(x.ff)&&x.ff!==0,hasFU=finite(x.fu)&&x.fu!==0;
+      const styleHtml=!x.noSpeech&&(hasFF||hasFU)?`<div class="pr-style">写法（${stl.src}）：${hasFF?`<label><input type="checkbox" data-style="fiat" data-sk="${esc(stl.key)}" ${stl.fiatFee==='inside'?'checked':''}> Fee(Fiat) 写入</label>`:''}${hasFU?`<label><input type="checkbox" data-style="usdt" data-sk="${esc(stl.key)}" ${prUsesUsdFee(x)?'checked':''}> Fee(USDT) 写入</label>`:''}<button class="fee-ref" data-style-save="${esc(stl.key)}">记住这家的写法</button>${stl.src==='记忆'?`<button class="fee-ref" data-style-reset="${esc(stl.key)}">清除记忆</button>`:''}</div>`:'';
       const noteHtml=x.note.has
         ? `<b>Note：</b>${esc(x.noteText)||''}${x.note.type?`<div class="pr-muted">识别：${esc(x.note.type)}${finite(x.noteAmount)?`｜${money4(x.noteAmount)} U`:''}</div>`:''}`
         : '';
@@ -2250,8 +2298,8 @@ function renderPR(){
         <td class="pr-id">${hashHtml}</td>
         <td class="pr-note-cell">${noteHtml}</td>
         <td class="${x.noteDiff?'pr-bad':''}">${diff}</td>
-        <td class="pr-calc">${calcHtml}${otherIssues.length?`<div class="pr-bad">${otherIssues.map(esc).join('；')}</div>`:''}</td>
-        <td class="pr-speech">${x.noSpeech?`<span class="pr-muted">内转｜仅纪录，不生成话术</span>`:esc(speech)}${merged?`<div class="pr-muted">🔗 已与其他 ${merged.count-1} 笔（相同 TXID）合并为一则话术</div>`:''}</td>
+        <td class="pr-calc">${calcHtml}${sheetHtml}${otherIssues.length?`<div class="pr-bad">${otherIssues.map(esc).join('；')}</div>`:''}</td>
+        <td class="pr-speech">${x.noSpeech?`<span class="pr-muted">内转｜仅纪录，不生成话术</span>`:(x.ok?esc(speech):`<span class="pr-muted">先处理左边的差异才会出话术</span>`)}${x.styleWarn?`<div class="pr-bad">⚠ ${esc(x.styleWarn)}</div>`:''}${styleHtml}${merged?`<div class="pr-muted">🔗 已与其他 ${merged.count-1} 笔（相同 TXID）合并为一则话术</div>`:''}</td>
       </tr>`;
     }).join('')
   }</tbody></table></div>`;
@@ -2265,6 +2313,12 @@ function renderPR(){
   document.querySelectorAll('[data-pick]').forEach(cb=>{
     cb.onchange=()=>{const x=byKey.get(cb.dataset.pick);if(!x)return;groupKeys(x).forEach(k=>cb.checked?PR.selected.add(k):PR.selected.delete(k));renderPR();};
   });
+  document.querySelectorAll('[data-sheet-ack]').forEach(b=>{b.onclick=()=>{const m=prAck();m[b.dataset.sheetAck]=Date.now();try{localStorage.setItem(PR_ACK_KEY,JSON.stringify(m))}catch(e){}renderPR();toast('已确认，这笔照后台资料出话术')}});
+  document.querySelectorAll('[data-style]').forEach(cb=>{cb.onchange=()=>{const k=cb.dataset.sk,x=PR.data.find(y=>prStyleKey(y)===k);if(!x)return;const cur=prStyleOf(x);PR.styleTmp=PR.styleTmp||{};
+    PR.styleTmp[k]={fiatFee:cur.fiatFee,usdtFee:cur.usdtFee==='auto'?(prUsesUsdFee(x)?'show':'hide'):cur.usdtFee,[cb.dataset.style==='fiat'?'fiatFee':'usdtFee']:cb.dataset.style==='fiat'?(cb.checked?'inside':'hide'):(cb.checked?'show':'hide')};renderPR()}});
+  document.querySelectorAll('[data-style-save]').forEach(b=>{b.onclick=()=>{const k=b.dataset.styleSave,x=PR.data.find(y=>prStyleKey(y)===k);if(!x)return;const cur=prStyleOf(x);const m=prStyleMem();
+    m[k]={fiatFee:cur.fiatFee,usdtFee:cur.usdtFee==='auto'?(prUsesUsdFee(x)?'show':'hide'):cur.usdtFee,at:Date.now()};try{localStorage.setItem(PR_STYLE_KEY,JSON.stringify(m))}catch(e){}if(PR.styleTmp)delete PR.styleTmp[k];renderPR();toast('已记住 '+(x.provider||'')+' '+(x.currency||'')+' 的写法')}});
+  document.querySelectorAll('[data-style-reset]').forEach(b=>{b.onclick=()=>{const k=b.dataset.styleReset,m=prStyleMem();delete m[k];try{localStorage.setItem(PR_STYLE_KEY,JSON.stringify(m))}catch(e){}if(PR.styleTmp)delete PR.styleTmp[k];renderPR();toast('已清除，改回规则表写法')}});
   const pa=$('prPickAll');
   if(pa)pa.onchange=()=>{pickable.forEach(x=>groupKeys(x).forEach(k=>pa.checked?PR.selected.add(k):PR.selected.delete(k)));renderPR();};
 }
@@ -2471,6 +2525,7 @@ document.querySelectorAll('.pr-filter').forEach(btn=>{
 });
 // ===== 今日财务草稿（现金财务通知）：今天、操作人本人、验证通过、非内转；格式同上方话术，每则之间空一行，最后 @Elsa =====
 function buildFinanceDraft(){
+  refreshPRChecks();
   const ops=getPROps(),op=ops.join('、');
   if(!ops.length)return {error:'请先在上方选择操作人（可多选）'};
   const t0=new Date();t0.setHours(0,0,0,0);const t1=t0.getTime()+864e5;
@@ -2500,6 +2555,7 @@ $('prFinanceBtn').addEventListener('click',()=>{
 $('prFinanceCopy').addEventListener('click',async e=>{try{await navigator.clipboard.writeText($('prFinanceText').textContent);flashCopied(e.currentTarget)}catch(err){toast('复制失败，请手动选取')}});
 $('prFinanceClose').addEventListener('click',()=>{$('prFinanceCard').hidden=true});
 $('prCopyAll').addEventListener('click',async()=>{
+  refreshPRChecks();
   const groups=buildPRSpeechGroups(PR.data);
   const seen=new Set();
   const texts=[];
@@ -2626,6 +2682,7 @@ $('prCopyAll').addEventListener('click',async()=>{
 .fee-cell{white-space:nowrap}.tpl-table tr[data-i]{cursor:pointer}.flow-regen{color:var(--red);font-weight:700;font-size:12px;margin:2px 0 6px}.fee-in{width:52px;padding:5px 6px;border:1px solid var(--line);border-radius:8px;text-align:right;margin-right:3px}
 .fi-opt{font-weight:500;color:var(--text);margin-left:12px;white-space:nowrap}.fi-opt input{width:auto;margin:0 3px 0 0;vertical-align:-1px}
 #page-uploads .topbar p{display:none}#prFileName{display:none}
+.pr-style{margin-top:6px;font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}.pr-style input{width:auto;margin:0 2px 0 0;vertical-align:-1px}.pr-ok-line{color:#087b56;font-size:12px;margin-top:4px}
 .sync-bar .sb-open{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer}.sync-bar .sb-open:hover{border-color:#b7c6e0}.sync-bar .sb-all{background:var(--blue);border-color:var(--blue);color:#fff}
 .sync-bar .sb-re{border:0;background:#eef2f8;border-radius:6px;padding:1px 7px;cursor:pointer;font-weight:800;color:var(--blue)}
 .pr-ops-wrap{position:relative;display:inline-flex;align-items:center;gap:6px}
@@ -3398,6 +3455,11 @@ async function extSync(what){
  renderSyncBar();return EXT_BUSY[what];
 }
 window.extSync=extSync;
+// 给 Payout Record 用：用 Hash 找出金表那一行（只读）
+window.sheetRowByHash=h=>{const k=normH(h);const t=T.sheet?.tabs?.out;if(!k||!t?.ok)return null;const r=t.rows.find(x=>normH(x.hash)===k);if(!r)return null;
+ const n=v=>numOf(v);const same=r.orderNo?t.rows.filter(o=>o!==r&&o.orderNo===r.orderNo&&normH(o.hash)).length:0;
+ return {row:r.row,merchant:r.merchant,currency:r.currency,A:n(r.amountText),E:n(r.arriveText),FF:n(r.feeFText)||0,FU:n(r.feeUText)||0,FU2:n(r.feeU2Text)||0,U:n(r.usdtText),R:n(r.prateText),note:r.note||'',orderNo:r.orderNo||'',sameOrder:same,date:r.dateRaw||r.date}};
+window.sheetSyncedAt=()=>T.sheet?.syncedAt||0;
 window.fopsSyncBtn=async(what,btn)=>{
  if(!extReady()){toast(what==='sheet'?'未侦测到扩充功能：可把「⇪ 同步」拖到书签列，在出入金表页面点击':'未侦测到扩充功能：可把「⇪ 同步」拖到书签列，在后台页面点击');return}
  if(btn.dataset.busy)return;const t0=btn.textContent;btn.dataset.busy=1;btn.textContent='同步中…';
