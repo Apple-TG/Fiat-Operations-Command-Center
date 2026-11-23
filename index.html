@@ -143,6 +143,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 <aside class="sidebar">
 <div class="brand"><div class="logo">FO</div><div><h1>Fiat Operations AI</h1></div></div>
 <button class="nav-btn active" data-page="home">⌂　首頁總覽</button>
+<button class="nav-btn" data-page="daily" style="display:none">⚑　每日問題</button>
 
 <button class="nav-btn" data-page="uploads">⇧　上傳資料</button>
 <button class="nav-btn" data-page="settlement">$　結算話術</button>
@@ -153,7 +154,7 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 <main class="main">
 <div class="sync-bar" id="syncBar"></div>
 <section class="page active" id="page-home">
-<div class="topbar"><div><h2>首頁總覽</h2><p id="lastUpdated">尚未匯入資料</p></div><div class="actions"><a class="btn primary" id="homeSyncBtn" href="#" onclick="event.preventDefault();window.fopsSyncBtn?.('backend',this)">⇪ 同步后台</a><button class="btn" onclick="renderAll()">↻ 重新整理</button><button class="btn danger" onclick="resetAll()">清空全部資料</button></div></div>
+<div class="topbar"><div><h2>首頁總覽</h2><p id="lastUpdated">尚未匯入資料</p></div><div class="actions"><a class="btn primary" id="homeSyncBtn" href="#" onclick="event.preventDefault();window.fopsSyncBtn?.('backend',this)">⇪ 同步后台</a><button class="btn" onclick="toggleSettleK()">⚙ 保留倍数</button><button class="btn" onclick="renderAll()">↻ 重新整理</button><button class="btn danger" onclick="resetAll()">清空全部資料</button></div></div>
 
 <div class="card workflow-card compact">
   <div class="workflow-head">
@@ -179,6 +180,8 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
   </div>
 </div>
 
+<div class="card" id="settleKCard" hidden style="margin-bottom:16px"><div class="section-title"><div><h3>保留倍数</h3><div class="hint">还要预留 = max(7 天日均 × 倍数 − 今日已代付（UTC+0）, 0)；依近 30 天代付波动自动分组；今日代收低于平常一半时，当天倍数 +0.5</div></div></div>
+<div class="actions" id="settleKInputs"></div></div>
 <div class="grid main-grid">
 <div>
 <div class="card table-card">
@@ -197,6 +200,11 @@ details.fallback summary{cursor:pointer;color:var(--muted);font-size:13px}
 
 
 
+
+<section class="page" id="page-daily">
+<div class="topbar"><div><h2>每日問題</h2><p class="hint" id="dailyMeta">尚未产生报告</p></div><div class="actions"><button class="btn primary" id="dailyRun">生成报告</button></div></div>
+<div id="dailyOut"></div>
+</section>
 
 <section class="page" id="page-uploads">
 <div class="topbar"><div><h2>上傳資料</h2></div></div>
@@ -497,7 +505,7 @@ function statsFromBackend(list,start,end){
 function dayText(ms){return new Date(ms).toISOString().slice(5,10).replace('-','/')}
 function statsSourceText(type){
   const s=state[type];if(!s||!Object.keys(s.totals||{}).length)return '尚無資料';
-  if(s.source==='sync'&&s.range)return `後台同步 · ${dayText(s.range.start)}–${dayText(s.range.end)} · ${s.days} 天`;
+  if(s.source==='sync'&&s.range)return `後台同步 · ${dayText(s.range.start)}–${dayText(s.range.end)}`;
   if(s.source==='upload')return `手動上傳 · ${s.days} 天${s.at?' · '+s.at:''}`;
   return `${s.days} 天`;
 }
@@ -529,7 +537,7 @@ function applyBackendSync(payload){
     if(state[type]?.source!=='upload'){state[type]=state.statsSynced[type];setUpdated(type)}
     done.push(type==='withdraw'?'Withdrawal Stats':'Deposit Stats');
   });
-  state.backend={syncedAt:payload.syncedAt,start:payload.start,end:payload.end,risk,topup,capacity,errors:payload.errors||[],currencyCount:Object.keys(cur).length};
+  state.backend={syncedAt:payload.syncedAt,start:payload.start,end:payload.end,risk,topup,capacity,errors:payload.errors||[],currencyCount:Object.keys(cur).length,settle:payload.settle||state.backend?.settle||null};
   save();
   // Payout Record：不自動覆蓋目前的工作，交給 Payout Record 頁的「載入」按鈕
   if(payload.payoutRecords&&Array.isArray(payload.payoutRecords.list)){
@@ -774,21 +782,61 @@ async function loadChannels(type){
 
 function summary(){
  const map={};
- state.balances.forEach(r=>{map[r.currency]??={currency:r.currency,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[]};map[r.currency].fiat+=r.fiat;map[r.currency].usd+=r.usd});
+ state.balances.forEach(r=>{map[r.currency]??={currency:r.currency,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[]};if(isSharedDup(r))return;map[r.currency].fiat+=r.fiat;map[r.currency].usd+=r.usd});
  Object.keys(state.withdraw.totals||{}).forEach(c=>{map[c]??={currency:c,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[]};map[c].withdraw=state.withdraw.totals[c]/Math.max(1,state.withdraw.days)});
  Object.keys(state.deposit.totals||{}).forEach(c=>{map[c]??={currency:c,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[]};map[c].deposit=state.deposit.totals[c]/Math.max(1,state.deposit.days)});
  state.payout.forEach(x=>{map[x.currency]??={currency:x.currency,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[]};map[x.currency].payout.push(x)});
  state.payin.forEach(x=>{map[x.currency]??={currency:x.currency,fiat:0,usd:0,withdraw:0,deposit:0,payout:[],payin:[]};map[x.currency].payin.push(x)});
  return Object.values(map).sort((a,b)=>a.currency.localeCompare(b.currency));
 }
-function recommendation(x){
- const wd=x.withdraw||0;const open=x.payout.filter(y=>y.status==='开启').length;const usable=usableBalanceForCurrency(x.currency,x.payout);
- const lockedText=usable.locked>0?`；另有 ${SYMBOLS[x.currency]||''}${fmt(usable.locked,0)} 卡在 ${usable.lockedMerchants} 个商户（${usable.lockedChannels} 个已关闭通道）。`:'';
- if(wd>0&&usable.amount<wd){return {type:'risk',text:`建议补 ${SYMBOLS[x.currency]||''}${fmt(wd-usable.amount,0)}`,reason:`可动用余额低于 1 天 Withdrawal 日均；开启代付 ${open} 家${lockedText}`}}
- if(wd>0&&usable.amount>wd*2){const amt=usable.amount-wd,u=x.fiat>0&&x.usd>0?amt*x.usd/x.fiat:0;return {type:'settle',text:`可结算 ${SYMBOLS[x.currency]||''}${fmt(amt,0)}${u?`（${fmt(u,0)} U）`:''}`,reason:`以可动用余额判断，保留约 1 天 Withdrawal 后仍有多余余额${lockedText}`}}
- if(open===0&&x.payout.length){return {type:'risk',text:'代付无可用通道',reason:`目前无开启通道${lockedText}`}}
- return {type:'ok',text:'观察',reason:`余额与通道暂时稳定；开启代付 ${open} 家。`}
+// ---------- 出入U判断（2026-11-23 回测后定案）----------
+// 币种保留额 = max(7 天日均 × 倍数 − 今日已代付, 0)；可出U = 可用余额（开启通道、扣处理中代付）− 保留额
+const SETTLE_K_DEFAULT={'稳定':0.8,'中等':1.0,'波动大':1.0};
+function settleK(){return {...SETTLE_K_DEFAULT,...(state.settleK||{})}}
+function curTier(c){const s=state.backend?.settle?.daily30?.[c+'FIAT'];if(!s||!s.length)return '波动大';const m=s.reduce((a,b)=>a+b,0)/s.length;if(m<=0)return '波动大';const sd=Math.sqrt(s.reduce((a,b)=>a+(b-m)**2,0)/s.length),cv=sd/m;return cv<0.3?'稳定':cv<0.7?'中等':'波动大'}
+function settlePlan(x){
+ const c=x.currency,S=state.backend?.settle,tier=curTier(c),kBase=settleK()[tier];
+ const frac=S?.today0?Math.min(1,(Date.now()-S.today0)/864e5):0,pin=S?.payinToday?.[c+'FIAT'];
+ const safety=!!(frac>0.25&&x.deposit>0&&pin!=null&&pin<0.5*x.deposit*frac);
+ const k=kBase+(safety?0.5:0),wd=x.withdraw||0,today=Number(state.backend?.capacity?.[c]?.today)||0;
+ const u=usableBalanceForCurrency(c,x.payout);
+ const pend=(S?.pendingW||[]).filter(p=>p.cur===c+'FIAT').reduce((a,p)=>a+p.amt,0);
+ const usable=u.amount,reserve=Math.max(wd*k-today,0),room=usable-reserve;
+ const rate=x.fiat>0&&x.usd>0?x.usd/x.fiat:0;
+ return {tier,k,kBase,safety,wd,today,pend,usable,reserve,room,rate,locked:u.locked,lockedMerchants:u.lockedMerchants,lockedChannels:u.lockedChannels,disabled:u.disabled,disabledMerchants:u.disabledMerchants};
 }
+function recommendation(x){
+ const sym=SYMBOLS[x.currency]||'',open=x.payout.filter(y=>y.status==='开启').length,P=settlePlan(x);
+ const lockedText=(P.locked>0?`；另有 ${sym}${fmt(P.locked,0)} 在 ${P.lockedMerchants} 个通道全关／维护的商户，不计入可用余额`:'')+(P.disabled>0?`；${P.disabledMerchants} 个商户备注停用，余额 ${sym}${fmt(P.disabled,0)} 不计`:'');
+ const basis=`${P.tier} ×${P.k}${P.safety?'（今日代收偏低，+0.5）':''}：7 天日均 ${sym}${fmt(P.wd,0)} × ${P.k} − 今日已代付 ${sym}${fmt(P.today,0)} = 还要预留 ${sym}${fmt(P.reserve,0)}；可用余额 ${sym}${fmt(P.usable,0)}`;
+ const U=v=>P.rate?`（${fmt(v*P.rate,0)} U）`:'';
+ if(open===0&&x.payout.length)return {type:'risk',text:'代付无可用通道',reason:`目前无开启通道${lockedText}`,plan:P};
+ if(P.room<0)return {type:'risk',text:`建议补 ${sym}${fmt(-P.room,0)}${U(-P.room)}`,reason:basis+lockedText,plan:P};
+ if(P.room>0)return {type:'settle',text:`可结算 ${sym}${fmt(P.room,0)}${U(P.room)}`,reason:basis+lockedText,plan:P};
+ return {type:'ok',text:'观察',reason:basis+lockedText,plan:P};
+}
+// 展开币种：只排顺序，不分配金额（出不出U、出多少看币种总额）。顺序：余额高的先；相差 20% 内，成功率差的先
+function settleMerchants(x){
+ const c=x.currency,P=settlePlan(x),S=state.backend?.settle||{};
+ const rateOf=p=>{const m=(S.merch7||[]).find(y=>normalizeName(y.p)===normalizeName(p)&&y.cur===c+'FIAT');if(!m)return NaN;const den=m.t-m.pd;return den>0?m.s/den:NaN};
+ const isClosed=m=>{const mm=x.payout.filter(ch=>channelMatchesMerchant(ch,m));return mm.length>0&&mm.every(ch=>ch.status!=='开启')};
+ const pendOf=m=>(S.pendingW||[]).filter(p=>p.cur===c+'FIAT'&&normalizeName(p.p)===normalizeName(m.provider)).reduce((a,p)=>({n:a.n+p.n,amt:a.amt+p.amt,maxH:Math.max(a.maxH,p.maxH)}),{n:0,amt:0,maxH:0});
+ const SD=sharedDupInfo();
+ const rows=state.balances.filter(b=>b.currency===c&&b.fiat>0&&!SD.dups.has(b)).map(m=>({m,rate:rateOf(m.provider),off:merchantDisabled(m,c),closed:isClosed(m),pend:pendOf(m),shared:(SD.first.get(m)||[]).map(d=>d.account)}));
+ const off=rows.filter(r=>r.off).sort((a,b)=>b.m.fiat-a.m.fiat);
+ const live=rows.filter(r=>!r.off).sort((a,b)=>{const hi=Math.max(a.m.fiat,b.m.fiat);if(hi>0&&Math.abs(a.m.fiat-b.m.fiat)/hi<=0.2){const ra=Number.isFinite(a.rate)?a.rate:1,rb=Number.isFinite(b.rate)?b.rate:1;if(ra!==rb)return ra-rb}return b.m.fiat-a.m.fiat});
+ return {P,list:[...live,...off]};
+}
+const escH=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function settleTableHtml(x){
+ const {P,list}=settleMerchants(x);if(!list.length)return '';const sym=SYMBOLS[x.currency]||'',U=v=>P.rate?`<div class="hint">${fmt(v*P.rate,0)} U</div>`:'';let n=0;
+ const rows=list.map(r=>{const tags=[r.shared&&r.shared.length?`<span class="badge b-blue" title="同额帐户：${escH(r.shared.join('、'))}">共用余额（${r.shared.length+1} 个帐户，只算一次）</span>`:'',r.off?'<span class="badge b-gray">备注停用，余额不计</span>':r.closed?'<span class="badge b-gray">通道全关／维护</span>':'',r.pend.n>=10||r.pend.maxH>6?`<span class="badge b-orange" title="处理中 ${fmt(r.pend.amt,0)}">卡单 ${r.pend.n} 笔／最久 ${r.pend.maxH.toFixed(1)}h</span>`:''].filter(Boolean).join(' ');
+  return `<tr class="${r.off?'st-off':''}"><td>${r.off?'':++n}</td><td><b>${escH(r.m.provider)}</b>${r.m.account?`<div class="hint">${escH(r.m.account)}</div>`:''}</td><td>${sym}${fmt(r.m.fiat,0)}${U(r.m.fiat)}</td><td>${Number.isFinite(r.rate)?`<b class="${r.rate<0.9?'gap-neg':''}">${(r.rate*100).toFixed(1)}%</b>`:'<span class="hint">—</span>'}</td><td>${tags}</td></tr>`}).join('');
+ return `<div class="settle-box"><div class="settle-head"><b>结算顺序</b><span class="hint">${P.room>0?`本币种可出 ${sym}${fmt(P.room,0)}${P.rate?`（${fmt(P.room*P.rate,0)} U）`:''}`:P.room<0?`需补 ${sym}${fmt(-P.room,0)}`:'目前不需出U'}${P.locked>0?`；另有通道全关／维护商户 ${sym}${fmt(P.locked,0)}`:''}　·　余额高的先（相差 20% 内，成功率差的先）</span></div>
+ <div class="pr-table-wrap"><table class="tpl-table settle-t"><thead><tr><th>#</th><th>商户</th><th>余额</th><th>7 天成功率</th><th>状态</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+function toggleSettleK(){const c=document.getElementById('settleKCard');c.hidden=!c.hidden;if(!c.hidden){const k=settleK();document.getElementById('settleKInputs').innerHTML=Object.keys(SETTLE_K_DEFAULT).map(t=>`<label style="display:flex;align-items:center;gap:6px">${t} ×<input type="number" step="0.1" min="0" data-k="${t}" value="${k[t]}" style="width:70px"></label>`).join('')+'<button class="btn primary" onclick="saveSettleK()">保存</button><button class="btn" onclick="state.settleK=null;save();toggleSettleK();toggleSettleK();renderAll()">恢复预设（0.8／1.0／1.0）</button>'}}
+function saveSettleK(){const o={};document.querySelectorAll('#settleKInputs [data-k]').forEach(i=>{const v=Number(i.value);if(v>=0)o[i.dataset.k]=v});state.settleK=o;save();renderAll();toast('已保存保留倍数')}
 // 后台 Payout Monitor 算法的建议（只显示作比较，不取代上面的原始判断）
 function backendSuggestion(x){
  const r=riskOf(x.currency);if(!r||!Number.isFinite(Number(r.fundsGapToday)))return '';
@@ -823,16 +871,33 @@ function channelMatchesMerchant(channel,merchant){
   const tokens=nameTokens(channel.channel);
   return Boolean((mp&&(cc===mp||tokens.includes(mp)))||(ma&&(cc===ma||tokens.includes(ma))));
 }
+// 共用余额：同一商户、同一币种的几个帐户余额完全相同 → 视为同一笔，只算第一个（2026-11-23）
+function sharedDupInfo(){
+  const seen={},dups=new Map(),first=new Map();
+  // 余额相差 1 以内（小数点误差）视为同一笔
+  (state.balances||[]).forEach(b=>{const v=Number(b.fiat)||0;if(!(v>=1))return;const g=normalizeName(b.provider)+'|'+b.currency;const list=seen[g]=seen[g]||[];const f=list.find(x=>Math.abs((Number(x.fiat)||0)-v)<=1);if(f){dups.set(b,f);(first.get(f)||first.set(f,[]).get(f)).push(b)}else list.push(b)});
+  return {dups,first};
+}
+function isSharedDup(b){return sharedDupInfo().dups.has(b)}
+// Payment Manage 备注写「停用」且该商户所有代收／代付通道都关闭：后台仍显示余额但不准确，不计（2026-11-23）
+const DISABLED_RE=/停用|停止使用|弃用|棄用|停止合作|不再使用|下架|已终止|已終止/;
+function merchantDisabled(merchant,currency){
+  const chs=(state.payout||[]).filter(ch=>ch.currency===currency&&channelMatchesMerchant(ch,merchant));
+  // 只看代付通道（代收不影响）：代付全关或维护，且代付备注写停用，才算停用
+  return chs.length>0&&chs.every(ch=>ch.status!=='开启')&&chs.some(ch=>DISABLED_RE.test(ch.noteText||''));
+}
 function usableBalanceForCurrency(currency,payoutChannels){
   const merchants=state.balances.filter(b=>b.currency===currency);
-  let amount=0,locked=0,lockedMerchants=0,lockedChannels=0;
+  let amount=0,locked=0,lockedMerchants=0,lockedChannels=0,disabled=0,disabledMerchants=0;
   merchants.forEach(merchant=>{
+    if(isSharedDup(merchant))return;
+    if(merchantDisabled(merchant,currency)){disabled+=Number(merchant.fiat)||0;disabledMerchants++;return}
     const matched=payoutChannels.filter(channel=>channelMatchesMerchant(channel,merchant));
-    const allClosed=matched.length>0&&matched.every(channel=>channel.status==='关闭');
+    const allClosed=matched.length>0&&matched.every(channel=>channel.status!=='开启'); // 全关或维护都不计
     if(allClosed){locked+=Number(merchant.fiat)||0;lockedMerchants++;lockedChannels+=matched.length}
     else amount+=Number(merchant.fiat)||0;
   });
-  return {amount,locked,lockedMerchants,lockedChannels,total:amount+locked};
+  return {amount,locked,lockedMerchants,lockedChannels,disabled,disabledMerchants,total:amount+locked};
 }
 function balanceForChannel(channel,currency){
   const balances=state.balances.filter(b=>b.currency===currency);
@@ -872,16 +937,16 @@ function openChannelDrawer(currency,merchantIndex,type){
   const merchant=merchants[merchantIndex];if(!merchant)return;
   const all=summary().find(x=>x.currency===currency)?.[type]||[];
   const channels=sortChannelsForCurrency(all.filter(c=>channelMatchesMerchant(c,merchant)),currency);
-  const labels={open:'开启',low:'余额不足',closed:'关闭'};
+  const labels={open:'开启',low:type==='payin'?'维护':'余额不足',closed:'关闭'};
   const groups={open:channels.filter(c=>c.status==='开启'),low:channels.filter(c=>c.status==='余额不足'),closed:channels.filter(c=>c.status==='关闭')};
   const rows=list=>list.length?list.map(c=>`<div class="drawer-channel"><b>${normalizeName(c.provider)===normalizeName(c.channel)?(c.provider||c.channel):(c.channel||c.provider)}</b>${c.provider&&normalizeName(c.provider)!==normalizeName(c.channel)?`<div class="hint">${c.provider}</div>`:''}${c.noteText?`<div class="hint">NOTE：${c.noteText}</div>`:''}</div>`).join(''):'<div class="drawer-empty">无</div>';
   document.getElementById('drawerTitle').textContent=`${merchant.provider||merchant.account} · ${type==='payout'?'代付':'代收'}通道`;
-  document.getElementById('drawerSubtitle').textContent=`${currency}｜开启 ${groups.open.length}｜余额不足 ${groups.low.length}｜关闭 ${groups.closed.length}`;
+  document.getElementById('drawerSubtitle').textContent=`${currency}｜开启 ${groups.open.length}｜${labels.low} ${groups.low.length}｜关闭 ${groups.closed.length}`;
   document.getElementById('drawerBody').innerHTML=`<section class="drawer-group"><h4><span>🟢 ${labels.open}</span><span>${groups.open.length}</span></h4><div class="drawer-channels">${rows(groups.open)}</div></section><section class="drawer-group"><h4><span>🟠 ${labels.low}</span><span>${groups.low.length}</span></h4><div class="drawer-channels">${rows(groups.low)}</div></section><section class="drawer-group"><details><summary>⚪ ${labels.closed}（${groups.closed.length}）</summary><div class="drawer-channels" style="margin-top:12px">${rows(groups.closed)}</div></details></section>`;
   document.getElementById('drawerBackdrop').classList.add('show');document.getElementById('channelDrawer').classList.add('show');document.getElementById('channelDrawer').setAttribute('aria-hidden','false');
 }
 function closeChannelDrawer(){document.getElementById('drawerBackdrop').classList.remove('show');document.getElementById('channelDrawer').classList.remove('show');document.getElementById('channelDrawer').setAttribute('aria-hidden','true')}
-function channelCards(channels,currency){
+function channelCards(channels,currency,type){
   if(!channels.length)return '<div class="hint">无对应通道</div>';
   return sortChannelsForCurrency(channels,currency).map(c=>{
     const note=(c.status==='关闭' && c.noteText)
@@ -892,7 +957,7 @@ function channelCards(channels,currency){
         <div class="hint">${c.channel||'未命名渠道'}</div>
         ${note}
       </div>
-      <span class="badge ${c.status==='开启'?'b-green':c.status==='余额不足'?'b-orange':'b-gray'}">${c.status}</span>
+      <span class="badge ${c.status==='开启'?'b-green':c.status==='余额不足'?'b-orange':'b-gray'}">${type==='payin'&&c.status==='余额不足'?'维护':c.status}</span>
     </div>`;
   }).join('');
 }
@@ -1197,7 +1262,7 @@ function renderAll(){
          <div class="merchant-amount">
            <b>${SYMBOLS[x.currency]||''} ${fmt(m.fiat)}</b>
            <div class="hint">${fmt(m.usd)} U</div>
-           ${providerAdvice(x.currency,m.provider)}
+           
          </div>
        </div>
        <div>${channelSummaryButton(matchedPayout,x.currency,merchantIndex,'payout')}</div>
@@ -1215,7 +1280,7 @@ function renderAll(){
      : `<div class="merchant-channel-row">
           <div class="merchant-cell"><div class="hint">暂无商户余额明细</div></div>
           <div class="channel-cell">${channelCards(x.payout,x.currency)}</div>
-          <div class="channel-cell">${channelCards(x.payin,x.currency)}</div>
+          <div class="channel-cell">${channelCards(x.payin,x.currency,'payin')}</div>
         </div>`;
 
    return `<tr class="currency-row" onclick="toggleCurrencyDetail('${x.currency}')">
@@ -1224,10 +1289,10 @@ function renderAll(){
      <td>${withdrawCell(x)}</td>
      <td><span class="badge ${po?'b-green':'b-gray'}">${po}/${x.payout.length}</span></td>
      <td><span class="badge ${pi?'b-green':'b-gray'}">${pi}/${x.payin.length}</span>${x.deposit?`<div class="hint">日均 ${SYMBOLS[x.currency]||''}${fmt(x.deposit,0)}</div>`:''}</td>
-     <td class="recommend ${cls}">${r.text}${backendSuggestion(x)?`<div class="hint" style="font-weight:600">后台算法：${backendSuggestion(x)}</div>`:''}</td>
+     <td class="recommend ${cls}">${r.text}${r.plan?`<div class="hint" style="font-weight:600">${r.plan.tier} ×${r.plan.k}${r.plan.safety?'（代收偏低）':''} · 预留 ${SYMBOLS[x.currency]||''}${fmt(r.plan.reserve,0)}</div>`:''}</td>
    </tr>
    <tr class="detail-row"><td colspan="6">
-     <div class="currency-detail" id="detail-${x.currency}">
+     <div class="currency-detail" id="detail-${x.currency}">${settleTableHtml(x)}
        <div class="detail-scroll">
          <div class="merchant-channel-table">
            <div class="merchant-channel-header">
@@ -1280,7 +1345,7 @@ function withdrawCell(x){
  }
  const max=Math.max(1,...daily.map(d=>d.a));
  const bars=daily.length?`<div class="wd-bars" title="${daily.map(d=>d.d.slice(5)+' '+sym+fmt(d.a,0)).join('\n')}">${daily.map(d=>`<i style="height:${Math.max(2,d.a/max*22)}px" class="${d.d===todayStr?'today':''}"></i>`).join('')}</div>`:'';
- return `<b>${x.withdraw?sym+' '+fmt(x.withdraw,0):'—'}</b><div class="hint">${statsSourceText('withdraw')}</div>${pmAvg?`<div class="hint">后台参考（7 日）${sym}${fmt(pmAvg,0)}</div>`:''}`;
+ return `<b>${x.withdraw?sym+' '+fmt(x.withdraw,0):'—'}</b><div class="hint">${statsSourceText('withdraw')}</div>`;
 }function riskOf(c){return state.backend?.risk?.[c]||null}
 function availCell(x,usable){
  const sym=SYMBOLS[x.currency]||'';
@@ -2683,6 +2748,12 @@ $('prCopyAll').addEventListener('click',async()=>{
 .fi-opt{font-weight:500;color:var(--text);margin-left:12px;white-space:nowrap}.fi-opt input{width:auto;margin:0 3px 0 0;vertical-align:-1px}
 #page-uploads .topbar p{display:none}#prFileName{display:none}
 .pr-style{margin-top:6px;font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}.pr-style input{width:auto;margin:0 2px 0 0;vertical-align:-1px}.pr-ok-line{color:#087b56;font-size:12px;margin-top:4px}
+.daily-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}.daily-kpi>div{background:#f6f8fc;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.daily-kpi small{display:block;color:var(--muted);font-size:12px}.daily-kpi b{font-size:22px}.daily-kpi span{display:block;font-size:12px;color:var(--muted)}
+.daily-sug{padding:8px 12px;border-radius:10px;margin:6px 0;font-weight:600;font-size:13px}.daily-sug.red{background:#fff1f2;color:#b42335}.daily-sug.orange{background:#fff7ec;color:#a85a06}.daily-sug.gray{background:#f3f5f9;color:#5d6878}
+.daily-tag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:11px;font-weight:800}.t-严重{background:#ffe1e4;color:#b42335}.t-偏低{background:#fff1df;color:#b86208}.t-恶化{background:#fff7d6;color:#8a6a00}.t-量大{background:#eef2f8;color:#4b5b72}
+.daily-sub{font-size:13px;margin:10px 0 6px;color:var(--muted)}.daily-why{font-size:12px;color:var(--muted);max-width:520px;white-space:normal}.daily-t td,.daily-t th{white-space:nowrap}
+@media(max-width:800px){.daily-kpi{grid-template-columns:repeat(2,1fr)}}
+.settle-box{margin:4px 0 14px;padding:12px;border:1px solid #cfe8dc;background:#f6fcf9;border-radius:12px}.settle-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;margin-bottom:8px}.settle-t td,.settle-t th{white-space:nowrap}.settle-t tr.st-go td{background:#eefaf3}.settle-t tr.st-off td{color:#9aa4b2}.badge.b-blue{background:#e8f0ff;color:#1d4ed8}
 .sync-bar .sb-open{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer}.sync-bar .sb-open:hover{border-color:#b7c6e0}.sync-bar .sb-all{background:var(--blue);border-color:var(--blue);color:#fff}
 .sync-bar .sb-re{border:0;background:#eef2f8;border-radius:6px;padding:1px 7px;cursor:pointer;font-weight:800;color:var(--blue)}
 .pr-ops-wrap{position:relative;display:inline-flex;align-items:center;gap:6px}
@@ -3455,6 +3526,95 @@ async function extSync(what){
  renderSyncBar();return EXT_BUSY[what];
 }
 window.extSync=extSync;
+// ---------- 每日問題（提现；UTC 日；按「生成报告」才读取） ----------
+const DAILY_KEY='fiat_ops_daily_report';
+const PENDING_ST={1:'Created',2:'Requested',3:'Withdrawing',5:'Review',6:'Requesting',8:'In Maintenance'};
+const DCAT={channel:'通道异常',maint:'通道维护',balance:'Provider 余额不足',provlimit:'Provider 限额／无可用产品',user:'用户收款资料',returned:'成功后退回',risk:'风控拒绝',system:'系统扣款失败'};
+function failCat(o){
+ if(o.st===-3||o.st===-5)return 'risk';const r=String(o.r||'');
+ if(/insufficient[\s\S]{0,30}balance|余额不足|餘額不足|balance (is )?not enough|not enough balance/i.test(r))return 'balance';
+ if(/limit[_\s]*exceed|daily[_\s]*limit|限额|超限|no vendor|products? (are )?not available|products available|quota/i.test(r))return 'provlimit';
+ if(/maint|维护|維護|temporarily/i.test(r))return 'maint';
+ if(o.st===-4)return 'returned';
+ if(/账户无效|帳戶無效|格式错误|格式錯誤|blocked_account|invalid[\s_](account|beneficiary|bank|card|phone|iban)|account[\s_](not|invalid|closed|blocked)|not allowed|姓名|户名|戶名|wrong account|收款(账户|账号|信息)/i.test(r))return 'user';
+ if(o.st===-6)return 'system';
+ return 'channel';
+}
+const dShort=c=>String(c||'').replace(/FIAT$/,'');
+const dPct=v=>Number.isFinite(v)?(v*100).toFixed(1)+'%':'—';
+const dPP=v=>Number.isFinite(v)?(v*100).toFixed(1)+' 个百分点':'—';
+const dHrs=ms=>ms>=864e5?(ms/864e5).toFixed(1)+' 天':(ms/36e5).toFixed(1)+' 小时';
+function cleanReason(t){t=String(t||'').trim();if(/^[\[{]/.test(t)){try{const j=JSON.parse(t);const m=j.msg||j.message||j.errorMsg||j.error||j.desc||j.respMsg||j.reason||j.status;if(m)return String(m).slice(0,70)}catch(e){}const m=t.match(/"(?:msg|message|errorMsg|error|reason|desc|respMsg)"\s*:\s*"([^"]{1,70})/);return m?m[1]:'（原始回应，无可读原因）'}return t.slice(0,70)||'（无原因）'}
+function analyzeDaily(d){
+ const D=864e5,Y=d.days[0],prev=d.days.slice(1),yS=d.day0,yE=d.day0+D;
+ const rateOf=x=>{const den=x.t-x.pd;return den>0?x.s/den:NaN};
+ const base={};prev.forEach(day=>day.cur.forEach(x=>{const b=base[x.cur]=base[x.cur]||{s:0,den:0};b.s+=x.s;b.den+=x.t-x.pd}));
+ const tot=Y.cur.reduce((a,x)=>({t:a.t+x.t,s:a.s+x.s,pd:a.pd+x.pd,f:a.f+x.f}),{t:0,s:0,pd:0,f:0});
+ const bAll=prev.reduce((a,day)=>{day.cur.forEach(x=>{a.s+=x.s;a.den+=x.t-x.pd});return a},{s:0,den:0});
+ const curRows=Y.cur.map(x=>{const den=x.t-x.pd,b=base[x.cur],r=rateOf(x),br=b&&b.den>0?b.s/b.den:NaN;return {cur:x.cur,t:x.t,s:x.s,f:x.f,pd:x.pd,den,rate:r,base:br,delta:r-br}}).sort((a,b)=>b.den-a.den);
+ const abnormal=curRows.filter(x=>x.den>=30&&Number.isFinite(x.delta)&&x.delta<=-0.05).sort((a,b)=>a.delta-b.delta);
+ // Provider（含币种）昨天与自己 7 天平均
+ const agg=list=>{const m={};list.forEach(x=>{const k=(x.p||'?')+'|'+x.cur;const g=m[k]=m[k]||{t:0,s:0,pd:0};g.t+=x.t;g.s+=x.s;g.pd+=x.pd});return m};
+ const provY=agg(Y.ch),provB=agg(prev.flatMap(day=>day.ch));
+ const fy=d.failed.filter(o=>o.t>=yS&&o.t<yE);
+ const byProv={};fy.forEach(o=>{const c=failCat(o),k=(o.p||'?')+'|'+o.cur;const g=byProv[k]=byProv[k]||{p:o.p||'?',cur:o.cur,cats:{},reasons:{}};g.cats[c]=(g.cats[c]||0)+1;const rk=c+'|'+cleanReason(o.r);g.reasons[rk]=(g.reasons[rk]||0)+1});
+ const provRows=Object.entries(byProv).map(([k,g])=>{const y=provY[k]||{t:0,s:0,pd:0},b=provB[k],den=y.t-y.pd,rate=den>0?y.s/den:NaN,br=b&&b.t-b.pd>0?b.s/(b.t-b.pd):NaN;return {...g,den,rate,base:br,delta:rate-br}});
+ const topReasons=(g,cats)=>Object.entries(g.reasons).filter(([k])=>cats.includes(k.split('|')[0])).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,n])=>k.split('|').slice(1).join('|')+' ×'+n);
+ const nOf=(g,cats)=>cats.reduce((a,c)=>a+(g.cats[c]||0),0);
+ const CH=['channel','maint'];
+ const tagOf=g=>g.den>=5&&g.rate<0.5?'严重':g.den>=10&&g.rate<0.8?'偏低':Number.isFinite(g.delta)&&g.delta<=-0.05&&g.den>=10?'恶化':nOf(g,CH)>=50?'量大':'';
+ const chAll=provRows.filter(g=>nOf(g,CH)>=5).map(g=>({...g,n:nOf(g,CH),why:topReasons(g,CH),tag:tagOf(g)})).filter(g=>g.tag);
+ const ORDER={'严重':0,'偏低':1,'恶化':2,'量大':3};
+ chAll.sort((a,b)=>ORDER[a.tag]-ORDER[b.tag]||(a.tag==='量大'?b.n-a.n:a.rate-b.rate));
+ const channelIssues=chAll.slice(0,10),channelMore=chAll.length-channelIssues.length;
+ const PV=['balance','provlimit'];
+ const balanceIssues=provRows.filter(g=>nOf(g,PV)>0).sort((a,b)=>nOf(b,PV)-nOf(a,PV)).map(g=>({...g,n:nOf(g,PV),why:topReasons(g,PV)}));
+ const US=['user','returned'];
+ const userIssues=provRows.filter(g=>nOf(g,US)>=5).sort((a,b)=>nOf(b,US)-nOf(a,US)).slice(0,8).map(g=>({...g,n:nOf(g,US),why:topReasons(g,US)}));
+ const riskN=fy.filter(o=>failCat(o)==='risk').length;
+ const w0=yS-6*D,rp={};
+ d.failed.forEach(o=>{if(o.t<w0||o.t>=yE)return;const c=failCat(o);if(!['channel','maint','balance','provlimit'].includes(c))return;const k=(o.p||'?')+'|'+o.cur+'|'+c;const g=rp[k]=rp[k]||{p:o.p||'?',cur:o.cur,c,days:{}};const di=Math.floor((o.t-w0)/D);g.days[di]=(g.days[di]||0)+1});
+ const repAll=Object.values(rp).map(g=>({...g,nDays:Object.values(g.days).filter(v=>v>=3).length,total:Object.values(g.days).reduce((a,b)=>a+b,0),yday:g.days[6]||0})).filter(g=>g.nDays>=5).sort((a,b)=>b.total-a.total);
+ const repeated=repAll.slice(0,10),repeatedMore=repAll.length-repeated.length;
+ const now=d.syncedAt,pg={};
+ d.pending.filter(o=>now-o.t>2*36e5).forEach(o=>{const k=(o.p||'?')+'|'+o.cur+'|'+o.st;const g=pg[k]=pg[k]||{p:o.p||'?',cur:o.cur,st:o.st,n:0,oldest:o.t,usd:0};g.n++;g.usd+=o.usd;g.oldest=Math.min(g.oldest,o.t)});
+ const pendRows=Object.values(pg).sort((a,b)=>a.oldest-b.oldest);
+ const sug=[],has=(p,c)=>sug.some(x=>x.k===p+'|'+c);const add=(lv,k,t)=>{if(!sug.some(x=>x.k===k))sug.push({lv,k,t})};
+ channelIssues.filter(g=>g.tag==='严重').forEach(g=>add('red',g.p+'|'+g.cur,`立即通知 Provider（考虑暂停通道）：${g.p} ${dShort(g.cur)} 成功率 ${dPct(g.rate)}，${g.n} 笔失败，主因「${(g.why[0]||'').replace(/ ×\d+$/,'')}」`));
+ balanceIssues.filter(g=>g.n>=3).forEach(g=>add('red',g.p+'|'+g.cur,`${(g.cats.balance||0)>=(g.cats.provlimit||0)?'通知充值':'请 Provider 调整限额／开放产品'}：${g.p} ${dShort(g.cur)} 昨天 ${g.n} 笔失败（${(g.why[0]||'').replace(/ ×\d+$/,'')}）`));
+ channelIssues.filter(g=>g.tag==='偏低'||g.tag==='恶化').forEach(g=>add('orange',g.p+'|'+g.cur,`请 Provider 排查：${g.p} ${dShort(g.cur)} 成功率 ${dPct(g.rate)}${Number.isFinite(g.base)?`（7 天平均 ${dPct(g.base)}）`:''}，通道失败 ${g.n} 笔`));
+ abnormal.forEach(x=>add('orange','cur|'+x.cur,`观察币种：${dShort(x.cur)} 成功率 ${dPct(x.rate)}，比 7 天平均低 ${dPP(-x.delta)}`));
+ pendRows.filter(g=>now-g.oldest>6*36e5||g.n>=10).slice(0,4).forEach(g=>add('orange','pend|'+g.p+g.cur+g.st,`跟进卡单：${g.p} ${dShort(g.cur)} ${PENDING_ST[g.st]||g.st} ${g.n} 笔，最久 ${dHrs(now-g.oldest)}`));
+ repeated.filter(r=>r.nDays===7&&(r.c==='channel'||r.c==='maint')).slice(0,3).forEach(r=>add('gray','rep|'+r.p+r.cur,`长期失败偏高（7 天每天都有）：${r.p} ${dShort(r.cur)} 7 天 ${r.total} 笔，建议与 Provider 检讨`));
+ return {at:now,day0:d.day0,tot,bRate:bAll.den>0?bAll.s/bAll.den:NaN,curRows,abnormal,channelIssues,channelMore,balanceIssues,userIssues,repeated,repeatedMore,pendRows,riskN,fyN:fy.length,sug:sug.slice(0,15)};
+}
+function renderDaily(r){
+ const box=$('dailyOut');if(!r){box.innerHTML='<div class="card"><div class="hint">按右上角「生成报告」读取后台昨天（UTC+0）的提现资料并分析，约 1 分钟。</div></div>';return}
+ const day=new Date(r.day0).toISOString().slice(0,10),den=r.tot.t-r.tot.pd,rate=den>0?r.tot.s/den:NaN;
+ $('dailyMeta').textContent=`统计日 ${day}（UTC+0）· 产生于 ${new Date(r.at).toLocaleString('zh-TW',{hour12:false})}`;
+ const tbl=(head,rows)=>rows.length?`<div class="pr-table-wrap"><table class="tpl-table daily-t"><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`:'<div class="hint">无</div>';
+ const card=(title,inner,hint)=>`<div class="card" style="margin-bottom:16px"><div class="section-title"><div><h3>${title}</h3>${hint?`<div class="hint">${hint}</div>`:''}</div></div>${inner}</div>`;
+ const deltaCell=x=>Number.isFinite(x.delta)?`<span class="${x.delta<=-0.05?'gap-neg':x.delta>=0.02?'gap-pos':''}">${x.delta>0?'+':''}${(x.delta*100).toFixed(1)}</span>`:'—';
+ box.innerHTML=
+  card('改善建议',r.sug.length?r.sug.map(x=>`<div class="daily-sug ${x.lv}">${esc(x.t)}</div>`).join(''):'<div class="hint">没有需要处理的项目</div>')+
+  card('昨日成功率',`<div class="daily-kpi"><div><small>加权成功率</small><b>${dPct(rate)}</b><span>7 天平均 ${dPct(r.bRate)}</span></div><div><small>订单</small><b>${fmt(r.tot.t,0)}</b><span>待处理 ${fmt(r.tot.pd,0)}（不计入）</span></div><div><small>成功</small><b>${fmt(r.tot.s,0)}</b></div><div><small>失败</small><b>${fmt(r.tot.f,0)}</b><span>其中风控拒绝 ${fmt(r.riskN,0)}</span></div></div>`+
+   tbl(['币种','订单（扣除待处理）','成功率','7 天平均','差异（百分点）','失败','待处理'],r.curRows.map(x=>`<tr><td><b>${dShort(x.cur)}</b></td><td>${fmt(x.den,0)}</td><td><b>${dPct(x.rate)}</b></td><td>${dPct(x.base)}</td><td>${deltaCell(x)}</td><td>${fmt(x.f,0)}</td><td>${fmt(x.pd,0)}</td></tr>`)),
+   '成功率 = 成功 ÷（全部订单 − 待处理）；加权 = 各币种笔数加总')+
+  card('异常币种',tbl(['币种','成功率','7 天平均','下降'],r.abnormal.map(x=>`<tr><td><b>${dShort(x.cur)}</b></td><td>${dPct(x.rate)}</td><td>${dPct(x.base)}</td><td class="gap-neg">${dPP(-x.delta)}</td></tr>`)),'比 7 天平均低 5 个百分点以上，且昨天至少 30 笔')+
+  card('通道问题',tbl(['','Provider','币种','通道失败','成功率','7 天平均','主要原因'],r.channelIssues.map(g=>`<tr><td><span class="daily-tag t-${g.tag}">${g.tag}</span></td><td><b>${esc(g.p)}</b></td><td>${dShort(g.cur)}</td><td>${g.n}</td><td><b>${dPct(g.rate)}</b></td><td>${dPct(g.base)}</td><td class="daily-why">${g.why.map(esc).join('<br>')}</td></tr>`))+(r.channelMore?`<div class="hint">另有 ${r.channelMore} 家未列出</div>`:''),'严重：成功率 &lt; 50%；偏低：&lt; 80%；恶化：比自己 7 天平均低 5 个百分点以上；量大：通道失败 50 笔以上')+
+  card('商户问题',`<h4 class="daily-sub">Provider 端：余额不足／限额／无可用产品</h4>`+tbl(['Provider','币种','笔数','原因'],r.balanceIssues.map(g=>`<tr><td><b>${esc(g.p)}</b></td><td>${dShort(g.cur)}</td><td>${g.n}</td><td class="daily-why">${g.why.map(esc).join('<br>')}</td></tr>`))+
+   `<h4 class="daily-sub">用户收款资料／成功后退回（非通道问题）</h4>`+tbl(['Provider','币种','笔数','原因'],r.userIssues.map(g=>`<tr><td><b>${esc(g.p)}</b></td><td>${dShort(g.cur)}</td><td>${g.n}</td><td class="daily-why">${g.why.map(esc).join('<br>')}</td></tr>`)))+
+  card('重复错误',tbl(['Provider','币种','类别','近 7 天出现天数','7 天合计','昨天'],r.repeated.map(g=>`<tr><td><b>${esc(g.p)}</b></td><td>${dShort(g.cur)}</td><td>${DCAT[g.c]||g.c}</td><td><b>${g.nDays}</b> / 7</td><td>${g.total}</td><td>${g.yday}</td></tr>`))+(r.repeatedMore?`<div class="hint">另有 ${r.repeatedMore} 组未列出</div>`:''),'只看通道与 Provider 端原因；一天 3 笔以上算出现一次，7 天内出现 5 天以上；依 7 天合计排序')+
+  card('待处理',tbl(['Provider','币种','状态','笔数','最久','金额（USD）'],r.pendRows.map(g=>`<tr><td><b>${esc(g.p)}</b></td><td>${dShort(g.cur)}</td><td>${PENDING_ST[g.st]||g.st}</td><td>${g.n}</td><td class="${r.at-g.oldest>6*36e5?'gap-neg':''}">${dHrs(r.at-g.oldest)}</td><td>${fmt(g.usd,0)}</td></tr>`)),'产生报告当下，停在 Created／Requested／Withdrawing／Review／Requesting／In Maintenance 超过 2 小时的单（近 7 天建立）');
+}
+$('dailyRun').addEventListener('click',async()=>{
+ if(!extReady()){toast('需要扩充功能「Fiat Ops Sync」1.1 版，请到 chrome://extensions 重新载入');return}
+ const b=$('dailyRun');if(b.disabled)return;b.disabled=true;b.textContent='读取中…（约 1 分钟）';
+ try{const d=await extReq('daily',{});const r=analyzeDaily(d);try{localStorage.setItem(DAILY_KEY,JSON.stringify(r))}catch(e){}renderDaily(r);toast('✓ 每日问题报告已产生')}
+ catch(e){toast('⚠ 产生失败：'+e.message+(/未知请求/.test(e.message)?'（请重新载入扩充功能）':''))}
+ finally{b.disabled=false;b.textContent='生成报告'}
+});
+try{renderDaily(JSON.parse(localStorage.getItem(DAILY_KEY)||'null'))}catch(e){renderDaily(null)}
 // 给 Payout Record 用：用 Hash 找出金表那一行（只读）
 window.sheetRowByHash=h=>{const k=normH(h);const t=T.sheet?.tabs?.out;if(!k||!t?.ok)return null;const r=t.rows.find(x=>normH(x.hash)===k);if(!r)return null;
  const n=v=>numOf(v);const same=r.orderNo?t.rows.filter(o=>o!==r&&o.orderNo===r.orderNo&&normH(o.hash)).length:0;
